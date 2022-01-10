@@ -76,3 +76,8 @@ sudo ninja install
 cd /usr/local/stow
 sudo stow absl
 ```
+
+
+Running this: `CTEST_OUTPUT_ON_FAILURE=1 ninja test` resulted in two failed tests, which I ignored.
+
+Running this: `sudo ninja install` was successful!
