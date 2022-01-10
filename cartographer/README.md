@@ -78,6 +78,18 @@ sudo stow absl
 ```
 
 
-Running this: `CTEST_OUTPUT_ON_FAILURE=1 ninja test` resulted in two failed tests, which I ignored.
+Running this: `CTEST_OUTPUT_ON_FAILURE=1 ninja test` resulted in one failed test, which I ignored. This is the failed test:
+
+```bash
+...
+99% tests passed, 1 tests failed out of 80
+
+Total Test time (real) =  24.48 sec
+
+The following tests FAILED:
+         60 - cartographer.mapping.map_builder_test (Failed)
+Errors while running CTest
+FAILED: CMakeFiles/test.util 
+```
 
 Running this: `sudo ninja install` was successful!
