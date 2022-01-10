@@ -42,3 +42,37 @@ Assuming I can do these (based on my best guess):
 * libeigen3-dev -->  `brew install eigen`
 * libgflags-dev --> `brew install gflags`
 * libgoogle-glog-dev --> `brew install glog`
+* liblua5.2-dev --> `brew install lua`
+* libsuitesparse-dev --> `brew install suite-sparse`
+* lsb-release --> LINUX thing
+* ninja-build --> `brew install ninja`
+* stow --> `brew install stow`
+
+* python3-sphinx --> `brew install sphinx-doc`
+* libgmock-dev --> Assuming it's already installed via `brew install googletest` from above
+* libceres-dev --> `brew install ceres-solver`
+* protobuf-compiler --> `brew install protobuf && brew uprade protobuf`
+
+
+Complained about LuaGoogle not found; went into CMakeLists to change LuaGoogle --> Lua.
+
+
+Fails to link ; am doing the following:
+* Uninstall `brew uninstall abseil`, installing it by following the instructions [here](https://google-cartographer.readthedocs.io/en/latest/), like this:
+
+```bash
+git clone https://github.com/abseil/abseil-cpp.git
+cd abseil-cpp
+git checkout d902eb869bcfacc1bad14933ed9af4bed006d481
+mkdir build
+cd build
+cmake -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+  -DCMAKE_INSTALL_PREFIX=/usr/local/stow/absl \
+  ..
+ninja
+sudo ninja install
+cd /usr/local/stow
+sudo stow absl
+```
