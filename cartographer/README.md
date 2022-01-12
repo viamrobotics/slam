@@ -93,3 +93,18 @@ FAILED: CMakeFiles/test.util
 ```
 
 Running this: `sudo ninja install` was successful!
+
+#### But - we want grpc!
+So let's build it again.
+
+We can follow the scripts as mentioned in `cartographer/cartographer/scripts/...`.
+
+We have to install:
+* async_grpc
+* grpc
+* ?
+
+While installing async_grpc (most recent commit), ran into a few bugs. 
+
+Installing grpc, currently following this [guide](https://grpc.io/docs/languages/cpp/quickstart/).
+* Installing the build in `./libs/grpc_build`. Not sure how I'll link to it.. or 
