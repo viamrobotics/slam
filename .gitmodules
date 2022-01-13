@@ -1,0 +1,3 @@
+[submodule "slam-libraries/cartographer"]
+	path = slam-libraries/cartographer
+	url = git@github.com:kkufieta/cartographer.git

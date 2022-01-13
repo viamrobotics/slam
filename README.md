@@ -1,4 +1,8 @@
-# slam
-Directory of all slam implementations we currently support including server-side connections for RDK to communicate with
+# SLAM
 
-download ORB_SLAM3 from here https://github.com/JohnN193/ORB_SLAM3
+SLAM Service V1
+
+## SLAM Libraries
+[slam-libraries](./slam-libraries) contains all slam implementations we currently support.
+
+
