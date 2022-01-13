@@ -16,6 +16,7 @@ When working with submodules, it is important to follow this order:
 ### Clone & pull
 Working with gitmodules & branches takes a few more steps than usual, which are outlined below:
 
+
 1. Clone repo: `git clone --recurse-submodules git@github.com:viamrobotics/slam.git`
 2. `cd slam`
     * If you forgot `--recurse-submodules` when cloning or can't find any code in the gitmodules folders, run this: `git submodule update --init`
@@ -32,3 +33,22 @@ Or, alternatively:
 1. Commit changes in the submodules
 1. Commit changes in the main repo
 1. Push all changes by running `git push --recurse-submodules=on-demand`
+
+### Changing branches in a submodule
+When changing branches in a submodule, udpate `.gitmodules`, e.g. changing to a branch called `kk/fix-install`:
+
+```bash
+...
+[submodule "slam-libraries/cartographer"]
+        path = slam-libraries/cartographer
+        url = git@github.com:kkufieta/cartographer.git
+        branch=kk/fix-install
+```
+
+Commit & push the changes.
+
+When pulling down those changes, run the following:
+```bash
+git pull
+git submodule update --init --recursive
+```
