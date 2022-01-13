@@ -20,4 +20,4 @@
 .vscode/*
 
 # Folder with libraries
-/libs/*
+/slam-libraries/libs-*
