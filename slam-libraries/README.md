@@ -28,7 +28,7 @@ brew install suite-sparse
 brew install ninja
 brew install sphinx-doc
 ```
-
+ 
 ```bash
 curl -o lua-5.2.4.tar.gz https://www.lua.org/ftp/lua-5.2.4.tar.gz
 tar -xvf lua-5.2.4.tar.gz
@@ -38,6 +38,11 @@ sudo make install
 popd
 rm lua-5.2.4.tar.gz
 rm -rf lua-5.2.4
+```
+
+If you happen to have `protobuf` installed via `brew`, you'll need to uninstall it:
+```bash
+ brew uninstall --ignore-dependencies  protobuf
 ```
 
 **Install cartographer**
