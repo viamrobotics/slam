@@ -25,12 +25,20 @@ brew install openssl
 brew install eigen
 brew install gflags
 brew install glog
-brew install lua
+# brew install lua
 brew install suite-sparse
 brew install ninja
 brew install sphinx-doc
-# brew install abseil
-# brew install ceres-solver
+```
+
+```bash
+# Install Lua 5.2.4
+tar -xvf lua-5.2.4.tar.gz
+pushd lua
+make macosx
+sudo make install
+popd
+rm -rf lua
 ```
 
 **Install cartographer**
