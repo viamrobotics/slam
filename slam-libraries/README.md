@@ -44,7 +44,10 @@ rm -rf lua-5.2.4
 
 Run: `./install_cartographer.sh`
 
-#### Mac OSx
+Installation tested on:
+- [x] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
+- [x] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
+- [x] M1
 
 
 ## ORB_SLAM3
