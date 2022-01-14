@@ -31,7 +31,7 @@ brew install sphinx-doc
 
 ```bash
 curl -o lua-5.2.4.tar.gz https://www.lua.org/ftp/lua-5.2.4.tar.gz
-tar -xvf lua-5.2.4.tar.gz -C lua
+tar -xvf lua-5.2.4.tar.gz
 pushd lua-5.2.4
 make macosx
 sudo make install
