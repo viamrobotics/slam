@@ -15,7 +15,6 @@ brew update
 brew upgrade
 ```
 
-
 ```bash
 # Install dependencies
 brew install googletest
@@ -25,20 +24,20 @@ brew install openssl
 brew install eigen
 brew install gflags
 brew install glog
-# brew install lua
 brew install suite-sparse
 brew install ninja
 brew install sphinx-doc
 ```
 
 ```bash
-# Install Lua 5.2.4
-tar -xvf lua-5.2.4.tar.gz
-pushd lua
+curl -o lua-5.2.4.tar.gz https://www.lua.org/ftp/lua-5.2.4.tar.gz
+tar -xvf lua-5.2.4.tar.gz -C lua
+pushd lua-5.2.4
 make macosx
 sudo make install
 popd
-rm -rf lua
+rm lua-5.2.4.tar.gz
+rm -rf lua-5.2.4
 ```
 
 **Install cartographer**
