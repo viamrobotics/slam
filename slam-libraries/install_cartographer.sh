@@ -1,13 +1,10 @@
 #!/bin/sh
-
 set -o errexit
-set -o verbose
 
-rm -rf libs-cartographer
+# export LIBRARY_PATH=/usr/local/lib:/usr/local/include:
+./cartographer/viam/scripts/install_cartographer_cmake.sh
 
-mkdir libs-cartographer
-pushd libs-cartographer
+rm -rf cartographer/viam/build
+mkdir cartographer/viam/build
 
-popd
-export LIBRARY_PATH=/usr/local/lib:/usr/local/include:
-./cartographer/scripts/install_cartographer_cmake.sh
+cp ./cartographer/build/viam_carto_main ./cartographer/viam/build/main
