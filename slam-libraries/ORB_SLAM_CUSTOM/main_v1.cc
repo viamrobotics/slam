@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     if(argc < 5)
     {
         cerr << endl << "Usage: ./rgbd_file path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 (trajectory_file_name)" << endl;
-	 cerr << endl << "Example: ./bin/viam-main ./Vocabulary/ORBvoc.txt ./initialAttempt/realsense515_depth.yaml ./officePics Out_file.txt outputPose" << endl;
+	 cerr << endl << "./ORB_SLAM_CUSTOM/bin/viam_main_v1 ./ORB_SLAM_CUSTOM/ORB_SLAM3/Vocabulary/ORBvoc.txt ./ORB_SLAM_CUSTOM/ORB_SLAM3/initialAttempt/realsense515_depth2.yaml ./ORB_SLAM_CUSTOM/ORB_SLAM3/officePics3 Out_file.txt outputPose RGBD" << endl;
         return 1;
     }
     string path_to_vocab = string(argv[1]);
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     string path_to_sequence = string(argv[4]);
     string output_file_name = string(argv[5]);
     string file_name,file_nameTraj,file_nameKey;
-    string slam_mode = "RGBD";
+    string slam_mode = "RGBD" ;
 
         file_name = output_file_name;
         file_nameTraj = file_name;
@@ -69,26 +69,26 @@ int main(int argc, char **argv)
     
 	
     if (slam_mode == "RGBD"){
-        
+    cout << "RGBD SELECTED " << endl;
     // Retrieve paths to images
     vector<string> vstrImageFilenamesRGB;
     vector<string> vstrImageFilenamesD;
     vector<double> vTimestamps;
     string strAssociationFilename = string(path_to_data) + "/" + string(path_to_sequence);
     string pathSeq(path_to_data);
-    LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
-    // Check consistency in the number of images and depthmaps
-    int nImages = vstrImageFilenamesRGB.size();
-    if(vstrImageFilenamesRGB.empty())
-    {
-        cerr << endl << "No images found in provided path." << endl;
-        return 1;
-    }
-    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
-    {
-        cerr << endl << "Different number of images for rgb and depth." << endl;
-        return 1;
-    }
+    // LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
+    // // Check consistency in the number of images and depthmaps
+    // int nImages = vstrImageFilenamesRGB.size();
+    // if(vstrImageFilenamesRGB.empty())
+    // {
+    //     cerr << endl << "No images found in provided path." << endl;
+    //     return 1;
+    // }
+    // else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
+    // {
+    //     cerr << endl << "Different number of images for rgb and depth." << endl;
+    //     return 1;
+    // }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM3::System SLAM(path_to_vocab,path_to_settings,ORB_SLAM3::System::RGBD,false, 0, file_nameTraj);

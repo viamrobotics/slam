@@ -1,6 +1,6 @@
 echo "Configuring and building Thirdparty/DBoW2 ..."
 
-cd ORB_SLAM3/Thirdparty/DBoW2
+cd ORB_SLAM_CUSTOM/ORB_SLAM3/Thirdparty/DBoW2
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
@@ -33,13 +33,12 @@ tar -xf ORBvoc.txt.tar.gz
 cd ..
 
 echo "Configuring and building ORB_SLAM3 ..."
-cd ../ORB_SLAM3
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j2
 
-cd ../../ORB_SLAM_CUSTOM
+cd ../..
 mkdir bin
 mkdir build
 cd build
