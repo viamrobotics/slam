@@ -21,6 +21,6 @@
 
 # Folder with libraries
 /slam-libraries/libs-*
-
+build/*
 slam-libraries/ORB_SLAM_CUSTOM/ORB_SLAM3
 slam-libraries/ORB_SLAM_CUSTOM/build/
