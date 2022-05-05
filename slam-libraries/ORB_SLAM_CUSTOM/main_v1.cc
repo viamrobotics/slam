@@ -76,19 +76,19 @@ int main(int argc, char **argv)
     vector<double> vTimestamps;
     string strAssociationFilename = string(path_to_data) + "/" + string(path_to_sequence);
     string pathSeq(path_to_data);
-    // LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
-    // // Check consistency in the number of images and depthmaps
-    // int nImages = vstrImageFilenamesRGB.size();
-    // if(vstrImageFilenamesRGB.empty())
-    // {
-    //     cerr << endl << "No images found in provided path." << endl;
-    //     return 1;
-    // }
-    // else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
-    // {
-    //     cerr << endl << "Different number of images for rgb and depth." << endl;
-    //     return 1;
-    // }
+    LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
+    // Check consistency in the number of images and depthmaps
+    int nImages = vstrImageFilenamesRGB.size();
+    if(vstrImageFilenamesRGB.empty())
+    {
+        cerr << endl << "No images found in provided path." << endl;
+        return 1;
+    }
+    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
+    {
+        cerr << endl << "Different number of images for rgb and depth." << endl;
+        return 1;
+    }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM3::System SLAM(path_to_vocab,path_to_settings,ORB_SLAM3::System::RGBD,false, 0, file_nameTraj);
