@@ -8,7 +8,7 @@
 #include <ctime>
 #include "glog/logging.h"
 
-#include "viam/src/io/read_PCD_file.h"
+#include "../src/io/read_PCD_file.h"
 
 
 namespace viam {

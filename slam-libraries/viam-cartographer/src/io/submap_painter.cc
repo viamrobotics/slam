@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "viam/src/io/submap_painter.h"
+#include "../src/io/submap_painter.h"
 
 #include "cartographer/mapping/2d/submap_2d.h"
 #include "cartographer/mapping/3d/submap_3d.h"

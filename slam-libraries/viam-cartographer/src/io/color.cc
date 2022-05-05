@@ -21,7 +21,7 @@
 #include "cartographer/common/port.h"
 #include "glog/logging.h"
 
-#include "viam/src/io/color.h"
+#include "../src/io/color.h"
 
 namespace viam {
 namespace io {

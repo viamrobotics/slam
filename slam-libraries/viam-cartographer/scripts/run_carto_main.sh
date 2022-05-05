@@ -31,8 +31,8 @@ CONFIGURATION_MAPPING_BASENAME="mapping_new_map.lua"
 CONFIGURATION_LOCALIZATION_BASENAME="locating_in_map.lua"
 CONFIGURATION_UPDATE_BASENAME="updating_a_map.lua"
 
-mkdir -p viam/output
-cd viam/output
+mkdir -p output
+cd output
 rm -rf ${OUTPUT_DIRECTORY}
 mkdir ${OUTPUT_DIRECTORY}
 rm -rf pics_localization_map_visualization

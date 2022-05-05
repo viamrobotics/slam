@@ -25,7 +25,7 @@
 #include "cartographer/mapping/trajectory_node.h"
 #include "cartographer/mapping/id.h"
 
-#include "viam/src/io/color.h"
+#include "../src/io/color.h"
 
 namespace viam {
 namespace io {

@@ -17,7 +17,7 @@
 #include "cartographer/io/image.h"
 #include "cartographer/transform/transform.h"
 
-#include "viam/src/io/draw_trajectories.h"
+#include "../src/io/draw_trajectories.h"
 
 namespace viam {
 namespace io {

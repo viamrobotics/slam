@@ -90,8 +90,8 @@ install(DIRECTORY cmake DESTINATION share/cartographer/)
 
 file(GLOB_RECURSE ALL_LIBRARY_HDRS "cartographer/*.h")
 file(GLOB_RECURSE ALL_LIBRARY_SRCS "cartographer/*.cc")
-file(GLOB_RECURSE ALL_VIAM_HDRS "viam/*.h")
-file(GLOB_RECURSE ALL_VIAM_SRCS "viam/*.cc")
+file(GLOB_RECURSE ALL_VIAM_HDRS "../src/*.h")
+file(GLOB_RECURSE ALL_VIAM_SRCS "../src/*.cc")
 # file(GLOB_RECURSE TEST_LIBRARY_HDRS "cartographer/fake_*.h" "cartographer/*test_helpers*.h" "cartographer/mock_*.h")
 # file(GLOB_RECURSE TEST_LIBRARY_SRCS "cartographer/fake_*.cc" "cartographer/*test_helpers*.cc" "cartographer/mock_*.cc")
 # file(GLOB_RECURSE ALL_TESTS "cartographer/*_test.cc")
@@ -227,7 +227,7 @@ google_binary(cartographer_print_configuration
 
 google_binary(viam_carto_main
   SRCS
-    viam/src/main.cc
+    ../src/main.cc
 )
 
 if(${BUILD_GRPC})

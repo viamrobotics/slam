@@ -10,10 +10,10 @@
 #include "cartographer/mapping/proto/trajectory.pb.h"
 #include "cartographer/mapping/proto/pose_graph.pb.h"
 
-#include "viam/src/mapping/map_builder.h"
-#include "viam/src/io/draw_trajectories.h"
-#include "viam/src/io/read_PCD_file.h"
-#include "viam/src/io/submap_painter.h"
+#include "../src/mapping/map_builder.h"
+#include "../src/io/draw_trajectories.h"
+#include "../src/io/read_PCD_file.h"
+#include "../src/io/submap_painter.h"
 
 
 DEFINE_string(configuration_directory, "",

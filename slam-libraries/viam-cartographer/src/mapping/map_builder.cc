@@ -32,8 +32,8 @@
 #include "gtest/gtest.h"
 #include "glog/logging.h"
 
-#include "viam/src/io/read_PCD_file.h"
-#include "viam/src/mapping/map_builder.h"
+#include "../src/io/read_PCD_file.h"
+#include "../src/mapping/map_builder.h"
 
 namespace viam {
 namespace mapping {
