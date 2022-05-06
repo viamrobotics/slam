@@ -18,6 +18,3 @@
 
 # code editor settings
 .vscode/*
-
-# Folder with libraries
-/slam-libraries/libs-*
