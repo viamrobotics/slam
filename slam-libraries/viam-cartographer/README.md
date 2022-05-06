@@ -28,7 +28,7 @@ brew upgrade
 brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3
 brew link lua@5.3
 
-# TODO[kat] - Make sure these are necessary:
+# TODO[kat]: Make sure these are necessary:
 brew install openssl
 brew install eigen
 brew install gflags
@@ -67,4 +67,4 @@ libpcl-dev
 ## Running cartographer
 Configure how to run cartographer in this file: [scripts/run_cartographer.sh](./scripts/run_cartographer.sh).
 
-You can run the script by executing: `./scripts/run_cartographer.sh`.
+Run cartographer by executing: `./scripts/run_cartographer.sh`
