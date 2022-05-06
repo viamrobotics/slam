@@ -65,6 +65,6 @@ libpcl-dev
 ```
 
 ## Running cartographer
-Configure how to run cartographer in this file: [scripts/run_carto_main.sh](./scripts/run_carto_main.sh).
+Configure how to run cartographer in this file: [scripts/run_cartographer.sh](./scripts/run_cartographer.sh).
 
-You can run the script by executing: `./scripts/run_carto_main.sh`.
+You can run the script by executing: `./scripts/run_cartographer.sh`.

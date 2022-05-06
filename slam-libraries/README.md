@@ -7,11 +7,8 @@ configurations.
 
 Learn more at [the official Docs site](https://google-cartographer.readthedocs.io).
 
-### Installation
+### Getting started
 Follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
-
-
-
 
 ## ORB_SLAM3
 Download ORB_SLAM3 from here https://github.com/JohnN193/ORB_SLAM3
