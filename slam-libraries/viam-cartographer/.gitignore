@@ -1,6 +1,2 @@
 build
-bazel-*
 output
-
-*.DS_Store
-.vscode
