@@ -37,11 +37,11 @@ brew install suite-sparse
 brew install sphinx-doc
 ```
  
-**Install cartographer**
+**Build cartographer**
 
-Run: `./scripts/install_cartographer.sh`
+Run: `./scripts/build_cartographer.sh`
 
-Installation tested on:
+Installation & building tested on:
 - [x] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
 - [x] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
 - [x] M1
