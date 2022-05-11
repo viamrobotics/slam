@@ -292,8 +292,6 @@ void DrawSavedMap(const std::string& mode,
 
 }  // namespace viam
 
-// Example of how to run this file: 
-// .run_cart_main.sh
 int main(int argc, char** argv) {
   google::InitGoogleLogging("XXX");
   std::string mode = "DON'T USE RIGHT NOW!!!!!!!";
@@ -344,15 +342,15 @@ int main(int argc, char** argv) {
   }
 
   if (FLAGS_localization == true) {
-    // std::cout << "Creating a quick visualization of the localization map" << std::endl;
-    // cartographer::mapping::CreateMap(mode,
-    //   FLAGS_localization_data_directory,
-    //   "pics_localization_map_visualization",
-    //   FLAGS_configuration_directory,
-    //   FLAGS_configuration_mapping_basename,
-    //   "map_localization_unused.pbstream",
-    //   FLAGS_localization_starting_scan_number,
-    //   200);
+    std::cout << "Creating a quick visualization of the localization map" << std::endl;
+    viam::CreateMap(mode,
+      FLAGS_localization_data_directory,
+      "pics_localization_map_visualization",
+      FLAGS_configuration_directory,
+      FLAGS_configuration_mapping_basename,
+      "map_localization_unused.pbstream",
+      FLAGS_localization_starting_scan_number,
+      200);
 
     std::cout << "Localizing!" << std::endl;
     viam::LoadMapAndRun(mode,
@@ -375,15 +373,15 @@ int main(int argc, char** argv) {
   }
 
   if (FLAGS_update == true) {
-    // std::cout << "Creating a quick visualization of the updating map" << std::endl;
-    // cartographer::mapping::CreateMap(mode,
-    //   FLAGS_update_data_directory,
-    //   "pics_update_map_visualization",
-    //   FLAGS_configuration_directory,
-    //   FLAGS_configuration_mapping_basename,
-    //   "map_update_unused.pbstream",
-    //   FLAGS_update_starting_scan_number,
-    //   200);
+    std::cout << "Creating a quick visualization of the updating map" << std::endl;
+    viam::CreateMap(mode,
+      FLAGS_update_data_directory,
+      "pics_update_map_visualization",
+      FLAGS_configuration_directory,
+      FLAGS_configuration_mapping_basename,
+      "map_update_unused.pbstream",
+      FLAGS_update_starting_scan_number,
+      200);
 
     std::cout << "Updating Map!" << std::endl;
     viam::LoadMapAndRun(mode,
