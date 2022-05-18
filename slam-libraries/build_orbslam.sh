@@ -4,7 +4,7 @@ cd ORB_SLAM_CUSTOM/ORB_SLAM3/Thirdparty/DBoW2
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j2
+make -j`nproc`
 
 cd ../../g2o
 
@@ -13,7 +13,7 @@ echo "Configuring and building Thirdparty/g2o ..."
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j2
+make -j`nproc`
 
 cd ../../Sophus
 
@@ -22,7 +22,7 @@ echo "Configuring and building Thirdparty/Sophus ..."
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j2
+make -j`nproc`
 
 cd ../../../
 
@@ -43,4 +43,4 @@ mkdir bin
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j2
+make -j`nproc`

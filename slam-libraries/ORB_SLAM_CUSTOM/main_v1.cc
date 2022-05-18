@@ -20,9 +20,7 @@
 #include<algorithm>
 #include<fstream>
 #include<chrono>
-
 #include<opencv2/core/core.hpp>
-
 #include<System.h>
 
 using namespace std;
@@ -35,20 +33,17 @@ void exit_loop_handler(int s){
     b_continue_session = false;
 }
 
-// void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
-//                 vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps);
-
 void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                 vector<string> &vstrImageFilenamesRGB, vector<string> &vstrImageFilenamesD, vector<double> &vTimeStamps);
 void SavePCD(std::vector<ORB_SLAM3::MapPoint*> mapStuff, string file_name);
 
 int main(int argc, char **argv)
 {
-    
+    //TODO: change inputs to match args from rdk
     if(argc < 5)
     {
         cerr << endl << "Usage: ./rgbd_file path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 (trajectory_file_name)" << endl;
-	 cerr << endl << "./ORB_SLAM_CUSTOM/bin/viam_main_v1 ./ORB_SLAM_CUSTOM/ORB_SLAM3/Vocabulary/ORBvoc.txt ./ORB_SLAM_CUSTOM/ORB_SLAM3/initialAttempt/realsense515_depth2.yaml ./ORB_SLAM_CUSTOM/ORB_SLAM3/officePics3 Out_file.txt outputPose RGBD" << endl;
+	    cerr << endl << "./ORB_SLAM_CUSTOM/bin/viam_main_v1 ./ORB_SLAM_CUSTOM/ORB_SLAM3/Vocabulary/ORBvoc.txt ./ORB_SLAM_CUSTOM/ORB_SLAM3/initialAttempt/realsense515_depth2.yaml ./ORB_SLAM_CUSTOM/ORB_SLAM3/officePics3 Out_file.txt outputPose RGBD" << endl;
         return 1;
     }
     string path_to_vocab = string(argv[1]);
@@ -59,120 +54,68 @@ int main(int argc, char **argv)
     string file_name,file_nameTraj,file_nameKey;
     string slam_mode = "RGBD" ;
 
-        file_name = output_file_name;
-        file_nameTraj = file_name;
-        file_nameKey = file_name;
-        file_nameTraj = file_nameTraj.append(".txt");
-        file_nameKey = file_nameKey.append("Keyframe.txt");
+    file_name = output_file_name;
+    file_nameTraj = file_name;
+    file_nameKey = file_name;
+    file_nameTraj = file_nameTraj.append(".txt");
+    file_nameKey = file_nameKey.append("Keyframe.txt");
 
 
     
 	
     if (slam_mode == "RGBD"){
-    cout << "RGBD SELECTED " << endl;
-    // Retrieve paths to images
-    vector<string> vstrImageFilenamesRGB;
-    vector<string> vstrImageFilenamesD;
-    vector<double> vTimestamps;
-    string strAssociationFilename = string(path_to_data) + "/" + string(path_to_sequence);
-    string pathSeq(path_to_data);
-    LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
-    // Check consistency in the number of images and depthmaps
-    int nImages = vstrImageFilenamesRGB.size();
-    if(vstrImageFilenamesRGB.empty())
-    {
-        cerr << endl << "No images found in provided path." << endl;
-        return 1;
-    }
-    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
-    {
-        cerr << endl << "Different number of images for rgb and depth." << endl;
-        return 1;
-    }
-
-    // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(path_to_vocab,path_to_settings,ORB_SLAM3::System::RGBD,false, 0, file_nameTraj);
-    float imageScale = SLAM.GetImageScale();
-
-    // Main loop
-    cv::Mat imRGB, imD;
-    Sophus::SE3f pose;
-      
-    // while (!SLAM.isShutDown() && b_continue_session)
-    for(int ni=0; ni<nImages; ni++)
-    {
-        // Read image and depthmap from file
-        imRGB = cv::imread(vstrImageFilenamesRGB[ni],cv::IMREAD_UNCHANGED); //,cv::IMREAD_UNCHANGED);
-        imD = cv::imread(vstrImageFilenamesD[ni],cv::IMREAD_UNCHANGED); //,cv::IMREAD_UNCHANGED);
-        double tframe = vTimestamps[ni];
-
-        if(imRGB.empty())
+        cout << "RGBD SELECTED " << endl;
+        // Retrieve paths to images
+        vector<string> vstrImageFilenamesRGB;
+        vector<string> vstrImageFilenamesD;
+        vector<double> vTimestamps;
+        string strAssociationFilename = string(path_to_data) + "/" + string(path_to_sequence);
+        string pathSeq(path_to_data);
+        LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
+        // Check consistency in the number of images and depthmaps
+        int nImages = vstrImageFilenamesRGB.size();
+        if(vstrImageFilenamesRGB.empty())
         {
-            cerr << endl << "Failed to load image at: "
-                 << vstrImageFilenamesRGB[ni] << endl;
+            cerr << endl << "No images found in provided path." << endl;
+            return 1;
+        }
+        else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
+        {
+            cerr << endl << "Different number of images for rgb and depth." << endl;
             return 1;
         }
 
-        if(imageScale != 1.f)
-        {
-            int width = imRGB.cols * imageScale;
-            int height = imRGB.rows * imageScale;
-            cv::resize(imRGB, imRGB, cv::Size(width, height));
-            cv::resize(imD, imD, cv::Size(width, height));
-        }
+        // Create SLAM system. It initializes all system threads and gets ready to process frames.
+        ORB_SLAM3::System SLAM(path_to_vocab,path_to_settings,ORB_SLAM3::System::RGBD,false, 0, file_nameTraj);
+        float imageScale = SLAM.GetImageScale();
 
-
-        // Pass the image to the SLAM system
-        pose = SLAM.TrackRGBD(imRGB,imD,tframe);
-
-
-    }
-    }
-    else if(slam_mode == "MONO"){
-        //load stuff
-        int nImages=0;
-        cv::Mat im;
-
-        // Initialize SLAM
-        ORB_SLAM3::System SLAM(path_to_vocab,path_to_settings,ORB_SLAM3::System::MONOCULAR,false, 0, file_nameTraj);
-
-        // while (!SLAM.isShutDown() && b_continue_session)
+        // Main loop
+        cv::Mat imRGB, imD;
+        Sophus::SE3f pose;
+        
+        for(int ni=0; ni<nImages; ni++)
         {
             // Read image and depthmap from file
-            // imRGB = cv::imread(vstrImageFilenamesRGB[ni],cv::IMREAD_UNCHANGED); //,cv::IMREAD_UNCHANGED);
-            // double tframe = vTimestamps[ni];
+            imRGB = cv::imread(vstrImageFilenamesRGB[ni],cv::IMREAD_UNCHANGED); 
+            imD = cv::imread(vstrImageFilenamesD[ni],cv::IMREAD_UNCHANGED); 
+            double tframe = vTimestamps[ni];
 
-            // if(imRGB.empty())
-            // {
-            //     cerr << endl << "Failed to load image at: "
-            //         << vstrImageFilenamesRGB[ni] << endl;
-            //     return 1;
-            // }
+            if(imRGB.empty())
+            {
+                cerr << endl << "Failed to load image at: "
+                    << vstrImageFilenamesRGB[ni] << endl;
+                return 1;
+            }
 
-            // if(imageScale != 1.f)
-            // {
-            //     int width = imRGB.cols * imageScale;
-            //     int height = imRGB.rows * imageScale;
-            //     cv::resize(imRGB, imRGB, cv::Size(width, height));
-            // }
-            // SLAM.TrackMonocular(im, timestamp);
+            // Pass the image to the SLAM system
+            pose = SLAM.TrackRGBD(imRGB,imD,tframe);
+
         }
+    }
+    else if(slam_mode == "MONO"){
+        //TODO implement MONO
 
     }
-    // // Stop all threads
-    // std::vector<ORB_SLAM3::MapPoint*> mapStuff = SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
-    //     // Map* GetCurrentMap();
-    //     // mapStuff = SLAM.GetTrackedMapPoints();
-    //     cout << "Start to write PCD with datapoints: " << endl;
-    //     cout << mapStuff.size() << endl;
-    
-    // SavePCD(mapStuff, file_name);
-
-    // cout << "End to write PCD" << endl;
-    // SLAM.Shutdown();
-    // SLAM.SaveTrajectoryEuRoC(file_nameTraj);
-    // SLAM.SaveKeyFrameTrajectoryEuRoC(file_nameKey);
-    // cout << "Yo Shutting" << endl;
 
 
     return 0;
@@ -201,10 +144,8 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
             vstrImageFilenamesD.push_back(pathCam1 + "/" + ss.str());
             double t;
             string timestring = s.substr(0, s.find_last_of("."));
-	    std::string::size_type sz;  
-	    // cout << timestring << endl;
-        //     timestring >> t;
-	    t = std::stod(timestring,&sz);
+            std::string::size_type sz;  
+            t = std::stod(timestring,&sz);
             vTimeStamps.push_back(t);
 
         }
@@ -219,7 +160,6 @@ void SavePCD(std::vector<ORB_SLAM3::MapPoint*> mapStuff, string file_name){
         pathSaveFileName.append(".pcd");
         std::remove(pathSaveFileName.c_str());
         std::ofstream ofs(pathSaveFileName, std::ios::binary);
-        // boost::archive::text_oarchive oa(ofs);
         ofs  << "VERSION .7\n"
             << "FIELDS x y z\n"
             << "SIZE 4 4 4\n"
@@ -235,8 +175,7 @@ void SavePCD(std::vector<ORB_SLAM3::MapPoint*> mapStuff, string file_name){
             << "\n"
             << "DATA ascii\n";
 	for (auto p : mapStuff) {
-		Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();//ORB_SLAM3::Converter::toVector3d(p->GetWorldPos());
-		// std::cout << v.x() << "," << v.y() << "," << v.z() << std::endl;
+		Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
         ofs << v.x()  << " " << v.y()  << " " << v.z()  << "\n";
 	}
     ofs.close();
