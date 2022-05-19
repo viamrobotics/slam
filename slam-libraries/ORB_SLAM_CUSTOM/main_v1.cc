@@ -40,10 +40,11 @@ void SavePCD(std::vector<ORB_SLAM3::MapPoint*> mapStuff, string file_name);
 int main(int argc, char **argv)
 {
     //TODO: change inputs to match args from rdk
+    //https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
     if(argc < 5)
     {
         cerr << endl << "Usage: ./rgbd_file path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 (trajectory_file_name)" << endl;
-	    cerr << endl << "./ORB_SLAM_CUSTOM/bin/viam_main_v1 ./ORB_SLAM_CUSTOM/ORB_SLAM3/Vocabulary/ORBvoc.txt ./ORB_SLAM_CUSTOM/ORB_SLAM3/initialAttempt/realsense515_depth2.yaml ./ORB_SLAM_CUSTOM/ORB_SLAM3/officePics3 Out_file.txt outputPose RGBD" << endl;
+        cerr << endl << "./ORB_SLAM_CUSTOM/bin/viam_main_v1 ./ORB_SLAM_CUSTOM/ORB_SLAM3/Vocabulary/ORBvoc.txt ./ORB_SLAM_CUSTOM/ORB_SLAM3/initialAttempt/realsense515_depth2.yaml ./ORB_SLAM_CUSTOM/ORB_SLAM3/officePics3 Out_file.txt outputPose RGBD" << endl;
         return 1;
     }
     string path_to_vocab = string(argv[1]);
@@ -61,9 +62,9 @@ int main(int argc, char **argv)
     file_nameKey = file_nameKey.append("Keyframe.txt");
 
 
-    
-	
     if (slam_mode == "RGBD"){
+        //TODO update to work with images from rdk 
+        //https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
         cout << "RGBD SELECTED " << endl;
         // Retrieve paths to images
         vector<string> vstrImageFilenamesRGB;
@@ -114,6 +115,7 @@ int main(int argc, char **argv)
     }
     else if(slam_mode == "MONO"){
         //TODO implement MONO
+        //https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
 
     }
 
@@ -126,7 +128,7 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                 vector<string> &vstrImageFilenamesRGB, vector<string> &vstrImageFilenamesD, vector<double> &vTimeStamps)
 {
     string pathCam0 = pathSeq + "/rgb";
-	string pathCam1 = pathSeq + "/depth";
+    string pathCam1 = pathSeq + "/depth";
     ifstream fTimes;
     fTimes.open(strPathTimes.c_str());
     vTimeStamps.reserve(5000);

@@ -9,12 +9,12 @@ MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
-
 set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../rdk)
 set(SRCDIR ${RDK_SOURCE_DIR}/grpc/cpp/gen)
 set(ORBSLAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/ORB_SLAM3)
 MESSAGE("PROJECT SOURCE DIR: " ${PROJECT_SOURCE_DIR})
 MESSAGE("GRPC SOURCE DIR: " ${SRCDIR})
+
 # Check C++14 or C++0x support
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
@@ -43,7 +43,6 @@ MESSAGE(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
-find_package(realsense2)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -56,19 +55,12 @@ ${Pangolin_INCLUDE_DIRS}
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-
-
 add_subdirectory(${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o)
 
-
-
 # Build examples
-
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(viam_main_v1
         main_v1.cc)
-# target_link_libraries(viam_main_v1 ${PROJECT_NAME})
 target_link_libraries(viam_main_v1
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
@@ -80,7 +72,7 @@ ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
 -lcrypto
 )
 
-
+#GRPC example
 if(FALSE)#if(EXISTS ${SRCDIR})
    find_package(PkgConfig REQUIRED)
 
@@ -96,11 +88,9 @@ if(FALSE)#if(EXISTS ${SRCDIR})
    set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ORBSLAM_SOURCE_DIR}/initialAttempt)
 
-
    add_executable(rgbd_fromStream
          initialAttempt/rgbd_fromStream.cc ${SOURCES})
    target_link_libraries(rgbd_fromStream ${PROJECT_NAME} ${GRPC_LIBRARIES} ${GRPCPP_LIBRARIES} ${PROTOBUF_LIBRARIES})
    target_include_directories(rgbd_fromStream PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS})
    target_compile_options(rgbd_fromStream PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER} ${PROTOBUF_CFLAGS_OTHER})
 endif()
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
