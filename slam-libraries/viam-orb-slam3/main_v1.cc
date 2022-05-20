@@ -153,10 +153,9 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
             ss << s;
             vstrImageFilenamesRGB.push_back(pathCam0 + "/" + ss.str());
             vstrImageFilenamesD.push_back(pathCam1 + "/" + ss.str());
-            double t;
             string timestring = s.substr(0, s.find_last_of("."));
             std::string::size_type sz;
-            t = std::stod(timestring, &sz);
+            double t = std::stod(timestring, &sz);
             vTimeStamps.push_back(t);
         }
     }
