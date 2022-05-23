@@ -1,6 +1,6 @@
 [submodule "slam-libraries/viam-cartographer/cartographer"]
 	path = slam-libraries/viam-cartographer/cartographer
 	url = git@github.com:cartographer-project/cartographer.git
-[submodule "slam-libraries/viam-orb-slam3/ORB_SLAM3"]
-	path = slam-libraries/viam-orb-slam3/ORB_SLAM3
+[submodule "slam-libraries/ORB_SLAM3"]
+	path = slam-libraries/ORB_SLAM3
 	url = https://github.com/JohnN193/ORB_SLAM3
