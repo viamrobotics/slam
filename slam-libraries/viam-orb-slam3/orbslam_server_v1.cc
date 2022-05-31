@@ -178,6 +178,10 @@ int main(int argc, char **argv) {
             // Pass the image to the SLAM system
             pose = SLAM.TrackRGBD(imRGB, imD, tframe);
         }
+        cout << "System shutdown!\n";
+        std::vector<ORB_SLAM3::MapPoint*> mapStuff = SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
+        SavePCD(mapStuff, file_name);
+        SLAM.Shutdown();
     } else if (slam_mode == "MONO") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
