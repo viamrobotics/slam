@@ -9,7 +9,7 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
-set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../rdk)
+set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../rdk)
 set(SRCDIR ${RDK_SOURCE_DIR}/grpc/cpp/gen)
 set(ORBSLAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/ORB_SLAM3)
 message("PROJECT SOURCE DIR: " ${PROJECT_SOURCE_DIR})
@@ -72,3 +72,35 @@ target_link_libraries(
   ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
   -lboost_serialization
   -lcrypto)
+
+if(EXISTS ${SRCDIR})
+  find_package(PkgConfig REQUIRED)
+
+  pkg_check_modules(GRPC REQUIRED grpc) 
+  pkg_check_modules(GRPCPP REQUIRED grpc++)
+  pkg_check_modules(PROTOBUF REQUIRED protobuf)
+
+  set(SOURCES ${SRCDIR}/proto/api/service/slam/v1/slam.grpc.pb.cc ${SRCDIR}/proto/api/service/slam/v1/slam.pb.cc)
+  set(SOURCES ${SOURCES} ${SRCDIR}/proto/api/common/v1/common.grpc.pb.cc ${SRCDIR}/proto/api/common/v1/common.pb.cc)
+  set(SOURCES ${SOURCES} ${SRCDIR}/google/api/annotations.pb.cc ${SRCDIR}/google/api/httpbody.pb.cc)
+  set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
+
+  add_executable(grpc_server
+        orbslam_server_v1.cc ${SOURCES})
+  target_link_libraries(
+    grpc_server
+    ${OpenCV_LIBS}
+    ${EIGEN3_LIBS}
+    ${Pangolin_LIBRARIES}
+    ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+    ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+    ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
+    -lboost_serialization
+    -lcrypto
+    ${GRPC_LIBRARIES}
+    ${GRPCPP_LIBRARIES} 
+    ${PROTOBUF_LIBRARIES})
+  # target_link_libraries(grpc_server ${PROJECT_NAME} ${GRPC_LIBRARIES} ${GRPCPP_LIBRARIES} ${PROTOBUF_LIBRARIES})
+  target_include_directories(grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS})
+  target_compile_options(grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER} ${PROTOBUF_CFLAGS_OTHER})
+endif()
