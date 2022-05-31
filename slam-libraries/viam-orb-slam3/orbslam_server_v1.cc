@@ -47,6 +47,8 @@ using grpc::ServerReader;
 using grpc::ServerReaderWriter;
 using grpc::ServerWriter;
 
+using proto::api::common::v1::Pose;
+using proto::api::common::v1::PoseInFrame;
 using proto::api::service::slam::v1::SLAMService;
 using proto::api::service::slam::v1::GetPositionRequest;
 using proto::api::service::slam::v1::GetPositionResponse;
@@ -58,7 +60,16 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetPosition(ServerContext* context,
                                const GetPositionRequest* request,
                                GetPositionResponse* response) override {
+        Sophus::SE3f currPose(poseGrpc);
         
+        Pose* myPose;
+        PoseInFrame* inFrame;
+        auto actualPose = currPose.params();
+        myPose->set_x(actualPose[4]);
+        myPose->set_y(actualPose[5]);
+        myPose->set_z(actualPose[6]);
+        inFrame->set_allocated_pose(myPose);
+        response->set_allocated_pose(inFrame);
         return grpc::Status::OK;
     }
     ::grpc::Status GetMap(ServerContext* context,
@@ -67,6 +78,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         
         return grpc::Status::OK;
     }
+    Sophus::SE3f poseGrpc;
 };
 bool b_continue_session;
 
@@ -160,7 +172,7 @@ int main(int argc, char **argv) {
 
         // Main loop
         cv::Mat imRGB, imD;
-        Sophus::SE3f pose;
+        Sophus::SE3f poseRobot;
 
         for (int ni = 0; ni < nImages; ni++) {
             // Read image and depthmap from file
@@ -176,7 +188,12 @@ int main(int argc, char **argv) {
             }
 
             // Pass the image to the SLAM system
-            pose = SLAM.TrackRGBD(imRGB, imD, tframe);
+            slamService.poseGrpc = SLAM.TrackRGBD(imRGB, imD, tframe);
+            // cout <<poseRobot.translation().x()<< " is the x position\n" << endl;
+            // cout << poseRobot.params()<< "\n" << endl;
+            // auto actualPose = poseRobot.params();
+            // cout << actualPose[6] << " should be z(y cuz orbslam default)\n" << endl;
+            
         }
         cout << "System shutdown!\n";
         std::vector<ORB_SLAM3::MapPoint*> mapStuff = SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
