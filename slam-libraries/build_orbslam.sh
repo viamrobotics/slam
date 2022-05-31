@@ -31,7 +31,7 @@ cd $BASEDIR/ORB_SLAM3
 
 echo "Uncompress vocabulary ..."
 
-tar -xf ORBvoc.txt.tar.gz -C Vocabulary/
+tar -xf Vocabulary/ORBvoc.txt.tar.gz -C Vocabulary/
 
 echo "Configuring and building ORB_SLAM3 ..."
 mkdir build
