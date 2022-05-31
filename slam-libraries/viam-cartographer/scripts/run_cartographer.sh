@@ -4,11 +4,11 @@ set -o errexit
 
 
 # ---- Edit based on your needs:
-DATE="May03"
+DATE="June01"
 
 MAPPING="true"
-LOCALIZATION="true"
-UPDATE="true"
+LOCALIZATION="false"
+UPDATE="false"
 
 DATA_BASE_DIRECTORY="$HOME/viam/lidar_data"
 MAPPING_DATA_DIRECTORY="$DATA_BASE_DIRECTORY/data_Feb_11_2022_small"
