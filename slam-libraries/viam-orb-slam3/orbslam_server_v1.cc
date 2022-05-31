@@ -53,7 +53,21 @@ using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::GetMapRequest;
 using proto::api::service::slam::v1::GetMapResponse;
 
-
+class SLAMServiceImpl final : public SLAMService::Service {
+    public:
+    ::grpc::Status GetPosition(ServerContext* context,
+                               const GetPositionRequest* request,
+                               GetPositionResponse* response) override {
+        
+        return grpc::Status::OK;
+    }
+    ::grpc::Status GetMap(ServerContext* context,
+                          const GetMapRequest* request,
+                          GetMapResponse* response) override {
+        
+        return grpc::Status::OK;
+    }
+};
 bool b_continue_session;
 
 void exit_loop_handler(int s) {
@@ -72,17 +86,17 @@ int main(int argc, char **argv) {
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
     if (argc < 5) {
         cerr << endl
-             << "Usage: ./rgbd_file path_to_vocabulary path_to_settings "
+             << "Usage: binary path_to_vocabulary path_to_settings "
                 "path_to_sequence_folder_1 path_to_times_file_1 "
                 "(trajectory_file_name)"
              << endl;
         cerr << endl
-             << "./ORB_SLAM_CUSTOM/bin/viam_main_v1 "
-                "./ORB_SLAM_CUSTOM/ORB_SLAM3/Vocabulary/ORBvoc.txt "
-                "./ORB_SLAM_CUSTOM/ORB_SLAM3/initialAttempt/"
+             << "./viam-orb-slam3/bin/viam_main_v1 "
+                "./viam-orb-slam3/ORB_SLAM3/Vocabulary/ORBvoc.txt "
+                "./viam-orb-slam3/ORB_SLAM3/initialAttempt/"
                 "realsense515_depth2.yaml "
-                "./ORB_SLAM_CUSTOM/ORB_SLAM3/officePics3 Out_file.txt "
-                "outputPose RGBD"
+                "./viam-orb-slam3/ORB_SLAM3/officePics3 Out_file.txt "
+                "outputPose"
              << endl;
         return 1;
     }
@@ -93,13 +107,25 @@ int main(int argc, char **argv) {
     string output_file_name = string(argv[5]);
     string file_name, file_nameTraj, file_nameKey;
     string slam_mode = "RGBD";
+    string port_num = "8085";
+    string slam_port = "localhost:" +port_num;
+
+    SLAMServiceImpl slamService;
+    ServerBuilder builder;
+    builder.AddListeningPort(slam_port,
+                             grpc::InsecureServerCredentials());
+    builder.RegisterService(&slamService);
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    std::cout << "Server listening on "
+                << slam_port << std::endl;
+
 
     file_name = output_file_name;
     file_nameTraj = file_name;
     file_nameKey = file_name;
     file_nameTraj = file_nameTraj.append(".txt");
     file_nameKey = file_nameKey.append("Keyframe.txt");
-
+    int nImages = 0;
     if (slam_mode == "RGBD") {
         // TODO update to work with images from rdk
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
@@ -113,8 +139,9 @@ int main(int argc, char **argv) {
         string pathSeq(path_to_data);
         LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB,
                        vstrImageFilenamesD, vTimestamps);
+                       
         // Check consistency in the number of images and depthmaps
-        int nImages = vstrImageFilenamesRGB.size();
+        nImages = vstrImageFilenamesRGB.size();
         if (vstrImageFilenamesRGB.empty()) {
             cerr << endl << "No images found in provided path." << endl;
             return 1;
