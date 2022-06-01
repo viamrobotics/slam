@@ -20,6 +20,11 @@
  */
 
 #include <System.h>
+#include <grpc/grpc.h>
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server.h>
+#include <grpcpp/server_builder.h>
+#include <grpcpp/server_context.h>
 
 #include <algorithm>
 #include <chrono>
@@ -27,17 +32,11 @@
 #include <iostream>
 #include <opencv2/core/core.hpp>
 
-#include <grpc/grpc.h>
-#include <grpcpp/security/server_credentials.h>
-#include <grpcpp/server.h>
-#include <grpcpp/server_builder.h>
-#include <grpcpp/server_context.h>
-
 #include "proto/api/common/v1/common.grpc.pb.h"
 #include "proto/api/common/v1/common.pb.h"
 #include "proto/api/service/slam/v1/slam.grpc.pb.h"
 #include "proto/api/service/slam/v1/slam.pb.h"
-
+#define _USE_MATH_DEFINES
 using namespace std;
 
 using grpc::Server;
@@ -47,38 +46,127 @@ using grpc::ServerReader;
 using grpc::ServerReaderWriter;
 using grpc::ServerWriter;
 
+using proto::api::common::v1::PointCloudObject;
 using proto::api::common::v1::Pose;
 using proto::api::common::v1::PoseInFrame;
-using proto::api::service::slam::v1::SLAMService;
-using proto::api::service::slam::v1::GetPositionRequest;
-using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::GetMapRequest;
 using proto::api::service::slam::v1::GetMapResponse;
+using proto::api::service::slam::v1::GetPositionRequest;
+using proto::api::service::slam::v1::GetPositionResponse;
+using proto::api::service::slam::v1::SLAMService;
 
 class SLAMServiceImpl final : public SLAMService::Service {
-    public:
-    ::grpc::Status GetPosition(ServerContext* context,
-                               const GetPositionRequest* request,
-                               GetPositionResponse* response) override {
+   public:
+    ::grpc::Status GetPosition(ServerContext *context,
+                               const GetPositionRequest *request,
+                               GetPositionResponse *response) override {
+        // Copy pose to new location
         Sophus::SE3f currPose(poseGrpc);
-        
-        Pose* myPose;
-        PoseInFrame* inFrame;
+
+        // Setup mapping of pose message to the response. NOTE not using
+        // inFrame->set_reference_frame yet
+        PoseInFrame *inFrame = response->mutable_pose();
+        Pose *myPose = inFrame->mutable_pose();
+
+        // pull out pose into a vector [qx qy qz qw x y z] and transform into
+        // angle axis + x y z. NOTE the origin of the pose is wrt the camera(z
+        // axis comes out of the lense) so may require an additional
+        // transformation
+        double o_x, o_y, o_z;
         auto actualPose = currPose.params();
+        float angle_rad = 2 * acos(actualPose[3]);
+        double angle_deg = angle_rad * 180.0 / M_PI;
+        myPose->set_theta(angle_deg);
+
+        if (fmod(angle_rad, M_PI) != 0) {
+            o_x = actualPose[0] / sin(angle_rad / 2.0);
+            o_y = actualPose[1] / sin(angle_rad / 2.0);
+            o_z = actualPose[2] / sin(angle_rad / 2.0);
+
+        } else {
+            o_x = actualPose[0];
+            o_y = actualPose[1];
+            o_z = actualPose[2];
+        }
+
+        // set pose for our response
+        myPose->set_o_x(o_x);
+        myPose->set_o_y(o_y);
+        myPose->set_o_z(o_z);
         myPose->set_x(actualPose[4]);
         myPose->set_y(actualPose[5]);
         myPose->set_z(actualPose[6]);
-        inFrame->set_allocated_pose(myPose);
-        response->set_allocated_pose(inFrame);
+
         return grpc::Status::OK;
     }
-    ::grpc::Status GetMap(ServerContext* context,
-                          const GetMapRequest* request,
-                          GetMapResponse* response) override {
-        
+
+    ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
+                          GetMapResponse *response) override {
+        float max = 0;
+        float min = 10000;
+        auto mime_type = request->mime_type();
+        response->set_mime_type(mime_type);
+
+        if (mime_type == "image/jpeg") {
+            // TODO: determine how to make 2D map
+            // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-131
+
+        } else if (mime_type == "image/pcd") {
+            // take sparse slam map and convert into a pcd. Orientation of PCD
+            // is wrt the camera(z is coming out of the lens) so may need to
+            // transform.
+            std::vector<ORB_SLAM3::MapPoint *> actualMap(currMapPoints);
+
+            std::stringbuf buffer;
+            std::ostream oss(&buffer);
+
+            // write our PCD file. we are writing as a binary
+            oss << "VERSION .7\n"
+                << "FIELDS x y z rgb\n"
+                << "SIZE 4 4 4 4\n"
+                << "TYPE F F F I\n"
+                << "COUNT 1 1 1 1\n"
+                << "WIDTH " << actualMap.size() << "\n"
+                << "HEIGHT " << 1 << "\n"
+                << "VIEWPOINT 0 0 0 1 0 0 0\n"
+                << "POINTS " << actualMap.size() << "\n"
+                << "DATA binary\n";
+
+            // initial loop to determine color bounds for PCD.
+            for (auto p : actualMap) {
+                Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
+                float val = v.y();
+                if (max < val) max = val;
+                if (min > val) min = val;
+            }
+            float span = max - min;
+            char clr = 0;
+
+            // write the map with simple rgb colors. Map also written as a
+            // binary
+            for (auto p : actualMap) {
+                Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
+                float val = v.y();
+                auto ratio = (val - min) / span;
+                clr = (char)(60 + (int)(ratio * 192));
+                if (clr > 255) clr = 255;
+                if (clr < 0) clr = 0;
+                int rgb = 0;
+                rgb = rgb | (clr << 16);
+                rgb = rgb | (clr << 8);
+                rgb = rgb | (clr << 0);
+                buffer.sputn((const char *)&v.x(), 4);
+                buffer.sputn((const char *)&v.y(), 4);
+                buffer.sputn((const char *)&v.z(), 4);
+                buffer.sputn((const char *)&rgb, 4);
+            }
+            PointCloudObject *myPointCloud = response->mutable_point_cloud();
+            myPointCloud->set_point_cloud(buffer.str());
+        }
         return grpc::Status::OK;
     }
     Sophus::SE3f poseGrpc;
+    std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 };
 bool b_continue_session;
 
@@ -120,17 +208,13 @@ int main(int argc, char **argv) {
     string file_name, file_nameTraj, file_nameKey;
     string slam_mode = "RGBD";
     string port_num = "8085";
-    string slam_port = "localhost:" +port_num;
+    string slam_port = "localhost:" + port_num;
 
+    // setup the SLAM server
     SLAMServiceImpl slamService;
     ServerBuilder builder;
-    builder.AddListeningPort(slam_port,
-                             grpc::InsecureServerCredentials());
+    builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
     builder.RegisterService(&slamService);
-    std::unique_ptr<Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on "
-                << slam_port << std::endl;
-
 
     file_name = output_file_name;
     file_nameTraj = file_name;
@@ -138,10 +222,12 @@ int main(int argc, char **argv) {
     file_nameTraj = file_nameTraj.append(".txt");
     file_nameKey = file_nameKey.append("Keyframe.txt");
     int nImages = 0;
+    int nkeyframes = 0;
     if (slam_mode == "RGBD") {
         // TODO update to work with images from rdk
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
         cout << "RGBD SELECTED " << endl;
+
         // Retrieve paths to images
         vector<string> vstrImageFilenamesRGB;
         vector<string> vstrImageFilenamesD;
@@ -151,7 +237,7 @@ int main(int argc, char **argv) {
         string pathSeq(path_to_data);
         LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB,
                        vstrImageFilenamesD, vTimestamps);
-                       
+
         // Check consistency in the number of images and depthmaps
         nImages = vstrImageFilenamesRGB.size();
         if (vstrImageFilenamesRGB.empty()) {
@@ -168,12 +254,13 @@ int main(int argc, char **argv) {
         ORB_SLAM3::System SLAM(path_to_vocab, path_to_settings,
                                ORB_SLAM3::System::RGBD, false, 0,
                                file_nameTraj);
-        float imageScale = SLAM.GetImageScale();
+
+        // Start the SLAM gRPC server
+        std::unique_ptr<Server> server(builder.BuildAndStart());
+        std::cout << "Server listening on " << slam_port << std::endl;
 
         // Main loop
         cv::Mat imRGB, imD;
-        Sophus::SE3f poseRobot;
-
         for (int ni = 0; ni < nImages; ni++) {
             // Read image and depthmap from file
             imRGB = cv::imread(vstrImageFilenamesRGB[ni], cv::IMREAD_UNCHANGED);
@@ -189,14 +276,23 @@ int main(int argc, char **argv) {
 
             // Pass the image to the SLAM system
             slamService.poseGrpc = SLAM.TrackRGBD(imRGB, imD, tframe);
-            // cout <<poseRobot.translation().x()<< " is the x position\n" << endl;
-            // cout << poseRobot.params()<< "\n" << endl;
-            // auto actualPose = poseRobot.params();
-            // cout << actualPose[6] << " should be z(y cuz orbslam default)\n" << endl;
-            
+
+            // Update the copy of the current map whenever a change in keyframes
+            // occurs
+            ORB_SLAM3::Map *currMap = SLAM.GetAtlas()->GetCurrentMap();
+            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
+                currMap->GetAllKeyFrames();
+            if (SLAM.GetTrackingState() ==
+                    ORB_SLAM3::Tracking::eTrackingState::OK &&
+                nkeyframes != keyframes.size()) {
+                slamService.currMapPoints = currMap->GetAllMapPoints();
+            }
+            nkeyframes = keyframes.size();
         }
+
         cout << "System shutdown!\n";
-        std::vector<ORB_SLAM3::MapPoint*> mapStuff = SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
+        std::vector<ORB_SLAM3::MapPoint *> mapStuff =
+            SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
         SavePCD(mapStuff, file_name);
         SLAM.Shutdown();
     } else if (slam_mode == "MONO") {
