@@ -142,8 +142,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
             float span = max - min;
             char clr = 0;
 
-            // write the map with simple rgb colors. Map also written as a
-            // binary
+            // write the map with simple rgb colors based off height from the
+            // "ground". Map written as a binary
             for (auto p : actualMap) {
                 Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
                 float val = v.y();
