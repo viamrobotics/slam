@@ -191,11 +191,11 @@ int main(int argc, char **argv) {
                 "(trajectory_file_name)"
              << endl;
         cerr << endl
-             << "./viam-orb-slam3/bin/viam_main_v1 "
-                "./viam-orb-slam3/ORB_SLAM3/Vocabulary/ORBvoc.txt "
-                "./viam-orb-slam3/ORB_SLAM3/initialAttempt/"
+             << "./bin/viam_main_v1 "
+                "./ORB_SLAM3/Vocabulary/ORBvoc.txt "
+                "./ORB_SLAM3/initialAttempt/"
                 "realsense515_depth2.yaml "
-                "./viam-orb-slam3/ORB_SLAM3/officePics3 Out_file.txt "
+                "./ORB_SLAM3/officePics3 Out_file.txt "
                 "outputPose"
              << endl;
         return 1;
