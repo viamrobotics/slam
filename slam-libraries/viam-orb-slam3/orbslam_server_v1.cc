@@ -148,7 +148,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
                 float val = v.y();
                 auto ratio = (val - min) / span;
-                clr = (char)(60 + (int)(ratio * 192));
+                clr = (char)(60 + (ratio * 192));
                 if (clr > 255) clr = 255;
                 if (clr < 0) clr = 0;
                 int rgb = 0;
@@ -217,16 +217,14 @@ int main(int argc, char **argv) {
     builder.RegisterService(&slamService);
 
     file_name = output_file_name;
-    file_nameTraj = file_name;
-    file_nameKey = file_name;
-    file_nameTraj = file_nameTraj.append(".txt");
-    file_nameKey = file_nameKey.append("Keyframe.txt");
+    file_nameTraj = file_name + ".txt";
+    file_nameKey = file_name + "Keyframe.txt";
     int nImages = 0;
     int nkeyframes = 0;
     if (slam_mode == "RGBD") {
         // TODO update to work with images from rdk
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
-        cout << "RGBD SELECTED " << endl;
+        cout << "RGBD SELECTED" << endl;
 
         // Retrieve paths to images
         vector<string> vstrImageFilenamesRGB;
@@ -257,7 +255,7 @@ int main(int argc, char **argv) {
 
         // Start the SLAM gRPC server
         std::unique_ptr<Server> server(builder.BuildAndStart());
-        std::cout << "Server listening on " << slam_port << std::endl;
+        printf("Server listening on %s", slam_port);
 
         // Main loop
         cv::Mat imRGB, imD;
@@ -290,7 +288,7 @@ int main(int argc, char **argv) {
             nkeyframes = keyframes.size();
         }
 
-        cout << "System shutdown!\n";
+        cout << "System shutdown!\n" << endl;
         std::vector<ORB_SLAM3::MapPoint *> mapStuff =
             SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
         SavePCD(mapStuff, file_name);
@@ -335,20 +333,22 @@ void SavePCD(std::vector<ORB_SLAM3::MapPoint *> mapStuff, string file_name) {
     pathSaveFileName = pathSaveFileName.append(file_name);
     pathSaveFileName.append(".pcd");
     std::remove(pathSaveFileName.c_str());
-    std::ofstream ofs(pathSaveFileName, std::ios::binary);
-    ofs << "VERSION .7\n"
-        << "FIELDS x y z\n"
-        << "SIZE 4 4 4\n"
-        << "TYPE F F F\n"
-        << "COUNT 1 1 1\n"
-        << "WIDTH " << mapStuff.size() << "\n"
-        << "HEIGHT " << 1 << "\n"
-        << "VIEWPOINT 0 0 0 1 0 0 0\n"
-        << "POINTS " << mapStuff.size() << "\n"
-        << "DATA ascii\n";
+    FILE *fp = fopen(pathSaveFileName.c_str(), "w");
+    fprintf(fp,
+            "VERSION .7\n"
+            "FIELDS x y z\n"
+            "SIZE 4 4 4\n"
+            "TYPE F F F\n"
+            "COUNT 1 1 1\n"
+            "WIDTH %li\n"
+            "HEIGHT %i\n"
+            "VIEWPOINT 0 0 0 1 0 0 0\n"
+            "POINTS %li\nDATA ascii\n",
+            mapStuff.size(), 1, mapStuff.size());
     for (auto p : mapStuff) {
         Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-        ofs << v.x() << " " << v.y() << " " << v.z() << "\n";
+        fprintf(fp, "%f %f %f\n", v.x(), v.y(), v.z());
+        // ofs << v.x() << " " << v.y() << " " << v.z() << "\n";
     }
-    ofs.close();
+    fclose(fp);
 }
