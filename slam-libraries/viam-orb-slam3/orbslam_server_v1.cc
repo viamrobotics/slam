@@ -55,6 +55,19 @@ using proto::api::service::slam::v1::GetPositionRequest;
 using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::SLAMService;
 
+bool b_continue_session;
+
+void exit_loop_handler(int s) {
+    cout << "Finishing session" << endl;
+    b_continue_session = false;
+}
+
+void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
+                    vector<string> &vstrImageFilenamesRGB,
+                    vector<string> &vstrImageFilenamesD,
+                    vector<double> &vTimeStamps);
+void SavePCD(std::vector<ORB_SLAM3::MapPoint *> mapStuff, string file_name);
+
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
     ::grpc::Status GetPosition(ServerContext *context,
@@ -165,66 +178,15 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
         return grpc::Status::OK;
     }
-    Sophus::SE3f poseGrpc;
-    std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
-};
-bool b_continue_session;
 
-void exit_loop_handler(int s) {
-    cout << "Finishing session" << endl;
-    b_continue_session = false;
-}
-
-void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
-                    vector<string> &vstrImageFilenamesRGB,
-                    vector<string> &vstrImageFilenamesD,
-                    vector<double> &vTimeStamps);
-void SavePCD(std::vector<ORB_SLAM3::MapPoint *> mapStuff, string file_name);
-
-int main(int argc, char **argv) {
-    // TODO: change inputs to match args from rdk
-    // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
-    if (argc < 5) {
-        cerr << endl
-             << "Usage: binary path_to_vocabulary path_to_settings "
-                "path_to_sequence_folder_1 path_to_times_file_1 "
-                "(trajectory_file_name)"
-             << endl;
-        cerr << endl
-             << "./bin/viam_main_v1 "
-                "./ORB_SLAM3/Vocabulary/ORBvoc.txt "
-                "./ORB_SLAM3/initialAttempt/"
-                "realsense515_depth2.yaml "
-                "./ORB_SLAM3/officePics3 Out_file.txt "
-                "outputPose"
-             << endl;
-        return 1;
-    }
-    string path_to_vocab = string(argv[1]);
-    string path_to_settings = string(argv[2]);
-    string path_to_data = string(argv[3]);
-    string path_to_sequence = string(argv[4]);
-    string output_file_name = string(argv[5]);
-    string file_name, file_nameTraj, file_nameKey;
-    string slam_mode = "RGBD";
-    string port_num = "8085";
-    string slam_port = "localhost:" + port_num;
-
-    // setup the SLAM server
-    SLAMServiceImpl slamService;
-    ServerBuilder builder;
-    builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
-    builder.RegisterService(&slamService);
-
-    file_name = output_file_name;
-    file_nameTraj = file_name + ".txt";
-    file_nameKey = file_name + "Keyframe.txt";
-    int nImages = 0;
-    int nkeyframes = 0;
-    if (slam_mode == "RGBD") {
-        // TODO update to work with images from rdk
-        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
-        cout << "RGBD SELECTED" << endl;
+    int process_rgbd() {
+        // Function used for ORB_SLAM with an rgbd camera. Currently returns int
+        // as a placeholder for error signals should the server have to restart
+        // itself.
+        string file_nameTraj = output_file_name + ".txt";
+        string file_nameKey = output_file_name + "Keyframe.txt";
+        int nImages = 0;
+        int nkeyframes = 0;
 
         // Retrieve paths to images
         vector<string> vstrImageFilenamesRGB;
@@ -253,10 +215,6 @@ int main(int argc, char **argv) {
                                ORB_SLAM3::System::RGBD, false, 0,
                                file_nameTraj);
 
-        // Start the SLAM gRPC server
-        std::unique_ptr<Server> server(builder.BuildAndStart());
-        printf("Server listening on %s", slam_port);
-
         // Main loop
         cv::Mat imRGB, imD;
         for (int ni = 0; ni < nImages; ni++) {
@@ -273,7 +231,7 @@ int main(int argc, char **argv) {
             }
 
             // Pass the image to the SLAM system
-            slamService.poseGrpc = SLAM.TrackRGBD(imRGB, imD, tframe);
+            poseGrpc = SLAM.TrackRGBD(imRGB, imD, tframe);
 
             // Update the copy of the current map whenever a change in keyframes
             // occurs
@@ -283,7 +241,7 @@ int main(int argc, char **argv) {
             if (SLAM.GetTrackingState() ==
                     ORB_SLAM3::Tracking::eTrackingState::OK &&
                 nkeyframes != keyframes.size()) {
-                slamService.currMapPoints = currMap->GetAllMapPoints();
+                currMapPoints = currMap->GetAllMapPoints();
             }
             nkeyframes = keyframes.size();
         }
@@ -291,8 +249,68 @@ int main(int argc, char **argv) {
         cout << "System shutdown!\n" << endl;
         std::vector<ORB_SLAM3::MapPoint *> mapStuff =
             SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
-        SavePCD(mapStuff, file_name);
+        SavePCD(mapStuff, output_file_name);
         SLAM.Shutdown();
+        return 1;
+    }
+
+    Sophus::SE3f poseGrpc;
+    std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
+    string output_file_name;
+    string slam_port;
+    string path_to_vocab;
+    string path_to_settings;
+    string path_to_data;
+    string path_to_sequence;
+};
+
+int main(int argc, char **argv) {
+    // TODO: change inputs to match args from rdk
+    // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
+    if (argc < 5) {
+        cerr << endl
+             << "Usage: binary path_to_vocabulary path_to_settings "
+                "path_to_sequence_folder_1 path_to_times_file_1 "
+                "(trajectory_file_name)"
+             << endl;
+        cerr << endl
+             << "./bin/viam_main_v1 "
+                "./ORB_SLAM3/Vocabulary/ORBvoc.txt "
+                "./ORB_SLAM3/initialAttempt/"
+                "realsense515_depth2.yaml "
+                "./ORB_SLAM3/officePics3 Out_file.txt "
+                "outputPose"
+             << endl;
+        return 1;
+    }
+
+    // setup the SLAM server
+    SLAMServiceImpl slamService;
+    ServerBuilder builder;
+
+    slamService.path_to_vocab = string(argv[1]);
+    slamService.path_to_settings = string(argv[2]);
+    slamService.path_to_data = string(argv[3]);
+    slamService.path_to_sequence = string(argv[4]);
+    slamService.output_file_name = string(argv[5]);
+    string slam_mode = "RGBD";
+    string port_num = "8085";
+    slamService.slam_port = "localhost:" + port_num;
+
+    builder.AddListeningPort(slamService.slam_port,
+                             grpc::InsecureServerCredentials());
+    builder.RegisterService(&slamService);
+
+    // Start the SLAM gRPC server
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    printf("Server listening on %s", slamService.slam_port);
+
+    if (slam_mode == "RGBD") {
+        // TODO update to work with images from rdk
+        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
+        cout << "RGBD SELECTED" << endl;
+        slamService.process_rgbd();
+
     } else if (slam_mode == "MONO") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
