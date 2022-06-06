@@ -11,7 +11,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 
 if(DEFINED ENV{RDK_SOURCE_DIR})
-  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/$ENV{RDK_SOURCE_DIR})
+  set(RDK_SOURCE_DIR $ENV{RDK_SOURCE_DIR})
 else()
   set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../rdk)
 endif()
@@ -43,9 +43,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV 3.2)
+find_package(OpenCV 4)
 if(NOT OpenCV_FOUND)
-  find_package(OpenCV 4)
+  find_package(OpenCV 3.2)
   if(NOT OpenCV_FOUND)
     message(FATAL_ERROR "OpenCV > 3.2 not found.")
   endif()
@@ -121,5 +121,8 @@ if(EXISTS ${SRCDIR})
     grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
                        ${PROTOBUF_CFLAGS_OTHER})
 else()
-  message(FATAL_ERROR "RDK C++ gRPC gen files not found")
+  message(
+    FATAL_ERROR
+      "RDK C++ gRPC gen files not found. Please specify the absolute path to your RDK_SOURCE_DIR e.g. 'export RDK_SOURCE_DIR=/home/user/rdk'"
+  )
 endif()

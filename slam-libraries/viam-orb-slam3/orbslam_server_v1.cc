@@ -126,7 +126,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
         } else if (mime_type == "image/pcd") {
             // take sparse slam map and convert into a pcd. Orientation of PCD
-            // is wrt the camera(z is coming out of the lens) so may need to
+            // is wrt the camera (z is coming out of the lens) so may need to
             // transform.
             std::vector<ORB_SLAM3::MapPoint *> actualMap(currMapPoints);
 
@@ -248,11 +248,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             nkeyframes = keyframes.size();
         }
+        
 
         cout << "System shutdown!\n" << endl;
-        std::vector<ORB_SLAM3::MapPoint *> mapStuff =
-            SLAM.GetAtlas()->GetCurrentMap()->GetAllMapPoints();
-        SavePCD(mapStuff, output_file_name);
         SLAM.Shutdown();
         return 1;
     }
@@ -345,28 +343,4 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
             vTimeStamps.push_back(t);
         }
     }
-}
-
-void SavePCD(std::vector<ORB_SLAM3::MapPoint *> mapStuff, string file_name) {
-    string pathSaveFileName = "./";
-    pathSaveFileName = pathSaveFileName.append(file_name);
-    pathSaveFileName.append(".pcd");
-    std::remove(pathSaveFileName.c_str());
-    FILE *fp = fopen(pathSaveFileName.c_str(), "w");
-    fprintf(fp,
-            "VERSION .7\n"
-            "FIELDS x y z\n"
-            "SIZE 4 4 4\n"
-            "TYPE F F F\n"
-            "COUNT 1 1 1\n"
-            "WIDTH %li\n"
-            "HEIGHT %i\n"
-            "VIEWPOINT 0 0 0 1 0 0 0\n"
-            "POINTS %li\nDATA ascii\n",
-            mapStuff.size(), 1, mapStuff.size());
-    for (auto p : mapStuff) {
-        Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-        fprintf(fp, "%f %f %f\n", v.x(), v.y(), v.z());
-    }
-    fclose(fp);
 }
