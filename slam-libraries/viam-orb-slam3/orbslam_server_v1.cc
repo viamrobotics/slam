@@ -183,6 +183,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // Function used for ORB_SLAM with an rgbd camera. Currently returns int
         // as a placeholder for error signals should the server have to restart
         // itself.
+
+        // TODO update to work with images from rdk
+        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
         string file_nameTraj = output_file_name + ".txt";
         string file_nameKey = output_file_name + "Keyframe.txt";
         int nImages = 0;
@@ -306,8 +309,6 @@ int main(int argc, char **argv) {
     printf("Server listening on %s", slamService.slam_port);
 
     if (slam_mode == "RGBD") {
-        // TODO update to work with images from rdk
-        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
         cout << "RGBD SELECTED" << endl;
         slamService.process_rgbd();
 
@@ -366,7 +367,6 @@ void SavePCD(std::vector<ORB_SLAM3::MapPoint *> mapStuff, string file_name) {
     for (auto p : mapStuff) {
         Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
         fprintf(fp, "%f %f %f\n", v.x(), v.y(), v.z());
-        // ofs << v.x() << " " << v.y() << " " << v.z() << "\n";
     }
     fclose(fp);
 }
