@@ -66,7 +66,6 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                     vector<string> &vstrImageFilenamesRGB,
                     vector<string> &vstrImageFilenamesD,
                     vector<double> &vTimeStamps);
-void SavePCD(std::vector<ORB_SLAM3::MapPoint *> mapStuff, string file_name);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -185,7 +184,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // itself.
 
         // TODO update to work with images from rdk
-        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-181
+        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-127
         string file_nameTraj = output_file_name + ".txt";
         string file_nameKey = output_file_name + "Keyframe.txt";
         int nImages = 0;
@@ -248,7 +247,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             nkeyframes = keyframes.size();
         }
-        
 
         cout << "System shutdown!\n" << endl;
         SLAM.Shutdown();
@@ -322,6 +320,8 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                     vector<string> &vstrImageFilenamesRGB,
                     vector<string> &vstrImageFilenamesD,
                     vector<double> &vTimeStamps) {
+    // TODO this will be rewritten to injest data from RDK in
+    // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-127
     string pathCam0 = pathSeq + "/rgb";
     string pathCam1 = pathSeq + "/depth";
     ifstream fTimes;
