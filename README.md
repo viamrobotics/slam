@@ -10,6 +10,13 @@ If you happened to use `git clone` only, you won't see the libraries in the `sla
 
 * [slam-libraries](./slam-libraries) contains all slam implementations we currently support.
 
+## Linting
+
+```bash
+brew install clang-format
+make format
+```
+
 ## Contributing
 When working with submodules, it is important to follow this order:
 
