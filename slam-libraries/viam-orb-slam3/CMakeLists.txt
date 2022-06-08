@@ -112,8 +112,6 @@ if(EXISTS ${SRCDIR})
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
-  # target_link_libraries(grpc_server ${PROJECT_NAME} ${GRPC_LIBRARIES}
-  # ${GRPCPP_LIBRARIES} ${PROTOBUF_LIBRARIES})
   target_include_directories(
     grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
                        ${PROTOBUF_INCLUDE_DIRS})

@@ -54,7 +54,7 @@ using proto::api::service::slam::v1::GetMapResponse;
 using proto::api::service::slam::v1::GetPositionRequest;
 using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::SLAMService;
-
+using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 bool b_continue_session;
 
 void exit_loop_handler(int s) {
@@ -153,6 +153,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             float span = max - min;
             char clr = 0;
+            int offsetRGB = 60;
+            int spanRGB = 192;
 
             // write the map with simple rgb colors based off height from the
             // "ground". Map written as a binary
@@ -160,7 +162,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
                 float val = v.y();
                 auto ratio = (val - min) / span;
-                clr = (char)(60 + (ratio * 192));
+                clr = (char)(offsetRGB + (ratio * spanRGB));
                 if (clr > 255) clr = 255;
                 if (clr < 0) clr = 0;
                 int rgb = 0;
@@ -178,15 +180,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return grpc::Status::OK;
     }
 
-    int process_rgbd() {
+    int process_rgbd(std::unique_ptr<ORB_SLAM3::System> &SLAM) {
         // Function used for ORB_SLAM with an rgbd camera. Currently returns int
         // as a placeholder for error signals should the server have to restart
         // itself.
 
         // TODO update to work with images from rdk
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-127
-        string file_nameTraj = output_file_name + ".txt";
-        string file_nameKey = output_file_name + "Keyframe.txt";
         int nImages = 0;
         int nkeyframes = 0;
 
@@ -211,12 +211,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
             return 1;
         }
 
-        // Create SLAM system. It initializes all system threads and gets ready
-        // to process frames.
-        ORB_SLAM3::System SLAM(path_to_vocab, path_to_settings,
-                               ORB_SLAM3::System::RGBD, false, 0,
-                               file_nameTraj);
-
         // Main loop
         cv::Mat imRGB, imD;
         for (int ni = 0; ni < nImages; ni++) {
@@ -233,14 +227,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
 
             // Pass the image to the SLAM system
-            poseGrpc = SLAM.TrackRGBD(imRGB, imD, tframe);
+            poseGrpc = SLAM->TrackRGBD(imRGB, imD, tframe);
 
             // Update the copy of the current map whenever a change in keyframes
             // occurs
-            ORB_SLAM3::Map *currMap = SLAM.GetAtlas()->GetCurrentMap();
+            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
             std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                 currMap->GetAllKeyFrames();
-            if (SLAM.GetTrackingState() ==
+            if (SLAM->GetTrackingState() ==
                     ORB_SLAM3::Tracking::eTrackingState::OK &&
                 nkeyframes != keyframes.size()) {
                 currMapPoints = currMap->GetAllMapPoints();
@@ -248,17 +242,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
             nkeyframes = keyframes.size();
         }
 
-        cout << "System shutdown!\n" << endl;
-        SLAM.Shutdown();
+        cout << "Finished Processing Images\n" << endl;
+
         return 1;
     }
 
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
-    string output_file_name;
-    string slam_port;
-    string path_to_vocab;
-    string path_to_settings;
     string path_to_data;
     string path_to_sequence;
 };
@@ -287,31 +277,39 @@ int main(int argc, char **argv) {
     SLAMServiceImpl slamService;
     ServerBuilder builder;
 
-    slamService.path_to_vocab = string(argv[1]);
-    slamService.path_to_settings = string(argv[2]);
+    string path_to_vocab = string(argv[1]);
+    string path_to_settings = string(argv[2]);
     slamService.path_to_data = string(argv[3]);
     slamService.path_to_sequence = string(argv[4]);
-    slamService.output_file_name = string(argv[5]);
+    string output_file_name = string(argv[5]) + ".txt";
     string slam_mode = "RGBD";
-    string port_num = "8085";
-    slamService.slam_port = "localhost:" + port_num;
+    string slam_port = "localhost:8085";
 
-    builder.AddListeningPort(slamService.slam_port,
-                             grpc::InsecureServerCredentials());
+    builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    printf("Server listening on %s", slamService.slam_port);
+    printf("Server listening on %s", slam_port);
 
+    SlamPtr SLAM = nullptr;
     if (slam_mode == "RGBD") {
-        cout << "RGBD SELECTED" << endl;
-        slamService.process_rgbd();
+        cout << "RGBD Selected" << endl;
+
+        // Create SLAM system. It initializes all system threads and gets ready
+        // to process frames.
+        SLAM = std::make_unique<ORB_SLAM3::System>(
+            path_to_vocab, path_to_settings, ORB_SLAM3::System::RGBD, false, 0,
+            output_file_name);
+        slamService.process_rgbd(SLAM);
 
     } else if (slam_mode == "MONO") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
     }
+
+    SLAM->Shutdown();
+    cout << "System shutdown!\n" << endl;
 
     return 0;
 }
