@@ -11,4 +11,4 @@
 *.swp
 
 # code editor settings
-.vscode/*
+.vscode
