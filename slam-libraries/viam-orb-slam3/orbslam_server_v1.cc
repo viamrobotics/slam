@@ -18,13 +18,13 @@
  * You should have received a copy of the GNU General Public License along with
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <System.h>
 #include <grpc/grpc.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
+#include <signal.h>
 
 #include <algorithm>
 #include <chrono>
@@ -55,7 +55,7 @@ using proto::api::service::slam::v1::GetPositionRequest;
 using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::SLAMService;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
-bool b_continue_session;
+bool b_continue_session = true;
 
 void exit_loop_handler(int s) {
     cout << "Finishing session" << endl;
@@ -240,6 +240,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 currMapPoints = currMap->GetAllMapPoints();
             }
             nkeyframes = keyframes.size();
+            if (b_continue_session == false) break;
         }
 
         cout << "Finished Processing Images\n" << endl;
@@ -251,46 +252,52 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
     string path_to_data;
     string path_to_sequence;
+    string camera_name;
 };
+
+string argParser(int argc, char **argv, string varName);
 
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
-    if (argc < 5) {
-        cerr << endl
-             << "Usage: binary path_to_vocabulary path_to_settings "
-                "path_to_sequence_folder_1 path_to_times_file_1 "
-                "(trajectory_file_name)"
-             << endl;
-        cerr << endl
-             << "./bin/viam_main_v1 "
-                "./ORB_SLAM3/Vocabulary/ORBvoc.txt "
-                "./ORB_SLAM3/initialAttempt/"
-                "realsense515_depth2.yaml "
-                "./ORB_SLAM3/officePics3 Out_file.txt "
-                "outputPose"
-             << endl;
-        return 1;
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = exit_loop_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+    b_continue_session = true;
+    for (int i = 0; i < argc; ++i) {
+        printf("Argument #%d is %s\n", i, argv[i]);
     }
 
     // setup the SLAM server
     SLAMServiceImpl slamService;
     ServerBuilder builder;
-
-    string path_to_vocab = string(argv[1]);
-    string path_to_settings = string(argv[2]);
-    slamService.path_to_data = string(argv[3]);
-    slamService.path_to_sequence = string(argv[4]);
-    string output_file_name = string(argv[5]) + ".txt";
+    string dummyPath =
+        "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";  // will remove
+                                                               // this when
+                                                               // working on
+                                                               // data ingestion
+                                                               // DATA127/181
+    string actual_path = argParser(argc, argv, "-data_dir=");
+    string path_to_vocab = actual_path + "/config/ORBvoc.txt";
+    string path_to_settings = actual_path + "/config/realsense515_depth2.yaml";
+    slamService.path_to_data =
+        dummyPath + "/ORB_SLAM3/officePics3";  // will change in DATA 127/181
+    slamService.path_to_sequence =
+        "Out_file.txt";  // will remove in DATA 127/181
     string slam_mode = "RGBD";
-    string slam_port = "localhost:8085";
+    string slam_port = "localhost:" + argParser(argc, argv, "-port=");
+    slamService.camera_name = argParser(argc, argv, "-sensors=");
 
     builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    printf("Server listening on %s", slam_port);
+    printf("Server listening on %s\n", slam_port.c_str());
 
     SlamPtr SLAM = nullptr;
     if (slam_mode == "RGBD") {
@@ -299,8 +306,7 @@ int main(int argc, char **argv) {
         // Create SLAM system. It initializes all system threads and gets ready
         // to process frames.
         SLAM = std::make_unique<ORB_SLAM3::System>(
-            path_to_vocab, path_to_settings, ORB_SLAM3::System::RGBD, false, 0,
-            output_file_name);
+            path_to_vocab, path_to_settings, ORB_SLAM3::System::RGBD, false, 0);
         slamService.process_rgbd(SLAM);
 
     } else if (slam_mode == "MONO") {
@@ -341,4 +347,20 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
             vTimeStamps.push_back(t);
         }
     }
+}
+
+string argParser(int argc, char **argv, string strName) {
+    string strVal;
+    string currArg;
+    size_t loc;
+    for (int i = 0; i < argc; ++i) {
+        // printf("Argument #%d is %s\n", i, argv[i]);
+        currArg = string(argv[i]);
+        loc = currArg.find(strName);
+        if (loc != string::npos) {
+            strVal = currArg.substr(loc + strName.size());
+            break;
+        }
+    }
+    return strVal;
 }
