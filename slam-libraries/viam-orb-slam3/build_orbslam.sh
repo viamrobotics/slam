@@ -1,4 +1,3 @@
-cd viam-orb-slam3
 BASEDIR=`pwd`
 cd $BASEDIR/ORB_SLAM3/Thirdparty
 ORB_THIRDPARTYDIR=`pwd`
