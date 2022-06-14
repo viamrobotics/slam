@@ -240,7 +240,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 currMapPoints = currMap->GetAllMapPoints();
             }
             nkeyframes = keyframes.size();
-            if (b_continue_session == false) break;
+            if (!b_continue_session) break;
         }
 
         cout << "Finished Processing Images\n" << endl;
@@ -256,7 +256,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 };
 
 string argParser(int argc, char **argv, string varName);
-
+string configMapParser(string map, string varName);
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
@@ -268,6 +268,19 @@ int main(int argc, char **argv) {
 
     sigaction(SIGINT, &sigIntHandler, NULL);
     b_continue_session = true;
+
+    if (argc < 5) {
+        cerr << "No args found, for local Usage: " endl
+             << "./orb_grpc_server "
+                "-data_dir=path_to_data "
+                "-config_param={mode=slam_mode} "
+                "-port=grpc_port "
+                "-sensors=sensor_name "
+                "(trajectory_file_name)"
+             << endl;
+        return 1;
+    }
+
     for (int i = 0; i < argc; ++i) {
         printf("Argument #%d is %s\n", i, argv[i]);
     }
@@ -282,14 +295,31 @@ int main(int argc, char **argv) {
                                                                // data ingestion
                                                                // DATA127/181
     string actual_path = argParser(argc, argv, "-data_dir=");
+    if (actual_path.empty()) {
+        cerr << "no data directory given" << endl;
+        return 0;
+    }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
     string path_to_settings = actual_path + "/config/realsense515_depth2.yaml";
     slamService.path_to_data =
         dummyPath + "/ORB_SLAM3/officePics3";  // will change in DATA 127/181
     slamService.path_to_sequence =
         "Out_file.txt";  // will remove in DATA 127/181
-    string slam_mode = "RGBD";
-    string slam_port = "localhost:" + argParser(argc, argv, "-port=");
+
+    string config_params = argParser(argc, argv, "-config_param=");
+    string slam_mode = configMapParser(config_params, "mode=");
+    if (slam_mode.empty()) {
+        cerr << "no SLAM mode given" << endl;
+        return 0;
+    }
+
+    string slam_port = argParser(argc, argv, "-port=");
+    if (slam_port.empty()) {
+        cerr << "no gRPC port given" << endl;
+        return 0;
+    }
+
+    // no errors for camera name because we may not use this
     slamService.camera_name = argParser(argc, argv, "-sensors=");
 
     builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
@@ -300,7 +330,7 @@ int main(int argc, char **argv) {
     printf("Server listening on %s\n", slam_port.c_str());
 
     SlamPtr SLAM = nullptr;
-    if (slam_mode == "RGBD") {
+    if (slam_mode == "rgbd") {
         cout << "RGBD Selected" << endl;
 
         // Create SLAM system. It initializes all system threads and gets ready
@@ -354,11 +384,33 @@ string argParser(int argc, char **argv, string strName) {
     string currArg;
     size_t loc;
     for (int i = 0; i < argc; ++i) {
-        // printf("Argument #%d is %s\n", i, argv[i]);
         currArg = string(argv[i]);
         loc = currArg.find(strName);
         if (loc != string::npos) {
             strVal = currArg.substr(loc + strName.size());
+            break;
+        }
+    }
+    return strVal;
+}
+
+string configMapParser(string map, string varName) {
+    string strVal;
+    string currArg;
+    size_t loc;
+    vector<string> v;
+    stringstream ss(map);
+
+    while (ss.good()) {
+        string substr;
+        getline(ss, substr, ',');
+        v.push_back(substr);
+    }
+    for (size_t i = 0; i < v.size(); i++) {
+        currArg = string(v[i]);
+        loc = currArg.find(varName);
+        if (loc != string::npos) {
+            strVal = currArg.substr(loc + varName.size());
             break;
         }
     }
