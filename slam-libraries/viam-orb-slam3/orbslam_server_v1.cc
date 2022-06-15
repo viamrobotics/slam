@@ -257,6 +257,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
 string argParser(int argc, char **argv, string varName);
 string configMapParser(string map, string varName);
+
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
@@ -270,13 +271,13 @@ int main(int argc, char **argv) {
     b_continue_session = true;
 
     if (argc < 5) {
-        cerr << "No args found, for local Usage: " endl
+        cerr << "No args found. Expected: \n"
+             << endl
              << "./orb_grpc_server "
                 "-data_dir=path_to_data "
                 "-config_param={mode=slam_mode} "
                 "-port=grpc_port "
                 "-sensors=sensor_name "
-                "(trajectory_file_name)"
              << endl;
         return 1;
     }
@@ -300,7 +301,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
-    string path_to_settings = actual_path + "/config/realsense515_depth2.yaml";
+    string path_to_settings = actual_path + "/config/testORB.yaml";
     slamService.path_to_data =
         dummyPath + "/ORB_SLAM3/officePics3";  // will change in DATA 127/181
     slamService.path_to_sequence =
@@ -319,7 +320,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    // no errors for camera name because we may not use this
+    // TODO DATA 127/181: evaluate use case for camera name
     slamService.camera_name = argParser(argc, argv, "-sensors=");
 
     builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
@@ -330,6 +331,7 @@ int main(int argc, char **argv) {
     printf("Server listening on %s\n", slam_port.c_str());
 
     SlamPtr SLAM = nullptr;
+    boost::algorithm::to_lower(slam_mode);
     if (slam_mode == "rgbd") {
         cout << "RGBD Selected" << endl;
 
@@ -339,7 +341,7 @@ int main(int argc, char **argv) {
             path_to_vocab, path_to_settings, ORB_SLAM3::System::RGBD, false, 0);
         slamService.process_rgbd(SLAM);
 
-    } else if (slam_mode == "MONO") {
+    } else if (slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
     }
@@ -380,6 +382,7 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
 }
 
 string argParser(int argc, char **argv, string strName) {
+    // Possibly remove these in a future task
     string strVal;
     string currArg;
     size_t loc;
@@ -396,23 +399,18 @@ string argParser(int argc, char **argv, string strName) {
 
 string configMapParser(string map, string varName) {
     string strVal;
-    string currArg;
-    size_t loc;
-    vector<string> v;
+    size_t loc = string::npos;
     stringstream ss(map);
 
     while (ss.good()) {
         string substr;
         getline(ss, substr, ',');
-        v.push_back(substr);
-    }
-    for (size_t i = 0; i < v.size(); i++) {
-        currArg = string(v[i]);
-        loc = currArg.find(varName);
+        loc = substr.find(varName);
         if (loc != string::npos) {
-            strVal = currArg.substr(loc + varName.size());
+            strVal = substr.substr(loc + varName.size());
             break;
         }
     }
+
     return strVal;
 }
