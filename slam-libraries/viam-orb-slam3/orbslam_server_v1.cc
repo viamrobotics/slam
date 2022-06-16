@@ -18,13 +18,13 @@
  * You should have received a copy of the GNU General Public License along with
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <System.h>
 #include <grpc/grpc.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
+#include <signal.h>
 
 #include <algorithm>
 #include <chrono>
@@ -55,7 +55,7 @@ using proto::api::service::slam::v1::GetPositionRequest;
 using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::SLAMService;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
-bool b_continue_session;
+bool b_continue_session = true;
 
 void exit_loop_handler(int s) {
     cout << "Finishing session" << endl;
@@ -240,6 +240,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 currMapPoints = currMap->GetAllMapPoints();
             }
             nkeyframes = keyframes.size();
+            if (!b_continue_session) break;
         }
 
         cout << "Finished Processing Images\n" << endl;
@@ -251,59 +252,96 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
     string path_to_data;
     string path_to_sequence;
+    string camera_name;
 };
+
+string argParser(int argc, char **argv, string varName);
+string configMapParser(string map, string varName);
 
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = exit_loop_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+    b_continue_session = true;
+
     if (argc < 5) {
-        cerr << endl
-             << "Usage: binary path_to_vocabulary path_to_settings "
-                "path_to_sequence_folder_1 path_to_times_file_1 "
-                "(trajectory_file_name)"
-             << endl;
-        cerr << endl
-             << "./bin/viam_main_v1 "
-                "./ORB_SLAM3/Vocabulary/ORBvoc.txt "
-                "./ORB_SLAM3/initialAttempt/"
-                "realsense515_depth2.yaml "
-                "./ORB_SLAM3/officePics3 Out_file.txt "
-                "outputPose"
+        cerr << "No args found. Expected: \n"
+             << endl
+             << "./orb_grpc_server "
+                "-data_dir=path_to_data "
+                "-config_param={mode=slam_mode} "
+                "-port=grpc_port "
+                "-sensors=sensor_name "
              << endl;
         return 1;
+    }
+
+    for (int i = 0; i < argc; ++i) {
+        printf("Argument #%d is %s\n", i, argv[i]);
     }
 
     // setup the SLAM server
     SLAMServiceImpl slamService;
     ServerBuilder builder;
+    string dummyPath =
+        "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";  // will remove
+                                                               // this when
+                                                               // working on
+                                                               // data ingestion
+                                                               // DATA127/181
+    string actual_path = argParser(argc, argv, "-data_dir=");
+    if (actual_path.empty()) {
+        cerr << "no data directory given" << endl;
+        return 0;
+    }
+    string path_to_vocab = actual_path + "/config/ORBvoc.txt";
+    string path_to_settings = actual_path + "/config/testORB.yaml";
+    slamService.path_to_data =
+        dummyPath + "/ORB_SLAM3/officePics3";  // will change in DATA 127/181
+    slamService.path_to_sequence =
+        "Out_file.txt";  // will remove in DATA 127/181
 
-    string path_to_vocab = string(argv[1]);
-    string path_to_settings = string(argv[2]);
-    slamService.path_to_data = string(argv[3]);
-    slamService.path_to_sequence = string(argv[4]);
-    string output_file_name = string(argv[5]) + ".txt";
-    string slam_mode = "RGBD";
-    string slam_port = "localhost:8085";
+    string config_params = argParser(argc, argv, "-config_param=");
+    string slam_mode = configMapParser(config_params, "mode=");
+    if (slam_mode.empty()) {
+        cerr << "no SLAM mode given" << endl;
+        return 0;
+    }
+
+    string slam_port = argParser(argc, argv, "-port=");
+    if (slam_port.empty()) {
+        cerr << "no gRPC port given" << endl;
+        return 0;
+    }
+
+    // TODO DATA 127/181: evaluate use case for camera name
+    slamService.camera_name = argParser(argc, argv, "-sensors=");
 
     builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    printf("Server listening on %s", slam_port);
+    printf("Server listening on %s\n", slam_port.c_str());
 
     SlamPtr SLAM = nullptr;
-    if (slam_mode == "RGBD") {
+    boost::algorithm::to_lower(slam_mode);
+    if (slam_mode == "rgbd") {
         cout << "RGBD Selected" << endl;
 
         // Create SLAM system. It initializes all system threads and gets ready
         // to process frames.
         SLAM = std::make_unique<ORB_SLAM3::System>(
-            path_to_vocab, path_to_settings, ORB_SLAM3::System::RGBD, false, 0,
-            output_file_name);
+            path_to_vocab, path_to_settings, ORB_SLAM3::System::RGBD, false, 0);
         slamService.process_rgbd(SLAM);
 
-    } else if (slam_mode == "MONO") {
+    } else if (slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
     }
@@ -341,4 +379,38 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
             vTimeStamps.push_back(t);
         }
     }
+}
+
+string argParser(int argc, char **argv, string strName) {
+    // Possibly remove these in a future task
+    string strVal;
+    string currArg;
+    size_t loc;
+    for (int i = 0; i < argc; ++i) {
+        currArg = string(argv[i]);
+        loc = currArg.find(strName);
+        if (loc != string::npos) {
+            strVal = currArg.substr(loc + strName.size());
+            break;
+        }
+    }
+    return strVal;
+}
+
+string configMapParser(string map, string varName) {
+    string strVal;
+    size_t loc = string::npos;
+    stringstream ss(map);
+
+    while (ss.good()) {
+        string substr;
+        getline(ss, substr, ',');
+        loc = substr.find(varName);
+        if (loc != string::npos) {
+            strVal = substr.substr(loc + varName.size());
+            break;
+        }
+    }
+
+    return strVal;
 }

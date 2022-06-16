@@ -98,9 +98,9 @@ if(EXISTS ${SRCDIR})
               ${SRCDIR}/google/api/httpbody.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
 
-  add_executable(grpc_server orbslam_server_v1.cc ${SOURCES})
+  add_executable(orb_grpc_server orbslam_server_v1.cc ${SOURCES})
   target_link_libraries(
-    grpc_server
+    orb_grpc_server
     ${OpenCV_LIBS}
     ${EIGEN3_LIBS}
     ${Pangolin_LIBRARIES}
@@ -113,11 +113,12 @@ if(EXISTS ${SRCDIR})
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
   target_include_directories(
-    grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
+    orb_grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
                        ${PROTOBUF_INCLUDE_DIRS})
   target_compile_options(
-    grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
+    orb_grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
                        ${PROTOBUF_CFLAGS_OTHER})
+
 else()
   message(
     FATAL_ERROR
