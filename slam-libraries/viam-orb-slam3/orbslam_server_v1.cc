@@ -28,9 +28,13 @@
 
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <opencv2/core/core.hpp>
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+#undef BOOST_NO_CXX11_SCOPED_ENUMS
 
 #include "proto/api/common/v1/common.grpc.pb.h"
 #include "proto/api/common/v1/common.pb.h"
@@ -38,6 +42,7 @@
 #include "proto/api/service/slam/v1/slam.pb.h"
 #define _USE_MATH_DEFINES
 using namespace std;
+using namespace boost::filesystem;
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -253,10 +258,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string path_to_data;
     string path_to_sequence;
     string camera_name;
+    bool offlineFlag = false;
 };
 
 string argParser(int argc, char **argv, string varName);
 string configMapParser(string map, string varName);
+float readTimeFromFilename(string filename);
+std::vector<std::string> listFilesInDirectory(
+    std::string data_directory, std::string extension);
 
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
@@ -273,9 +282,9 @@ int main(int argc, char **argv) {
     if (argc < 5) {
         cerr << "No args found. Expected: \n"
              << endl
-             << "./orb_grpc_server "
+             << "./bin/orb_grpc_server "
                 "-data_dir=path_to_data "
-                "-config_param={mode=slam_mode} "
+                "-config_param={mode=slam_mode,} "
                 "-port=grpc_port "
                 "-sensors=sensor_name "
              << endl;
@@ -285,7 +294,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < argc; ++i) {
         printf("Argument #%d is %s\n", i, argv[i]);
     }
-
     // setup the SLAM server
     SLAMServiceImpl slamService;
     ServerBuilder builder;
@@ -301,8 +309,8 @@ int main(int argc, char **argv) {
         return 0;
     }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
-    string path_to_settings = actual_path + "/config/testORB.yaml";
-    slamService.path_to_data =
+    string path_to_settings = actual_path + "/config";///testORB.yaml";
+    slamService.path_to_data = 
         dummyPath + "/ORB_SLAM3/officePics3";  // will change in DATA 127/181
     slamService.path_to_sequence =
         "Out_file.txt";  // will remove in DATA 127/181
@@ -321,7 +329,12 @@ int main(int argc, char **argv) {
     }
 
     // TODO DATA 127/181: evaluate use case for camera name
+    // bool offlineFlag = false;
     slamService.camera_name = argParser(argc, argv, "-sensors=");
+    if (slamService.camera_name.empty()) {
+        cout << "No camera given -> running in offline mode" << endl;
+        slamService.offlineFlag = true;
+    }
 
     builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
     builder.RegisterService(&slamService);
@@ -332,6 +345,59 @@ int main(int argc, char **argv) {
 
     SlamPtr SLAM = nullptr;
     boost::algorithm::to_lower(slam_mode);
+
+    string randomFrame = "combined_data_2022-06-15T17_45_11.0610.both";
+    const path myPath(path_to_settings);
+    path latest;
+    std::time_t latest_tm = 0; 
+    // if(is_directory(myPath))
+    // cout << "we got a directory: "<< myPath << endl;
+    for (auto&& entry : boost::make_iterator_range(directory_iterator(myPath), {})) {
+    path p = entry.path();
+    
+    if (is_regular_file(p) && p.extension() == ".yaml") 
+    {
+        std::time_t timestamp =  last_write_time(p);
+        cout << "this file: "<< p <<"\t with time:"<<timestamp  << endl;
+        if (timestamp > latest_tm) {
+            latest = p;
+            latest_tm = timestamp;
+            
+        }
+    }
+    }
+    const string myYAML = latest.stem().string();
+    slamService.camera_name = myYAML.substr(0,myYAML.find("_data_"));
+    if (slamService.camera_name.empty()){
+        cerr << "no correctly formatted .yaml file found, Expected:\n"
+        "{sensor}_data_{dateformat}.yaml";
+        return 0;
+    }
+    float yamlTime = readTimeFromFilename(myYAML.substr(myYAML.find("_data_")+6));
+    cout << "this random time is " << yamlTime << " seconds" << endl;
+
+    std::vector<std::string> files = listFilesInDirectory(actual_path+"/data",".both");
+    int locClosest;
+    float minTime = 1000000000;
+    for(int i=0;i<files.size();i++){
+        float fileTime = readTimeFromFilename(files[i].substr(files[i].find("_data_")+6));
+        float delTime = fileTime - yamlTime;
+        if(delTime>0){
+            cout << files[i] << endl;
+            if(minTime > delTime){
+                locClosest = i;
+                minTime = delTime;
+            }
+        }
+        
+    }
+    cout << "The closest next file is: " << files[locClosest] << endl;
+    // Next up: grab last image and check if its new
+    // Make some functions for offline and online(another process or just logic inside process?)
+    // decode .both
+    return 0;
+
+
     if (slam_mode == "rgbd") {
         cout << "RGBD Selected" << endl;
 
@@ -352,6 +418,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+// void LoadOfflineImagesVIAM()
 void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                     vector<string> &vstrImageFilenamesRGB,
                     vector<string> &vstrImageFilenamesD,
@@ -360,7 +427,7 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-127
     string pathCam0 = pathSeq + "/rgb";
     string pathCam1 = pathSeq + "/depth";
-    ifstream fTimes;
+    std::ifstream fTimes;
     fTimes.open(strPathTimes.c_str());
     vTimeStamps.reserve(5000);
     vstrImageFilenamesRGB.reserve(5000);
@@ -413,4 +480,39 @@ string configMapParser(string map, string varName) {
     }
 
     return strVal;
+}
+
+//NOTE: This assumes the string format YYYY-MM-DDT17_42_13.3814 
+// Where after T is a 24hr UTC clock
+// Also do not work on New Years Eve or Feb 29th
+int months[12]={31,28,31,30,31,30,31,31,30,31,30,31};//How many days in month
+float readTimeFromFilename(string filename){
+    int start_pos = filename.find("T") + 1;
+    std::string::size_type sz;
+    float days_f = std::stof(filename.substr(start_pos-3, 2), &sz);
+    int month_i = std::stoi(filename.substr(start_pos-5, 2), &sz)-1 ;
+    for(int i=0;i<month_i;i++)
+    days_f = days_f + months[i];
+        // Hour
+    float hour_f = std::stof(filename.substr(start_pos, 2), &sz);
+    // Minute
+    float min_f = std::stof(filename.substr(start_pos+3, 2), &sz);
+
+    // Second
+    float sec_f = std::stof(filename.substr(start_pos+6), &sz);
+
+    float myTime = 24 * 3600 * days_f + 3600 * (hour_f) + 60 * (min_f) + (sec_f);
+    return myTime;
+}
+
+std::vector<std::string> listFilesInDirectory(
+    std::string data_directory, std::string extension) {
+    std::vector<std::string> file_paths;
+
+    for (const auto& entry : directory_iterator(data_directory)) {
+        file_paths.push_back((entry.path()).stem().string());
+    }
+
+    sort(file_paths.begin(), file_paths.end());
+    return file_paths;
 }
