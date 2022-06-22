@@ -338,7 +338,6 @@ int main(int argc, char** argv) {
     }
 
     if (FLAGS_update == true) {
-
         std::cout << "Updating Map!" << std::endl;
         viam::LoadMapAndRun(
             mode, FLAGS_update_data_directory, FLAGS_output_directory,

@@ -1,4 +1,5 @@
-// TODO[kat]: [opt] at some point we should consider renaming to read_data or read_IO or something more genetic
+// TODO[kat]: [opt] at some point we should consider renaming to read_data or
+// read_IO or something more genetic
 
 #include "../src/io/read_PCD_file.h"
 
