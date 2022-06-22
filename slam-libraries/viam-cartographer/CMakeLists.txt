@@ -14,6 +14,19 @@ find_package(absl REQUIRED)
 find_package(Ceres REQUIRED COMPONENTS SuiteSparse)
 find_package(Lua 5.2 REQUIRED)
 
+
+# WARNING: PR Review comment:
+# Absolute paths are generally not a good idea. If at all possible,
+# just use the library name itself (cartographer) for linking.
+# `/usr/local/lib` should be in the LD path on most linux systems already,
+# so that should "just work."
+# The include is a similar thing, though the files would need to be reference
+# as <cartographer/file.h> instead of just <file.h> if they're in their own folder.
+
+# TODO[kat]: First attempts showed that in order to fix this, a cmake module has to be written.
+# This task is postponed until I start working on these two tickets (the last two tickets to be tackled):
+# https://viam.atlassian.net/browse/DATA-123
+# https://viam.atlassian.net/browse/DATA-124
 include_directories("/usr/local/include/cartographer")
 link_libraries("/usr/local/lib/libcartographer.a")
 
@@ -84,6 +97,18 @@ google_binary(main
     src/main.cc
 )
 
+# WARNING: PR Review comment:
+# Absolute paths are generally not a good idea. If at all possible,
+# just use the library name itself (cartographer) for linking.
+# `/usr/local/lib` should be in the LD path on most linux systems already,
+# so that should "just work."
+# The include is a similar thing, though the files would need to be reference
+# as <cartographer/file.h> instead of just <file.h> if they're in their own folder.
+
+# TODO[kat]: First attempts showed that in order to fix this, a cmake module has to be written.
+# This task is postponed until I start working on these two tickets (the last two tickets to be tackled):
+# https://viam.atlassian.net/browse/DATA-123
+# https://viam.atlassian.net/browse/DATA-124
 target_link_libraries(main PUBLIC "/usr/local/lib/libcartographer.a")
 target_include_directories(main SYSTEM PUBLIC "/usr/local/include/cartographer")
 
