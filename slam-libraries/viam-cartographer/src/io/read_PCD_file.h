@@ -1,3 +1,5 @@
+// [opt] at some point we should consider renaming to read_data or read_IO or something more genetic
+
 #ifndef VIAM_READ_FROM_FILE_H_
 #define VIAM_READ_FROM_FILE_H_
 
