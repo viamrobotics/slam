@@ -19,11 +19,15 @@
 namespace viam {
 namespace slam_service {
 
+std::vector<cartographer::transform::Rigid3d> GetLocalPoses(
+    viam::mapping::MapBuilder& mapBuilder);
+
 cartographer::transform::Rigid3d GetGlobalPose(
-    viam::mapping::MapBuilder &mapBuilder, int trajectory_id);
+    viam::mapping::MapBuilder& mapBuilder, int trajectory_id,
+    cartographer::transform::Rigid3d& latest_local_pose_);
 
 void PaintMap(
-    std::unique_ptr<cartographer::mapping::MapBuilderInterface> &map_builder_,
+    std::unique_ptr<cartographer::mapping::MapBuilderInterface>& map_builder_,
     std::string output_directory, std::string appendix);
 }  // namespace slam_service
 }  // namespace viam

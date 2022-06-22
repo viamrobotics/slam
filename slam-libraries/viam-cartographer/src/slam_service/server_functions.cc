@@ -33,21 +33,20 @@ latency of getPose should be no greater than n (probably 30ms)
 namespace viam {
 namespace slam_service {
 
+std::vector<cartographer::transform::Rigid3d> GetLocalPoses(
+    viam::mapping::MapBuilder& mapBuilder) {
+    return mapBuilder.GetLocalSlamResultPoses();
+}
+
 // TODO[kat]: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d GetGlobalPose(
-    viam::mapping::MapBuilder& mapBuilder, int trajectory_id) {
-    auto local_slam_result_poses_ = mapBuilder.GetLocalSlamResultPoses();
-
+    viam::mapping::MapBuilder& mapBuilder, int trajectory_id,
+    cartographer::transform::Rigid3d& latest_local_pose_) {
     auto local_transform =
         mapBuilder.map_builder_->pose_graph()->GetLocalToGlobalTransform(
             trajectory_id);
-    if (local_slam_result_poses_.size() > 0) {
-        auto local_slam_result_pose = local_slam_result_poses_.back();
-        return local_transform * local_slam_result_pose;
-    } else {
-        return cartographer::transform::Rigid3d();
-    }
+    return local_transform * latest_local_pose_;
 }
 
 void PaintMap(

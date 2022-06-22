@@ -118,9 +118,15 @@ void CreateMap(const std::string& mode, const std::string& data_directory,
                                 ->GetTrajectoryNodes()
                                 .size();
 
-            cartographer::transform::Rigid3d global_pose =
-                slam_service::GetGlobalPose(mapBuilder, trajectory_id);
-            myfile << "global_pose: " << global_pose.DebugString() << std::endl;
+            auto local_poses = slam_service::GetLocalPoses(mapBuilder);
+            if (local_poses.size() > 0) {
+                auto latest_local_pose = local_poses.back();
+                cartographer::transform::Rigid3d global_pose =
+                    slam_service::GetGlobalPose(mapBuilder, trajectory_id,
+                                                latest_local_pose);
+                myfile << "global_pose: " << global_pose.DebugString()
+                       << std::endl;
+            }
 
             if ((num_nodes >= starting_scan_number &&
                  num_nodes < starting_scan_number + 3) ||
