@@ -7,7 +7,7 @@ elif [ "$(uname)" == "Darwin" ]; then
     readlinkorreal() { readlink "$1" || echo "$1"; }
     cd $(dirname string readlinkorreal "${BASH_SOURCE}")/..
 else
-    echo ERROR: osx not implemented yet.
+    echo ERROR: your OS is not handled yet
     exit 1
 fi
 
