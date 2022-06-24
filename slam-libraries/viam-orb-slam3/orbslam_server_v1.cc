@@ -552,6 +552,7 @@ int main(int argc, char **argv) {
 
         // Create SLAM system. It initializes all system threads and gets ready
         // to process frames.
+        cout << path_to_vocab << endl << full_path_to_settings << endl;
         SLAM = std::make_unique<ORB_SLAM3::System>(
             path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD,
             false, 0);
