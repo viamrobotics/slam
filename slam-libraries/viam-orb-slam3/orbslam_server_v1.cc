@@ -78,8 +78,9 @@ std::vector<std::string> listFilesInDirectory(std::string data_directory,
                                               std::string extension);
 std::vector<std::string> listFilesInDirectoryForCamera(
     std::string data_directory, std::string extension, std::string camera_name);
-void decodeBOTH(std::string filename,cv::Mat &im,cv::Mat &depth );
-int parseDataDir(std::vector<std::string>& files,string interest, float configTime);
+void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
+int parseDataDir(std::vector<std::string> &files, string interest,
+                 float configTime);
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
     ::grpc::Status GetPosition(ServerContext *context,
@@ -193,58 +194,67 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return grpc::Status::OK;
     }
 
-
     int process_rgbd_online(std::unique_ptr<ORB_SLAM3::System> &SLAM) {
-
         std::vector<std::string> files =
-                listFilesInDirectoryForCamera(path_to_data,".both",camera_name);
-        if(files.size()==0){
-            cout << "no files found" << endl;
-            std::this_thread::sleep_until(std::chrono::system_clock::now() + 5s);
-            files = listFilesInDirectoryForCamera(path_to_data,".both",camera_name);
+            listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
+
+        int locRecent = parseDataDir(files, "recent", yamlTime);
+        while ((locRecent == -1) && (b_continue_session)) {
+            cout << "No new files found" << endl;
+            usleep(frame_delay * 1e3);
+            files = listFilesInDirectoryForCamera(path_to_data, ".both",
+                                                  camera_name);
+            locRecent = parseDataDir(files, "recent", yamlTime);
         }
-        int locRecent = parseDataDir(files,"recent",yamlTime); 
-        float fileTimeStart =
-            readTimeFromFilename(files[locRecent].substr(files[locRecent].find("_data_")+6));
-        float timeStamp = 0,prevTimeStamp = 0;
+        float fileTimeStart = readTimeFromFilename(
+            files[locRecent].substr(files[locRecent].find("_data_") + 6));
+        float timeStamp = 0, prevTimeStamp = 0;
         bool imErr = false;
-        int i = 0;
+        int i = locRecent;
         int nkeyframes = 0;
-        cout << fileTimeStart << endl;
-        while(b_continue_session){
-
-            files = listFilesInDirectoryForCamera(path_to_data,".both",camera_name);
-
-            i = parseDataDir(files,"recent",fileTimeStart); 
+        while (b_continue_session) {
             prevTimeStamp = timeStamp;
-            timeStamp = readTimeFromFilename(files[i].substr(files[i].find("_data_")+6)) - fileTimeStart;
-            if(prevTimeStamp >= timeStamp){
-                cerr << endl << "No new files: "<<files[i] << endl;
-                imErr = true;
+            // Look for new frames based off current timestamp
+            // Currently pauses based off frame_delay if no image is found
+            while ((i == -1) && (b_continue_session)) {
+                files = listFilesInDirectoryForCamera(path_to_data, ".both",
+                                                      camera_name);
+                i = parseDataDir(files, "recent", fileTimeStart);
+                if (i == -1) {
+                    cerr << "No new frames found " << endl;
+                    usleep(frame_delay * 1e3);
+                } else {
+                    timeStamp = readTimeFromFilename(files[i].substr(
+                                    files[i].find("_data_") + 6)) -
+                                fileTimeStart;
+                    if (prevTimeStamp == timeStamp) {
+                        i = -1;
+                        cerr << "No new frames found" << endl;
+                        usleep(frame_delay * 1e3);
+                    }
+                }
             }
-            //decode images
+
+            // decode images
             cv::Mat im, depth;
-            if(!imErr){
-                
-                decodeBOTH(path_to_data+"/"+files[i],im,depth );
-            }
-            
-            //Throw an error to skip this frame if not found
-            if (depth.empty() && !imErr) {
-                cerr << endl << "Failed to load depth at: "<<files[i] << endl;
+            decodeBOTH(path_to_data + "/" + files[i], im, depth);
+
+            // Throw an error to skip this frame if the frames are bad
+            if (depth.empty()) {
+                cerr << endl << "Failed to load depth at: " << files[i] << endl;
                 imErr = true;
             }
             if (im.empty() && !imErr) {
-                cerr << endl << "Failed to load png image at: "<<files[i] << endl;
+                cerr << endl
+                     << "Failed to load png image at: " << files[i] << endl;
                 imErr = true;
             }
-            if(!imErr){
+            if (!imErr) {
                 // Pass the image to the SLAM system
-                cout << "yo\t" << files[i] << endl;
                 poseGrpc = SLAM->TrackRGBD(im, depth, timeStamp);
 
-                // Update the copy of the current map whenever a change in keyframes
-                // occurs
+                // Update the copy of the current map whenever a change in
+                // keyframes occurs
                 ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
                 std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                     currMap->GetAllKeyFrames();
@@ -254,55 +264,57 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     currMapPoints = currMap->GetAllMapPoints();
                 }
                 nkeyframes = keyframes.size();
-            }else{
+            } else {
                 imErr = false;
             }
+            i = -1;
         }
-        cout << "Finished Processing Images\n" << endl;
+        cout << "Finished Processing Live Images\n" << endl;
         return 0;
     }
 
     int process_rgbd_offline(std::unique_ptr<ORB_SLAM3::System> &SLAM) {
-        //find all images used for our rgbd camera
+        // find all images used for our rgbd camera
         std::vector<std::string> files =
-        listFilesInDirectoryForCamera(path_to_data,".both",camera_name);
-        if(files.size()==0){
+            listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
+        if (files.size() == 0) {
             cout << "no files found" << endl;
             return 0;
         }
-        int locClosest = parseDataDir(files,"closest",yamlTime); 
+        int locClosest = parseDataDir(files, "closest", yamlTime);
         int nkeyframes = 0;
-        
+
         // calculate start time
-        float fileTimeStart =
-        readTimeFromFilename(files[locClosest].substr(files[locClosest].find("_data_")+6));
+        float fileTimeStart = readTimeFromFilename(
+            files[locClosest].substr(files[locClosest].find("_data_") + 6));
         float timeStamp = 0;
         bool imErr = false;
-        cout << "we starting yo"<< endl;
-        //iterate over all remaining files in directory
-        for(int i=locClosest;i<files.size();i++){
-            //record timestamp
-            timeStamp =
-            readTimeFromFilename(files[i].substr(files[i].find("_data_")+6))
-            - fileTimeStart;
-            //decode images
+
+        // iterate over all remaining files in directory
+        for (int i = locClosest; i < files.size(); i++) {
+            // record timestamp
+            timeStamp = readTimeFromFilename(
+                            files[i].substr(files[i].find("_data_") + 6)) -
+                        fileTimeStart;
+            // decode images
             cv::Mat im, depth;
-            decodeBOTH(path_to_data+"/"+files[i],im,depth );
-            //Throw an error to skip this frame if not found
+            decodeBOTH(path_to_data + "/" + files[i], im, depth);
+            // Throw an error to skip this frame if not found
             if (depth.empty()) {
-                cerr << endl << "Failed to load depth at: "<<files[i] << endl;
+                cerr << endl << "Failed to load depth at: " << files[i] << endl;
                 imErr = true;
             }
             if (im.empty() && !imErr) {
-                cerr << endl << "Failed to load png image at: "<<files[i] << endl;
+                cerr << endl
+                     << "Failed to load png image at: " << files[i] << endl;
                 imErr = true;
             }
-            if(!imErr){
+            if (!imErr) {
                 // Pass the image to the SLAM system
                 poseGrpc = SLAM->TrackRGBD(im, depth, timeStamp);
 
-                // Update the copy of the current map whenever a change in keyframes
-                // occurs
+                // Update the copy of the current map whenever a change in
+                // keyframes occurs
                 ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
                 std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                     currMap->GetAllKeyFrames();
@@ -312,13 +324,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     currMapPoints = currMap->GetAllMapPoints();
                 }
                 nkeyframes = keyframes.size();
-            }else{
+            } else {
                 imErr = false;
             }
             if (!b_continue_session) break;
         }
 
-        cout << "Finished Processing Images\n" << endl;
+        cout << "Finished Processing Offline Images\n" << endl;
         return 1;
     }
 
@@ -327,8 +339,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // as a placeholder for error signals should the server have to restart
         // itself.
 
-        // TODO update to work with images from rdk
-        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-127
+        // This function will be removed in a future update. Currently this is
+        // only used with a previous dataset
+
         int nImages = 0;
         int nkeyframes = 0;
 
@@ -396,10 +409,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string path_to_sequence;
     string camera_name;
     float yamlTime;
+    int frame_delay;
     bool offlineFlag = false;
 };
-
-
 
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
@@ -413,7 +425,7 @@ int main(int argc, char **argv) {
     sigaction(SIGINT, &sigIntHandler, NULL);
     b_continue_session = true;
 
-    if (argc < 5) {
+    if (argc < 6) {
         cerr << "No args found. Expected: \n"
              << endl
              << "./bin/orb_grpc_server "
@@ -421,6 +433,7 @@ int main(int argc, char **argv) {
                 "-config_param={mode=slam_mode,} "
                 "-port=grpc_port "
                 "-sensors=sensor_name "
+                "-data_rate_ms=frame_delay"
              << endl;
         return 1;
     }
@@ -431,27 +444,22 @@ int main(int argc, char **argv) {
     // setup the SLAM server
     SLAMServiceImpl slamService;
     ServerBuilder builder;
-    string dummyPath =
-        "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";  // will remove
-                                                               // this when
-                                                               // working on
-                                                               // data ingestion
-                                                               // DATA127/181
+
     string actual_path = argParser(argc, argv, "-data_dir=");
     if (actual_path.empty()) {
         cerr << "no data directory given" << endl;
         return 0;
     }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
-    string path_to_settings =
-        actual_path + "/config";  /// testORB.yaml";
-    
+    string path_to_settings = actual_path + "/config";  // testORB.yaml";
+
     slamService.path_to_data =
         actual_path + "/data";  // will change in DATA 127/181
 
     // leaving commented for possible testing
-    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";  
-    // slamService.path_to_sequence = "Out_file.txt"; 
+    // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
+    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
+    // slamService.path_to_sequence = "Out_file.txt";
 
     string config_params = argParser(argc, argv, "-config_param=");
     string slam_mode = configMapParser(config_params, "mode=");
@@ -466,8 +474,13 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    // TODO DATA 127/181: evaluate use case for camera name
-    // bool offlineFlag = false;
+    string frames = argParser(argc, argv, "-data_rate_ms=");
+    if (slamService.camera_name.empty()) {
+        cerr << "No camera data rate specified" << endl;
+        return 0;
+    }
+    slamService.frame_delay = stoi(frames);
+
     slamService.camera_name = argParser(argc, argv, "-sensors=");
     if (slamService.camera_name.empty()) {
         cout << "No camera given -> running in offline mode" << endl;
@@ -481,8 +494,7 @@ int main(int argc, char **argv) {
     std::unique_ptr<Server> server(builder.BuildAndStart());
     printf("Server listening on %s\n", slam_port.c_str());
 
-
-    //Determine which settings file to use(.yaml)
+    // Determine which settings file to use(.yaml)
     const path myPath(path_to_settings);
     path latest;
     std::time_t latest_tm = 0;
@@ -509,9 +521,11 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    // report the current yaml file check if it matches our format
     const string myYAML = latest.stem().string();
     cout << "Our yaml file: " << myYAML << endl;
-    string full_path_to_settings = path_to_settings + "/" + latest.filename().string();
+    string full_path_to_settings =
+        path_to_settings + "/" + latest.filename().string();
     if (slamService.offlineFlag) {
         if (myYAML.find("_data_") != string::npos)
             slamService.camera_name = myYAML.substr(0, myYAML.find("_data_"));
@@ -523,13 +537,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    //Grab timestamp from yaml
+    // Grab timestamp from yaml
     slamService.yamlTime =
         readTimeFromFilename(myYAML.substr(myYAML.find("_data_") + 6));
-    cout << "The time from our config is: " << slamService.yamlTime << " seconds"
-         << endl;
-    
-    //Start SLAM
+    cout << "The time from our config is: " << slamService.yamlTime
+         << " seconds" << endl;
+
+    // Start SLAM
     SlamPtr SLAM = nullptr;
     boost::algorithm::to_lower(slam_mode);
 
@@ -538,17 +552,17 @@ int main(int argc, char **argv) {
 
         // Create SLAM system. It initializes all system threads and gets ready
         // to process frames.
-        cout << path_to_vocab << endl << full_path_to_settings << endl;
         SLAM = std::make_unique<ORB_SLAM3::System>(
-            path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD, false, 0);
+            path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD,
+            false, 0);
         if (slamService.offlineFlag) {
             cout << "Running in offline mode" << endl;
             slamService.process_rgbd_offline(SLAM);
-        }else{
+        } else {
             cout << "Running in online mode" << endl;
             slamService.process_rgbd_online(SLAM);
         }
-            // slamService.process_rgbd_old(SLAM);
+        // slamService.process_rgbd_old(SLAM);
 
     } else if (slam_mode == "mono") {
         // TODO implement MONO
@@ -561,13 +575,12 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-// void LoadOfflineImagesVIAM()
 void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                     vector<string> &vstrImageFilenamesRGB,
                     vector<string> &vstrImageFilenamesD,
                     vector<double> &vTimeStamps) {
-    // TODO this will be rewritten to injest data from RDK in
-    // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-127
+    // This function will be removed in a future update. Currently this is only
+    // used with a previous dataset
     string pathCam0 = pathSeq + "/rgb";
     string pathCam1 = pathSeq + "/depth";
     std::ifstream fTimes;
@@ -636,11 +649,11 @@ float readTimeFromFilename(string filename) {
     float days_f = std::stof(filename.substr(start_pos - 3, 2), &sz);
     int month_i = std::stoi(filename.substr(start_pos - 5, 2), &sz) - 1;
     for (int i = 0; i < month_i; i++) days_f = days_f + months[i];
+
     // Hour
     float hour_f = std::stof(filename.substr(start_pos, 2), &sz);
     // Minute
     float min_f = std::stof(filename.substr(start_pos + 3, 2), &sz);
-
     // Second
     float sec_f = std::stof(filename.substr(start_pos + 6), &sz);
 
@@ -680,12 +693,9 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     cv::Mat rawData;
     std::ifstream fin(filename + ".both");
-    if(fin.peek() == std::ifstream::traits_type::eof()){
-        cout << "EOF yo" << endl;
+    if (fin.peek() == std::ifstream::traits_type::eof()) {
+        cerr << "Bad File, found EOF" << endl;
         return;
-    } 
-    if(!fin){
-        cout << "Not opened yo"<< endl;
     }
     std::vector<char> contents((std::istreambuf_iterator<char>(fin)),
                                std::istreambuf_iterator<char>());
@@ -706,8 +716,8 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     location = location + 8;
     frameHeight = (int)j;
     // exit if depth map is not complete(assumes 8bit)
-    if (nSize < (8*frameWidth*frameHeight)) return;
-    
+    if (nSize < (8 * frameWidth * frameHeight)) return;
+
     int depthFrame[frameWidth][frameHeight];
 
     for (int x = 0; x < frameWidth; x++) {
@@ -717,47 +727,47 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
             location = location + 8;
         }
     }
-    if(nSize <= location){
-       return; 
+    if (nSize <= location) {
+        return;
     }
-    
+
     char *pngBuf = &contents[location];
 
     depth = cv::Mat(cv::Size(frameWidth, frameHeight), CV_16U, depthFrame,
                     cv::Mat::AUTO_STEP);
-    rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1,
-                              (void *)pngBuf, cv::IMREAD_COLOR);
+    rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1, (void *)pngBuf,
+                      cv::IMREAD_COLOR);
     im = cv::imdecode(rawData, cv::IMREAD_COLOR);
 }
 
-int parseDataDir(std::vector<std::string>& files,string interest, float configTime){
-    //Find the next frame based off the current interest given a directory of data and time to search from
-    int locInterest;
+int parseDataDir(std::vector<std::string> &files, string interest,
+                 float configTime) {
+    // Find the next frame based off the current interest given a directory of
+    // data and time to search from
+    int locInterest = -1;
     float minTime = 1000000000;
-    float maxTime = configTime;
-    for (int i = 0; i < files.size(); i++) {
+    float maxTime = 0;
+    for (int i = 0; i < files.size() - 1; i++) {
         float fileTime =
             readTimeFromFilename(files[i].substr(files[i].find("_data_") + 6));
+
         float delTime = fileTime - configTime;
         if (delTime > 0) {
-            //Find the file closest to the configTime
-            if(interest == "closest"){
-                if(minTime > delTime){
+            // Find the file closest to the configTime
+            if (interest == "closest") {
+                if (minTime > delTime) {
                     locInterest = i;
                     minTime = delTime;
                 }
             }
-            //Find the file generated most recently
-            else if(interest == "recent"){
+            // Find the file generated most recently
+            else if (interest == "recent") {
                 if (maxTime < delTime) {
                     locInterest = i;
                     maxTime = delTime;
-                    
                 }
             }
-            
         }
     }
-    cout << "StartTime:\t" << configTime<< "\tcurrTime:\t"<< maxTime << endl;
     return locInterest;
-} 
+}
