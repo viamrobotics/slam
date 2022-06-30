@@ -542,7 +542,7 @@ int main(int argc, char **argv) {
         myYAML.substr(myYAML.find("_data_") + FILENAME_CONST));
     cout << "The time from our config is: " << slamService.yamlTime
          << " seconds" << endl;
-    return 0;
+
     // Start SLAM
     SlamPtr SLAM = nullptr;
     boost::algorithm::to_lower(slam_mode);
