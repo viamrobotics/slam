@@ -29,10 +29,13 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <opencv2/core/core.hpp>
+#include <sstream>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
@@ -45,7 +48,7 @@
 using namespace std;
 using namespace boost::filesystem;
 #define FILENAME_CONST 6
-
+enum FileParserMethod { Recent, Closest };
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -73,15 +76,16 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
                     vector<string> &vstrImageFilenamesRGB,
                     vector<string> &vstrImageFilenamesD,
                     vector<double> &vTimeStamps);
-string argParser(int argc, char **argv, string varName);
+string argParser(int argc, char **argv, const string varName);
 string configMapParser(string map, string varName);
-float readTimeFromFilename(string filename);
-
+double readTimeFromFilename(const string filename);
 std::vector<std::string> listFilesInDirectoryForCamera(
-    std::string data_directory, std::string extension, std::string camera_name);
+    const std::string data_directory, const std::string extension,
+    const std::string camera_name);
 void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
-int parseDataDir(std::vector<std::string> &files, const string interest,
-                 float configTime, float *timeInterest);
+int parseDataDir(const std::vector<std::string> &files,
+                 FileParserMethod interest, double configTime,
+                 double *timeInterest);
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
     ::grpc::Status GetPosition(ServerContext *context,
@@ -192,7 +196,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 rgb = rgb | (clr << 0);
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
-                buffer.sputn((const char *)&v.z(), 4);
                 buffer.sputn((const char *)&rgb, 4);
             }
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
@@ -204,18 +207,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
         std::vector<std::string> files =
             listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
-        float fileTimeStart = yamlTime;
-        int locRecent = parseDataDir(files, "recent", yamlTime, &fileTimeStart);
+        double fileTimeStart = yamlTime;
+        int locRecent = parseDataDir(files, Recent, yamlTime, &fileTimeStart);
         while ((locRecent == -1) && (b_continue_session)) {
             cout << "No new files found" << endl;
             usleep(frame_delay * 1e3);
             files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                   camera_name);
-            locRecent = parseDataDir(files, "recent", yamlTime, &fileTimeStart);
+            locRecent = parseDataDir(files, Recent, yamlTime, &fileTimeStart);
         }
         if (!b_continue_session) return;
 
-        float timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
+        double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
         int nkeyframes = 0;
 
@@ -227,7 +230,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             while ((i == -1) && (b_continue_session)) {
                 files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                       camera_name);
-                i = parseDataDir(files, "recent", prevTimeStamp + fileTimeStart,
+                i = parseDataDir(files, Recent, prevTimeStamp + fileTimeStart,
                                  &currTime);
                 if (i == -1) {
                     cerr << "No new frames found " << endl;
@@ -268,7 +271,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         cout << "Finished Processing Live Images\n" << endl;
         return;
     }
-    //////////////////////////////////////////////////////////////////////////
+
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
         // find all images used for our rgbd camera
         std::vector<std::string> files =
@@ -277,9 +280,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
             cout << "no files found" << endl;
             return;
         }
-        float fileTimeStart = yamlTime, timeStamp = 0;
-        int locClosest =
-            parseDataDir(files, "closest", yamlTime, &fileTimeStart);
+
+        double fileTimeStart = yamlTime, timeStamp = 0;
+        int locClosest = parseDataDir(files, Closest, yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             cerr << "No new images to process in directory" << endl;
             return;
@@ -304,6 +307,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                      << "Failed to load png image at: " << files[i] << endl;
             } else {
                 // Pass the image to the SLAM system
+                cout << "SLAMMIN  " << endl;
                 poseGrpc = SLAM->TrackRGBD(im, depth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
@@ -360,6 +364,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // Main loop
         cv::Mat imRGB, imD;
         for (int ni = 0; ni < nImages; ni++) {
+            std::lock_guard<std::mutex> lock(slam_mutex);
             // Read image and depthmap from file
             imRGB = cv::imread(vstrImageFilenamesRGB[ni], cv::IMREAD_UNCHANGED);
             imD = cv::imread(vstrImageFilenamesD[ni], cv::IMREAD_UNCHANGED);
@@ -397,7 +402,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string path_to_data;
     string path_to_sequence;
     string camera_name;
-    float yamlTime;
+    double yamlTime;
     int frame_delay;
     bool offlineFlag = false;
     std::mutex slam_mutex;
@@ -537,7 +542,7 @@ int main(int argc, char **argv) {
         myYAML.substr(myYAML.find("_data_") + FILENAME_CONST));
     cout << "The time from our config is: " << slamService.yamlTime
          << " seconds" << endl;
-
+    return 0;
     // Start SLAM
     SlamPtr SLAM = nullptr;
     boost::algorithm::to_lower(slam_mode);
@@ -633,27 +638,24 @@ string configMapParser(string map, string varName) {
     return strVal;
 }
 
-// NOTE: This assumes the string format YYYY-MM-DDT17_42_13.3814
-//  Where after T is a 24hr UTC clock
-//  Also do not work on New Years Eve or Feb 29th
-int months[12] = {31, 28, 31, 30, 31, 30,
-                  31, 31, 30, 31, 30, 31};  // How many days in month
-float readTimeFromFilename(string filename) {
-    int start_pos = filename.find("T") + 1;
+// Converts UTC time string to a double value.
+double readTimeFromFilename(string filename) {
     std::string::size_type sz;
-    float days_f = std::stof(filename.substr(start_pos - 3, 2), &sz);
-    int month_i = std::stoi(filename.substr(start_pos - 5, 2), &sz) - 1;
-    for (int i = 0; i < month_i; i++) days_f = days_f + months[i];
+    // Create a stream which we will use to parse the string,
+    std::istringstream ss(filename);
+    // which we provide to constructor of stream to fill the buffer.
 
-    // Hour
-    float hour_f = std::stof(filename.substr(start_pos, 2), &sz);
-    // Minute
-    float min_f = std::stof(filename.substr(start_pos + 3, 2), &sz);
-    // Second
-    float sec_f = std::stof(filename.substr(start_pos + 6), &sz);
+    // Create a tm object to store the parsed date and time.
+    std::tm dt = {0};
 
-    float myTime =
-        24 * 3600 * days_f + 3600 * (hour_f) + 60 * (min_f) + (sec_f);
+    // Now we read from buffer using get_time manipulator
+    // and formatting the input appropriately.
+    ss >> std::get_time(&dt, "%Y-%m-%dT%H_%M_%SZ");
+    double sub_sec =
+        (double)std::stof(filename.substr(filename.find(".")), &sz);
+    time_t thisTime = std::mktime(&dt);
+
+    double myTime = (double)thisTime + sub_sec;
     return myTime;
 }
 
@@ -668,7 +670,6 @@ std::vector<std::string> listFilesInDirectoryForCamera(
             file_paths.push_back(currFile);
         }
     }
-
     sort(file_paths.begin(), file_paths.end());
     return file_paths;
 }
@@ -723,21 +724,22 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     im = cv::imdecode(rawData, cv::IMREAD_COLOR);
 }
 
-int parseDataDir(std::vector<std::string> &files, const string interest,
-                 float configTime, float *timeInterest) {
+int parseDataDir(const std::vector<std::string> &files,
+                 FileParserMethod interest, double configTime,
+                 double *timeInterest) {
     // Find the next frame based off the current interest given a directory of
     // data and time to search from
     int locInterest = -1;
-    float minTime = 1000000000;
-    float maxTime = 0;
+    double minTime = std::numeric_limits<double>::max();
+    double maxTime = 0;
     for (int i = 0; i < files.size() - 1; i++) {
-        float fileTime = readTimeFromFilename(
+        double fileTime = readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
 
-        float delTime = fileTime - configTime;
+        double delTime = fileTime - configTime;
         if (delTime > 0) {
             // Find the file closest to the configTime
-            if (interest == "closest") {
+            if (interest == Closest) {
                 if (minTime > delTime) {
                     locInterest = i;
                     minTime = delTime;
@@ -745,7 +747,7 @@ int parseDataDir(std::vector<std::string> &files, const string interest,
                 }
             }
             // Find the file generated most recently
-            else if (interest == "recent") {
+            else if (interest == Recent) {
                 if (maxTime < delTime) {
                     locInterest = i;
                     maxTime = delTime;
