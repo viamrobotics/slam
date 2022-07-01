@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 if(DEFINED ENV{RDK_SOURCE_DIR})
   set(RDK_SOURCE_DIR $ENV{RDK_SOURCE_DIR})
 else()
-  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../rdk)
+  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../rdk-minimal)
 endif()
 
 set(SRCDIR ${RDK_SOURCE_DIR}/grpc/cpp/gen)
