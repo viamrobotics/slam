@@ -66,7 +66,7 @@ using proto::api::service::slam::v1::GetPositionResponse;
 using proto::api::service::slam::v1::SLAMService;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
-std::atomic<bool> b_continue_session{false};
+std::atomic<bool> b_continue_session{true};
 void exit_loop_handler(int s) {
     cout << "Finishing session" << endl;
     b_continue_session = false;
@@ -209,25 +209,27 @@ class SLAMServiceImpl final : public SLAMService::Service {
             listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
         double fileTimeStart = yamlTime;
         int locRecent = parseDataDir(files, Recent, yamlTime, &fileTimeStart);
-        while ((locRecent == -1) && (b_continue_session)) {
+        while (locRecent == -1) {
+            if (!b_continue_session) return;
             cout << "No new files found" << endl;
             usleep(frame_delay * 1e3);
             files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                   camera_name);
             locRecent = parseDataDir(files, Recent, yamlTime, &fileTimeStart);
         }
-        if (!b_continue_session) return;
 
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
         int nkeyframes = 0;
 
-        while (b_continue_session) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
+        while (true) {
+            if (!b_continue_session) return;
+
             prevTimeStamp = timeStamp;
             // Look for new frames based off current timestamp
             // Currently pauses based off frame_delay if no image is found
-            while ((i == -1) && (b_continue_session)) {
+            while (i == -1) {
+                if (!b_continue_session) return;
                 files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                       camera_name);
                 i = parseDataDir(files, Recent, prevTimeStamp + fileTimeStart,
@@ -239,7 +241,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     timeStamp = currTime - fileTimeStart;
                 }
             }
-            if (!b_continue_session) return;
             // decode images
             cv::Mat im, depth;
             decodeBOTH(path_to_data + "/" + files[i], im, depth);
@@ -253,16 +254,20 @@ class SLAMServiceImpl final : public SLAMService::Service {
             } else {
                 // Pass the image to the SLAM system
                 cout << "SLAMMIN" << endl;
-                poseGrpc = SLAM->TrackRGBD(im, depth, timeStamp);
+                auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
                 // Update the copy of the current map whenever a change in
                 // keyframes occurs
                 ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
                 std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                     currMap->GetAllKeyFrames();
-                if (SLAM->GetTrackingState() ==
-                        ORB_SLAM3::Tracking::eTrackingState::OK &&
-                    nkeyframes != keyframes.size()) {
-                    currMapPoints = currMap->GetAllMapPoints();
+                {
+                    std::lock_guard<std::mutex> lock(slam_mutex);
+                    poseGrpc = tmpPose;
+                    if (SLAM->GetTrackingState() ==
+                            ORB_SLAM3::Tracking::eTrackingState::OK &&
+                        nkeyframes != keyframes.size()) {
+                        currMapPoints = currMap->GetAllMapPoints();
+                    }
                 }
                 nkeyframes = keyframes.size();
             }
@@ -291,7 +296,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
         // iterate over all remaining files in directory
         for (int i = locClosest; i < files.size(); i++) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
             // record timestamp
             timeStamp = readTimeFromFilename(files[i].substr(
                             files[i].find("_data_") + FILENAME_CONST)) -
@@ -308,17 +312,21 @@ class SLAMServiceImpl final : public SLAMService::Service {
             } else {
                 // Pass the image to the SLAM system
                 cout << "SLAMMIN  " << endl;
-                poseGrpc = SLAM->TrackRGBD(im, depth, timeStamp);
+                auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
                 // keyframes occurs
                 ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
                 std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                     currMap->GetAllKeyFrames();
-                if (SLAM->GetTrackingState() ==
-                        ORB_SLAM3::Tracking::eTrackingState::OK &&
-                    nkeyframes != keyframes.size()) {
-                    currMapPoints = currMap->GetAllMapPoints();
+                {
+                    std::lock_guard<std::mutex> lock(slam_mutex);
+                    poseGrpc = tmpPose;
+                    if (SLAM->GetTrackingState() ==
+                            ORB_SLAM3::Tracking::eTrackingState::OK &&
+                        nkeyframes != keyframes.size()) {
+                        currMapPoints = currMap->GetAllMapPoints();
+                    }
                 }
                 nkeyframes = keyframes.size();
             }
@@ -405,6 +413,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double yamlTime;
     int frame_delay;
     bool offlineFlag = false;
+
     std::mutex slam_mutex;
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
@@ -414,8 +423,6 @@ int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
 
-    if (!b_continue_session.is_lock_free())
-        return 10;  // make sure we can actually use signal
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;
@@ -423,7 +430,6 @@ int main(int argc, char **argv) {
     sigIntHandler.sa_flags = 0;
 
     sigaction(SIGINT, &sigIntHandler, NULL);
-    b_continue_session = true;
 
     if (argc < 6) {
         cerr << "No args found. Expected: \n"
@@ -731,29 +737,31 @@ int parseDataDir(const std::vector<std::string> &files,
     // data and time to search from
     int locInterest = -1;
     double minTime = std::numeric_limits<double>::max();
-    double maxTime = 0;
-    for (int i = 0; i < files.size() - 1; i++) {
-        double fileTime = readTimeFromFilename(
-            files[i].substr(files[i].find("_data_") + FILENAME_CONST));
+    if (interest == Closest) {
+        for (int i = 0; i < files.size() - 1; i++) {
+            double fileTime = readTimeFromFilename(
+                files[i].substr(files[i].find("_data_") + FILENAME_CONST));
 
-        double delTime = fileTime - configTime;
-        if (delTime > 0) {
-            // Find the file closest to the configTime
-            if (interest == Closest) {
+            double delTime = fileTime - configTime;
+            if (delTime > 0) {
+                // Find the file closest to the configTime
                 if (minTime > delTime) {
                     locInterest = i;
                     minTime = delTime;
                     *timeInterest = fileTime;
                 }
             }
-            // Find the file generated most recently
-            else if (interest == Recent) {
-                if (maxTime < delTime) {
-                    locInterest = i;
-                    maxTime = delTime;
-                    *timeInterest = fileTime;
-                }
-            }
+        }
+    }
+    // Find the file generated most recently
+    else if (interest == Recent) {
+        int i = files.size() - 1;
+        double fileTime = readTimeFromFilename(
+            files[i].substr(files[i].find("_data_") + FILENAME_CONST));
+        double delTime = fileTime - configTime;
+        if (delTime > 0) {
+            locInterest = i;
+            *timeInterest = fileTime;
         }
     }
     return locInterest;
