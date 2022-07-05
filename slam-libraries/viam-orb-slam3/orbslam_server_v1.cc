@@ -208,6 +208,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         std::vector<std::string> files =
             listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
         double fileTimeStart = yamlTime;
+        // In online mode we want the most recent frames, so parse the data
+        // directory with this in mind
         int locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime,
                                      &fileTimeStart);
         while (locRecent == -1) {
@@ -225,6 +227,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         int nkeyframes = 0;
 
         while (true) {
+            // TBD: Possibly split this function into RGBD and MONO processing
+            // modes
+            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
             if (!b_continue_session) return;
 
             prevTimeStamp = timeStamp;
@@ -234,6 +239,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 if (!b_continue_session) return;
                 files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                       camera_name);
+                // In online mode we want the most recent frames, so parse the
+                // data directory with this in mind
                 i = parseDataDir(files, FileParserMethod::Recent,
                                  prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
@@ -289,6 +296,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
 
         double fileTimeStart = yamlTime, timeStamp = 0;
+        // In offline mode we want the to parse all frames since our map/yaml
+        // file was generated
         int locClosest = parseDataDir(files, FileParserMethod::Closest,
                                       yamlTime, &fileTimeStart);
         if (locClosest == -1) {
@@ -299,7 +308,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
         // iterate over all remaining files in directory
         for (int i = locClosest; i < files.size(); i++) {
-            // record timestamp
+            // TBD: Possibly split this function into RGBD and MONO processing
+            // modes
+            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+            //  record timestamp
             timeStamp = readTimeFromFilename(files[i].substr(
                             files[i].find("_data_") + FILENAME_CONST)) -
                         fileTimeStart;
@@ -736,20 +748,20 @@ int parseDataDir(const std::vector<std::string> &files,
                  double *timeInterest) {
     // Find the next frame based off the current interest given a directory of
     // data and time to search from
+
+    // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
             double fileTime = readTimeFromFilename(
                 files[i].substr(files[i].find("_data_") + FILENAME_CONST));
-
             double delTime = fileTime - configTime;
             if (delTime > 0) {
-                // Find the file closest to the configTime
                 *timeInterest = fileTime;
                 return i;
             }
         }
     }
-    // Find the file generated most recently
+    // Find the file generated most recently, used mostly in online mode
     else if (interest == FileParserMethod::Recent) {
         int i = files.size() - 2;
         double fileTime = readTimeFromFilename(
