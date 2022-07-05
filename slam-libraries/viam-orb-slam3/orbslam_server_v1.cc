@@ -48,7 +48,7 @@
 using namespace std;
 using namespace boost::filesystem;
 #define FILENAME_CONST 6
-enum FileParserMethod { Recent, Closest };
+enum class FileParserMethod { Recent, Closest };
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -208,14 +208,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
         std::vector<std::string> files =
             listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
         double fileTimeStart = yamlTime;
-        int locRecent = parseDataDir(files, Recent, yamlTime, &fileTimeStart);
+        int locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             cout << "No new files found" << endl;
             usleep(frame_delay * 1e3);
             files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                   camera_name);
-            locRecent = parseDataDir(files, Recent, yamlTime, &fileTimeStart);
+            locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime, &fileTimeStart);
         }
 
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
@@ -232,7 +232,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 if (!b_continue_session) return;
                 files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                       camera_name);
-                i = parseDataDir(files, Recent, prevTimeStamp + fileTimeStart,
+                i = parseDataDir(files, FileParserMethod::Recent, prevTimeStamp + fileTimeStart,
                                  &currTime);
                 if (i == -1) {
                     cerr << "No new frames found " << endl;
@@ -287,7 +287,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
 
         double fileTimeStart = yamlTime, timeStamp = 0;
-        int locClosest = parseDataDir(files, Closest, yamlTime, &fileTimeStart);
+        int locClosest = parseDataDir(files, FileParserMethod::Closest, yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             cerr << "No new images to process in directory" << endl;
             return;
@@ -422,7 +422,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
-
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;
@@ -510,7 +509,6 @@ int main(int argc, char **argv) {
 
         if (is_regular_file(p) && p.extension() == ".yaml") {
             std::time_t timestamp = last_write_time(p);
-            cout << "this file: " << p << "\t with time:" << timestamp << endl;
             if (timestamp > latest_tm) {
                 if (slamService.offlineFlag ||
                     p.stem().string().find(slamService.camera_name) !=
@@ -735,9 +733,8 @@ int parseDataDir(const std::vector<std::string> &files,
                  double *timeInterest) {
     // Find the next frame based off the current interest given a directory of
     // data and time to search from
-    int locInterest = -1;
     double minTime = std::numeric_limits<double>::max();
-    if (interest == Closest) {
+    if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
             double fileTime = readTimeFromFilename(
                 files[i].substr(files[i].find("_data_") + FILENAME_CONST));
@@ -745,24 +742,22 @@ int parseDataDir(const std::vector<std::string> &files,
             double delTime = fileTime - configTime;
             if (delTime > 0) {
                 // Find the file closest to the configTime
-                if (minTime > delTime) {
-                    locInterest = i;
-                    minTime = delTime;
                     *timeInterest = fileTime;
-                }
+                    return i;
             }
         }
     }
     // Find the file generated most recently
-    else if (interest == Recent) {
-        int i = files.size() - 1;
+    else if (interest == FileParserMethod::Recent) {
+        int i = files.size() - 2;
         double fileTime = readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
         double delTime = fileTime - configTime;
         if (delTime > 0) {
-            locInterest = i;
             *timeInterest = fileTime;
+            return i;
         }
     }
-    return locInterest;
+    // if we do not find a file return -1 as an error
+    return -1;
 }
