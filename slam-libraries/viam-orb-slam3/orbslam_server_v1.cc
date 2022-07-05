@@ -208,14 +208,16 @@ class SLAMServiceImpl final : public SLAMService::Service {
         std::vector<std::string> files =
             listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
         double fileTimeStart = yamlTime;
-        int locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime, &fileTimeStart);
+        int locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime,
+                                     &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             cout << "No new files found" << endl;
             usleep(frame_delay * 1e3);
             files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                   camera_name);
-            locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime, &fileTimeStart);
+            locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime,
+                                     &fileTimeStart);
         }
 
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
@@ -232,8 +234,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 if (!b_continue_session) return;
                 files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                       camera_name);
-                i = parseDataDir(files, FileParserMethod::Recent, prevTimeStamp + fileTimeStart,
-                                 &currTime);
+                i = parseDataDir(files, FileParserMethod::Recent,
+                                 prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
                     cerr << "No new frames found " << endl;
                     usleep(frame_delay * 1e3);
@@ -287,7 +289,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
 
         double fileTimeStart = yamlTime, timeStamp = 0;
-        int locClosest = parseDataDir(files, FileParserMethod::Closest, yamlTime, &fileTimeStart);
+        int locClosest = parseDataDir(files, FileParserMethod::Closest,
+                                      yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             cerr << "No new images to process in directory" << endl;
             return;
@@ -733,7 +736,6 @@ int parseDataDir(const std::vector<std::string> &files,
                  double *timeInterest) {
     // Find the next frame based off the current interest given a directory of
     // data and time to search from
-    double minTime = std::numeric_limits<double>::max();
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
             double fileTime = readTimeFromFilename(
@@ -742,8 +744,8 @@ int parseDataDir(const std::vector<std::string> &files,
             double delTime = fileTime - configTime;
             if (delTime > 0) {
                 // Find the file closest to the configTime
-                    *timeInterest = fileTime;
-                    return i;
+                *timeInterest = fileTime;
+                return i;
             }
         }
     }
