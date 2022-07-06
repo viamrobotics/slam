@@ -86,6 +86,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest);
+
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
     ::grpc::Status GetPosition(ServerContext *context,
@@ -623,6 +624,8 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
     }
 }
 
+// find a specific input argument from rdk and write the value to a string.
+// Returns empty if the argument is not found.
 string argParser(int argc, char **argv, string strName) {
     // Possibly remove these in a future task
     string strVal;
@@ -639,6 +642,8 @@ string argParser(int argc, char **argv, string strName) {
     return strVal;
 }
 
+// parse a config map for a specific variable name and return the value as a
+// string. Returns empty if the variable is not found within the map.
 string configMapParser(string map, string varName) {
     string strVal;
     size_t loc = string::npos;
@@ -660,9 +665,9 @@ string configMapParser(string map, string varName) {
 // Converts UTC time string to a double value.
 double readTimeFromFilename(string filename) {
     std::string::size_type sz;
-    // Create a stream which we will use to parse the string,
+    // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
-    // which we provide to constructor of stream to fill the buffer.
+
 
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
@@ -693,6 +698,10 @@ std::vector<std::string> listFilesInDirectoryForCamera(
     return file_paths;
 }
 
+// take .both files from rdk and process them to use with ORBSLAM. this will be
+// changed in
+// https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
+
 void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     cv::Mat rawData;
     std::ifstream fin(filename + ".both");
@@ -722,7 +731,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     if (nSize < (8 * frameWidth * frameHeight)) return;
 
     int depthFrame[frameWidth][frameHeight];
-
+    // copy depth map into 2D vector
     for (int x = 0; x < frameWidth; x++) {
         for (int y = 0; y < frameHeight; y++) {
             memcpy(&j, buffer + location, sizeof(__int64_t));
@@ -733,9 +742,10 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     if (nSize <= location) {
         return;
     }
-
+    // grab location of the png(occurs after depth map completes)
     char *pngBuf = &contents[location];
 
+    // format frames with opencv
     depth = cv::Mat(cv::Size(frameWidth, frameHeight), CV_16U, depthFrame,
                     cv::Mat::AUTO_STEP);
     rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1, (void *)pngBuf,
@@ -743,11 +753,11 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     im = cv::imdecode(rawData, cv::IMREAD_COLOR);
 }
 
+// Find the next frame based off the current interest given a directory of
+// data and time to search from
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest) {
-    // Find the next frame based off the current interest given a directory of
-    // data and time to search from
 
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
