@@ -146,7 +146,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // TODO: determine how to make 2D map
             // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-131
 
-        } else if (mime_type == "image/pcd") {
+        } else if (mime_type == "pointcloud/pcd") {
             // take sparse slam map and convert into a pcd. Orientation of PCD
             // is wrt the camera (z is coming out of the lens) so may need to
             // transform.
@@ -201,6 +201,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
             myPointCloud->set_point_cloud(buffer.str());
+        } else {
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                                "mime_type should be \"image/jpeg\" or "
+                                "\"pointcloud/pcd\", got \"" +
+                                    mime_type + "\"");
         }
         return grpc::Status::OK;
     }
@@ -668,7 +673,6 @@ double readTimeFromFilename(string filename) {
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
 
-
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
 
@@ -758,7 +762,6 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest) {
-
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
