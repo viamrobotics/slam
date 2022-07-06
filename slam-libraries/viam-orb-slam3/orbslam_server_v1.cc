@@ -664,6 +664,7 @@ double readTimeFromFilename(string filename) {
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
 
+
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
 
@@ -696,6 +697,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 // take .both files from rdk and process them to use with ORBSLAM. this will be
 // changed in
 // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
+
 void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     cv::Mat rawData;
     std::ifstream fin(filename + ".both");
@@ -751,6 +753,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest) {
+
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
