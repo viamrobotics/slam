@@ -624,6 +624,8 @@ void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
     }
 }
 
+// find a specific input argument from rdk and write the value to a string.
+// Returns empty if the argument is not found.
 string argParser(int argc, char **argv, string strName) {
     // Possibly remove these in a future task
     string strVal;
@@ -640,6 +642,8 @@ string argParser(int argc, char **argv, string strName) {
     return strVal;
 }
 
+// parse a config map for a specific variable name and return the value as a
+// string. Returns empty if the variable is not found within the map.
 string configMapParser(string map, string varName) {
     string strVal;
     size_t loc = string::npos;
@@ -725,7 +729,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     if (nSize < (8 * frameWidth * frameHeight)) return;
 
     int depthFrame[frameWidth][frameHeight];
-
+    // copy depth map into 2D vector
     for (int x = 0; x < frameWidth; x++) {
         for (int y = 0; y < frameHeight; y++) {
             memcpy(&j, buffer + location, sizeof(__int64_t));
@@ -736,9 +740,10 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     if (nSize <= location) {
         return;
     }
-
+    // grab location of the png(occurs after depth map completes)
     char *pngBuf = &contents[location];
 
+    // format frames with opencv
     depth = cv::Mat(cv::Size(frameWidth, frameHeight), CV_16U, depthFrame,
                     cv::Mat::AUTO_STEP);
     rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1, (void *)pngBuf,
