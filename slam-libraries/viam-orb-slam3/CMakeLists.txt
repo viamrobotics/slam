@@ -81,6 +81,7 @@ target_link_libraries(
   ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
   ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
   -lboost_serialization
+  -lboost_filesystem
   -lcrypto)
 
 if(EXISTS ${SRCDIR})
@@ -108,6 +109,7 @@ if(EXISTS ${SRCDIR})
     ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
     ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
     -lboost_serialization
+    -lboost_filesystem
     -lcrypto
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
