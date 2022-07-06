@@ -201,11 +201,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
             myPointCloud->set_point_cloud(buffer.str());
-        } else {
-            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                                "mime_type should be \"image/jpeg\" or "
-                                "\"pointcloud/pcd\", got \"" +
-                                    mime_type + "\"");
         }
         return grpc::Status::OK;
     }
@@ -570,8 +565,9 @@ int main(int argc, char **argv) {
 
     // Start SLAM
     SlamPtr SLAM = nullptr;
+    cout << slam_mode << endl;
     boost::algorithm::to_lower(slam_mode);
-
+    cout << slam_mode << endl;
     if (slam_mode == "rgbd") {
         cout << "RGBD Selected" << endl;
 
@@ -652,8 +648,8 @@ string argParser(int argc, char **argv, string strName) {
 string configMapParser(string map, string varName) {
     string strVal;
     size_t loc = string::npos;
-    stringstream ss(map);
-
+    
+    stringstream ss(map.substr(map.find("{")+1,map.find("}")-1));
     while (ss.good()) {
         string substr;
         getline(ss, substr, ',');
@@ -672,6 +668,7 @@ double readTimeFromFilename(string filename) {
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
+
 
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
@@ -762,6 +759,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest) {
+
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
