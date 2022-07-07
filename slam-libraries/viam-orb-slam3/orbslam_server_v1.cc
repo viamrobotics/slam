@@ -201,6 +201,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
             myPointCloud->set_point_cloud(buffer.str());
+        } else {
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                                "mime_type should be \"image/jpeg\" or "
+                                "\"pointcloud/pcd\", got \"" +
+                                    mime_type + "\"");
         }
         return grpc::Status::OK;
     }
@@ -469,7 +474,7 @@ int main(int argc, char **argv) {
     string actual_path = argParser(argc, argv, "-data_dir=");
     if (actual_path.empty()) {
         cerr << "no data directory given" << endl;
-        return 0;
+        return 2;
     }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
     string path_to_settings = actual_path + "/config";  // testORB.yaml";
@@ -486,19 +491,19 @@ int main(int argc, char **argv) {
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         cerr << "no SLAM mode given" << endl;
-        return 0;
+        return 2;
     }
 
     string slam_port = argParser(argc, argv, "-port=");
     if (slam_port.empty()) {
         cerr << "no gRPC port given" << endl;
-        return 0;
+        return 2;
     }
 
     string frames = argParser(argc, argv, "-data_rate_ms=");
     if (frames.empty()) {
         cerr << "No camera data rate specified" << endl;
-        return 0;
+        return 2;
     }
     slamService.frame_delay = stoi(frames);
 
@@ -538,7 +543,7 @@ int main(int argc, char **argv) {
     if (latest.empty()) {
         cerr << "no correctly formatted .yaml file found, Expected:\n"
                 "{sensor}_data_{dateformat}.yaml\n";
-        return 0;
+        return 3;
     }
 
     // report the current yaml file check if it matches our format
@@ -553,7 +558,7 @@ int main(int argc, char **argv) {
             cerr << "no correctly formatted .yaml file found, Expected:\n"
                     "{sensor}_data_{dateformat}.yaml\n"
                     "as most the recent config in directory\n";
-            return 0;
+            return 3;
         }
     }
 
@@ -565,9 +570,8 @@ int main(int argc, char **argv) {
 
     // Start SLAM
     SlamPtr SLAM = nullptr;
-    cout << slam_mode << endl;
     boost::algorithm::to_lower(slam_mode);
-    cout << slam_mode << endl;
+
     if (slam_mode == "rgbd") {
         cout << "RGBD Selected" << endl;
 
@@ -588,9 +592,9 @@ int main(int argc, char **argv) {
     } else if (slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
-    } else{
+    } else {
         cerr << "Error: Invalid slam_mode= " << slam_mode << endl;
-        return 0;
+        return 4;
     }
 
     SLAM->Shutdown();
@@ -651,8 +655,8 @@ string argParser(int argc, char **argv, string strName) {
 string configMapParser(string map, string varName) {
     string strVal;
     size_t loc = string::npos;
-    
-    stringstream ss(map.substr(map.find("{")+1,map.find("}")-1));
+
+    stringstream ss(map.substr(map.find("{") + 1, map.find("}") - 1));
     while (ss.good()) {
         string substr;
         getline(ss, substr, ',');
@@ -671,7 +675,6 @@ double readTimeFromFilename(string filename) {
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
-
 
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
@@ -762,7 +765,6 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest) {
-
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
