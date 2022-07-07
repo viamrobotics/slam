@@ -474,7 +474,7 @@ int main(int argc, char **argv) {
     string actual_path = argParser(argc, argv, "-data_dir=");
     if (actual_path.empty()) {
         cerr << "no data directory given" << endl;
-        return 2;
+        return 1;
     }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
     string path_to_settings = actual_path + "/config";  // testORB.yaml";
@@ -491,19 +491,19 @@ int main(int argc, char **argv) {
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         cerr << "no SLAM mode given" << endl;
-        return 2;
+        return 1;
     }
 
     string slam_port = argParser(argc, argv, "-port=");
     if (slam_port.empty()) {
         cerr << "no gRPC port given" << endl;
-        return 2;
+        return 1;
     }
 
     string frames = argParser(argc, argv, "-data_rate_ms=");
     if (frames.empty()) {
         cerr << "No camera data rate specified" << endl;
-        return 2;
+        return 1;
     }
     slamService.frame_delay = stoi(frames);
 
@@ -543,7 +543,7 @@ int main(int argc, char **argv) {
     if (latest.empty()) {
         cerr << "no correctly formatted .yaml file found, Expected:\n"
                 "{sensor}_data_{dateformat}.yaml\n";
-        return 3;
+        return 1;
     }
 
     // report the current yaml file check if it matches our format
@@ -558,7 +558,7 @@ int main(int argc, char **argv) {
             cerr << "no correctly formatted .yaml file found, Expected:\n"
                     "{sensor}_data_{dateformat}.yaml\n"
                     "as most the recent config in directory\n";
-            return 3;
+            return 1;
         }
     }
 
@@ -594,7 +594,7 @@ int main(int argc, char **argv) {
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
     } else {
         cerr << "Error: Invalid slam_mode= " << slam_mode << endl;
-        return 4;
+        return 1;
     }
 
     SLAM->Shutdown();
