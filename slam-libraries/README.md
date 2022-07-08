@@ -14,7 +14,8 @@ Learn more at [the official Docs site](https://google-cartographer.readthedocs.i
 Follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
 
 ## ORB_SLAM3
-SLAM system for feature based mapping using monocular, rgbd, and stereo camera setups. 
+SLAM system for feature based mapping using monocular, rgbd, and stereo camera setups. For more information see the official [ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
 ### Getting started
-see readme in viam-orb-slam3
+Follow the instruction as described in [viam-orb-slam3/README.md](./viam-orb-slam3/README.md).
+
