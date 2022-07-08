@@ -14,4 +14,7 @@ Learn more at [the official Docs site](https://google-cartographer.readthedocs.i
 Follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
 
 ## ORB_SLAM3
-Download ORB_SLAM3 from here https://github.com/JohnN193/ORB_SLAM3
+SLAM system for feature based mapping using monocular, rgbd, and stereo camera setups. 
+
+### Getting started
+see readme in viam-orb-slam3
