@@ -48,6 +48,8 @@
 using namespace std;
 using namespace boost::filesystem;
 #define FILENAME_CONST 6
+#define IMAGE_SIZE 300
+#define CHECK_FOR_SHUTDOWN_INTERVAL 1e5
 enum class FileParserMethod { Recent, Closest };
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -141,19 +143,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
         float min = 10000;
         auto mime_type = request->mime_type();
         response->set_mime_type(mime_type);
+        std::vector<ORB_SLAM3::MapPoint *> actualMap;
+        {
+            std::lock_guard<std::mutex> lk(slam_mutex);
+            actualMap = currMapPoints;
+        }
+
+        if (actualMap.size() == 0) {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "currently no map points exist");
+        }
 
         if (mime_type == "image/jpeg") {
-            std::vector<ORB_SLAM3::MapPoint *> actualMap;
-            {
-                std::lock_guard<std::mutex> lk(slam_mutex);
-                actualMap = currMapPoints;
-            }
-
-            if (actualMap.size() == 0) {
-                return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                    "currently no map points exist");
-            }
-
             // Determine the height and width of the image. Height is determined
             // using the z values, since we're projecting onto the XZ plan
             // (since z is currently coming out of the lens).
@@ -169,43 +170,36 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 maxZ = std::max(maxZ, v.z());
             }
 
-            // If the image would be too small, scale it to be larger.
             // TODO check for overflow
             const auto originalWidth = maxX - minX;
             const auto originalHeight = maxZ - minZ;
-            auto scale = 1;
-            if (originalWidth > 0 && originalHeight > 0 &&
-                (originalWidth < 100 || originalHeight < 100)) {
-                // TODO check for overflow
-                scale = std::max(100 / originalWidth, 100 / originalHeight);
-            }
 
-            // TODO check for overflow
-            const auto width = static_cast<int>(scale * originalWidth);
-            const auto height = static_cast<int>(scale * originalHeight);
-            if (width <= 0 || height <= 0) {
+            if (originalWidth <= 0 || originalHeight <= 0) {
                 std::ostringstream oss;
-                oss << "cannot create image with width " << width
-                    << " and height " << height;
+                oss << "cannot create image from map with width "
+                    << originalWidth << " and height " << originalHeight;
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
             }
 
+            // Scale to constant size image.
+            // TODO check for overflow
+            const auto widthScale = IMAGE_SIZE / originalWidth;
+            const auto heightScale = IMAGE_SIZE / originalHeight;
+
             // Create a new cv::Mat that can hold all of the MapPoints.
-            cout << "Creating image with " << height << " rows and " << width
-                 << " columns" << endl;
-            cv::Mat mat(height /* rows */, width /* cols */, 0 /* grayscale */,
+            cv::Mat mat(IMAGE_SIZE /* rows */, IMAGE_SIZE /* cols */,
+                        0 /* grayscale */,
                         cv::Scalar::all(0) /* initialize to black */);
 
             // Add each point to the cv::Mat. Project onto the XZ plane (since
             // z is currently coming out of the lens).
-            cout << "Adding " << actualMap.size() << " points to image"
-                 << endl;
+            cout << "Adding " << actualMap.size() << " points to image" << endl;
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
                 // TODO check for overflow
-                const auto j = static_cast<int>(scale * (v.x() - minX));
-                const auto i = static_cast<int>(scale * (v.z() - minZ));
-                if (i >= 0 && i < height && j >= 0 && j < width) {
+                const auto j = static_cast<int>(widthScale * (v.x() - minX));
+                const auto i = static_cast<int>(heightScale * (v.z() - minZ));
+                if (i >= 0 && i < IMAGE_SIZE && j >= 0 && j < IMAGE_SIZE) {
                     mat.at<uchar>(i, j) = 255;  // set point to white
                 }
             }
@@ -233,16 +227,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // take sparse slam map and convert into a pcd. Orientation of PCD
             // is wrt the camera (z is coming out of the lens) so may need to
             // transform.
-            std::vector<ORB_SLAM3::MapPoint *> actualMap;
-            {
-                std::lock_guard<std::mutex> lk(slam_mutex);
-                actualMap = currMapPoints;
-            }
-
-            if (actualMap.size() == 0) {
-                return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                    "currently no map points exist");
-            }
 
             std::stringbuf buffer;
             std::ostream oss(&buffer);
@@ -286,6 +270,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 rgb = rgb | (clr << 0);
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
+                buffer.sputn((const char *)&v.z(), 4);
                 buffer.sputn((const char *)&rgb, 4);
             }
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
@@ -674,7 +659,7 @@ int main(int argc, char **argv) {
             slamService.process_rgbd_offline(SLAM.get());
             // Continue to serve requests.
             while (b_continue_session) {
-                usleep(1e5);
+                usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
             }
         } else {
             cout << "Running in online mode" << endl;
