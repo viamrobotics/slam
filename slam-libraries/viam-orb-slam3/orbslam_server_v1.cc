@@ -143,8 +143,91 @@ class SLAMServiceImpl final : public SLAMService::Service {
         response->set_mime_type(mime_type);
 
         if (mime_type == "image/jpeg") {
-            // TODO: determine how to make 2D map
-            // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-131
+            std::vector<ORB_SLAM3::MapPoint *> actualMap;
+            {
+                std::lock_guard<std::mutex> lk(slam_mutex);
+                actualMap = currMapPoints;
+            }
+
+            if (actualMap.size() == 0) {
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                    "currently no map points exist");
+            }
+
+            // Determine the height and width of the image. Height is determined
+            // using the z values, since we're projecting onto the XZ plan
+            // (since z is currently coming out of the lens).
+            auto minX = std::numeric_limits<float>::max();
+            auto maxX = std::numeric_limits<float>::lowest();
+            auto minZ = std::numeric_limits<float>::max();
+            auto maxZ = std::numeric_limits<float>::lowest();
+            for (auto &&p : actualMap) {
+                const auto v = p->GetWorldPos();
+                minX = std::min(minX, v.x());
+                maxX = std::max(maxX, v.x());
+                minZ = std::min(minZ, v.z());
+                maxZ = std::max(maxZ, v.z());
+            }
+
+            // If the image would be too small, scale it to be larger.
+            // TODO check for overflow
+            const auto originalWidth = maxX - minX;
+            const auto originalHeight = maxZ - minZ;
+            auto scale = 1;
+            if (originalWidth > 0 && originalHeight > 0 &&
+                (originalWidth < 100 || originalHeight < 100)) {
+                // TODO check for overflow
+                scale = std::max(100 / originalWidth, 100 / originalHeight);
+            }
+
+            // TODO check for overflow
+            const auto width = static_cast<int>(scale * originalWidth);
+            const auto height = static_cast<int>(scale * originalHeight);
+            if (width <= 0 || height <= 0) {
+                std::ostringstream oss;
+                oss << "cannot create image with width " << width
+                    << " and height " << height;
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
+
+            // Create a new cv::Mat that can hold all of the MapPoints.
+            cout << "Creating image with " << height << " rows and " << width
+                 << " columns" << endl;
+            cv::Mat mat(height /* rows */, width /* cols */, 0 /* grayscale */,
+                        cv::Scalar::all(0) /* initialize to black */);
+
+            // Add each point to the cv::Mat. Project onto the XZ plane (since
+            // z is currently coming out of the lens).
+            cout << "Adding " << actualMap.size() << " points to image"
+                 << endl;
+            for (auto &&p : actualMap) {
+                const auto v = p->GetWorldPos();
+                // TODO check for overflow
+                const auto j = static_cast<int>(scale * (v.x() - minX));
+                const auto i = static_cast<int>(scale * (v.z() - minZ));
+                if (i >= 0 && i < height && j >= 0 && j < width) {
+                    mat.at<uchar>(i, j) = 255;  // set point to white
+                }
+            }
+
+            // Encode the image as a jpeg.
+            std::vector<uchar> buffer;
+            try {
+                cv::imencode(".jpeg", mat, buffer);
+            } catch (std::exception &e) {
+                std::ostringstream oss;
+                oss << "error encoding image " << e.what();
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
+
+            // Write the image to the response.
+            try {
+                response->set_image(std::string(buffer.begin(), buffer.end()));
+            } catch (std::exception &e) {
+                std::ostringstream oss;
+                oss << "error writing image to response " << e.what();
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
 
         } else if (mime_type == "pointcloud/pcd") {
             // take sparse slam map and convert into a pcd. Orientation of PCD
@@ -155,6 +238,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 std::lock_guard<std::mutex> lk(slam_mutex);
                 actualMap = currMapPoints;
             }
+
+            if (actualMap.size() == 0) {
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                    "currently no map points exist");
+            }
+
             std::stringbuf buffer;
             std::ostream oss(&buffer);
 
@@ -583,6 +672,10 @@ int main(int argc, char **argv) {
         if (slamService.offlineFlag) {
             cout << "Running in offline mode" << endl;
             slamService.process_rgbd_offline(SLAM.get());
+            // Continue to serve requests.
+            while (b_continue_session) {
+                usleep(1e5);
+            }
         } else {
             cout << "Running in online mode" << endl;
             slamService.process_rgbd_online(SLAM.get());
