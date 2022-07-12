@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cfenv>
 #include <chrono>
 #include <ctime>
 #include <filesystem>
@@ -44,6 +45,7 @@
 #include "proto/api/common/v1/common.pb.h"
 #include "proto/api/service/slam/v1/slam.grpc.pb.h"
 #include "proto/api/service/slam/v1/slam.pb.h"
+#pragma STDC FENV_ACCESS ON
 #define _USE_MATH_DEFINES
 using namespace std;
 using namespace boost::filesystem;
@@ -170,21 +172,39 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 maxZ = std::max(maxZ, v.z());
             }
 
-            // TODO check for overflow
+            std::feclearexcept(FE_ALL_EXCEPT);
             const auto originalWidth = maxX - minX;
             const auto originalHeight = maxZ - minZ;
+            // Only check for overflow and underflow. Division by zero and
+            // domain error would be unexpected. Inexact results are okay.
+            if (std::fetestexcept(FE_OVERFLOW) ||
+                std::fetestexcept(FE_UNDERFLOW)) {
+                std::ostringstream oss;
+                oss << "cannot create image from map with min X: " << minX
+                    << ", max X: " << maxX << ", min Z: " << minZ
+                    << ", and max Z: " << maxZ;
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
 
             if (originalWidth <= 0 || originalHeight <= 0) {
                 std::ostringstream oss;
-                oss << "cannot create image from map with width "
-                    << originalWidth << " and height " << originalHeight;
+                oss << "cannot create image from map with width: "
+                    << originalWidth << " and height: " << originalHeight;
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
             }
 
             // Scale to constant size image.
-            // TODO check for overflow
+            std::feclearexcept(FE_ALL_EXCEPT);
             const auto widthScale = IMAGE_SIZE / originalWidth;
             const auto heightScale = IMAGE_SIZE / originalHeight;
+            if (std::fetestexcept(FE_OVERFLOW) ||
+                std::fetestexcept(FE_UNDERFLOW)) {
+                std::ostringstream oss;
+                oss << "cannot create image from map with original width: "
+                    << originalWidth << ", original height: " << originalHeight
+                    << ", and image size: " << IMAGE_SIZE << "x" << IMAGE_SIZE;
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
 
             // Create a new cv::Mat that can hold all of the MapPoints.
             cv::Mat mat(IMAGE_SIZE /* rows */, IMAGE_SIZE /* cols */,
@@ -196,12 +216,30 @@ class SLAMServiceImpl final : public SLAMService::Service {
             cout << "Adding " << actualMap.size() << " points to image" << endl;
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
-                // TODO check for overflow
-                const auto j = static_cast<int>(widthScale * (v.x() - minX));
-                const auto i = static_cast<int>(heightScale * (v.z() - minZ));
-                if (i >= 0 && i < IMAGE_SIZE && j >= 0 && j < IMAGE_SIZE) {
-                    mat.at<uchar>(i, j) = 255;  // set point to white
+
+                std::feclearexcept(FE_ALL_EXCEPT);
+                const auto j_float = widthScale * (v.x() - minX);
+                const auto i_float = heightScale * (v.z() - minZ);
+                if (std::fetestexcept(FE_OVERFLOW) ||
+                    std::fetestexcept(FE_UNDERFLOW)) {
+                    std::ostringstream oss;
+                    oss << "cannot scale point with X: " << v.x()
+                        << " and Z: " << v.z()
+                        << " to include on map with min X: " << minX
+                        << ", min Z: " << minZ << ", widthScale: " << widthScale
+                        << ", and heightScale: " << heightScale;
+                    return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                        oss.str());
                 }
+
+                if (i_float < 0 || i_float >= IMAGE_SIZE || j_float < 0 ||
+                    j_float >= IMAGE_SIZE) {
+                    continue;
+                }
+
+                const auto j = static_cast<int>(j_float);
+                const auto i = static_cast<int>(i_float);
+                mat.at<uchar>(i, j) = 255;  // set point to white
             }
 
             // Encode the image as a jpeg.
