@@ -146,9 +146,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
         auto mime_type = request->mime_type();
         response->set_mime_type(mime_type);
         std::vector<ORB_SLAM3::MapPoint *> actualMap;
+        Sophus::SE3f currPose;
         {
             std::lock_guard<std::mutex> lk(slam_mutex);
             actualMap = currMapPoints;
+            currPose = poseGrpc;
         }
 
         if (actualMap.size() == 0) {
@@ -170,6 +172,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 maxX = std::max(maxX, v.x());
                 minZ = std::min(minZ, v.z());
                 maxZ = std::max(maxZ, v.z());
+            }
+            if (request->include_robot_marker()) {
+                const auto actualPose = currPose.params();
+                minX = std::min(minX, actualPose[4]);
+                maxX = std::max(maxX, actualPose[4]);
+                minZ = std::min(minZ, actualPose[6]);
+                maxZ = std::max(maxZ, actualPose[6]);
             }
 
             std::feclearexcept(FE_ALL_EXCEPT);
@@ -195,8 +204,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // Scale to constant size image.
             std::feclearexcept(FE_ALL_EXCEPT);
-            const auto widthScale = IMAGE_SIZE / originalWidth;
-            const auto heightScale = IMAGE_SIZE / originalHeight;
+            const auto widthScale = (IMAGE_SIZE - 2) / originalWidth;
+            const auto heightScale = (IMAGE_SIZE - 2) / originalHeight;
             if (std::fetestexcept(FE_OVERFLOW) ||
                 std::fetestexcept(FE_UNDERFLOW)) {
                 std::ostringstream oss;
@@ -208,7 +217,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // Create a new cv::Mat that can hold all of the MapPoints.
             cv::Mat mat(IMAGE_SIZE /* rows */, IMAGE_SIZE /* cols */,
-                        0 /* grayscale */,
+                        16 /* RGB */,
                         cv::Scalar::all(0) /* initialize to black */);
 
             // Add each point to the cv::Mat. Project onto the XZ plane (since
@@ -239,7 +248,39 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
                 const auto j = static_cast<int>(j_float);
                 const auto i = static_cast<int>(i_float);
-                mat.at<uchar>(i, j) = 255;  // set point to white
+                auto &matPoint = mat.at<cv::Vec3b>(cv::Point(i, j));
+                matPoint[0] = 255;
+                matPoint[1] = 255;
+                matPoint[2] = 255;
+            }
+
+            // Optionally add the robot marker to the image.
+            if (request->include_robot_marker()) {
+                const auto actualPose = currPose.params();
+
+                std::feclearexcept(FE_ALL_EXCEPT);
+                const auto j_float = widthScale * (actualPose[4] - minX);
+                const auto i_float = heightScale * (actualPose[6] - minZ);
+                if (std::fetestexcept(FE_OVERFLOW) ||
+                    std::fetestexcept(FE_UNDERFLOW)) {
+                    cout << "cannot scale robot marker point with X: "
+                         << actualPose[4] << " and Z: " << actualPose[6]
+                         << " to include on map with min X: " << minX
+                         << ", min Z: " << minZ
+                         << ", widthScale: " << widthScale
+                         << ", and heightScale: " << heightScale << endl;
+                } else if (i_float < 0 || i_float >= IMAGE_SIZE ||
+                           j_float < 0 || j_float >= IMAGE_SIZE) {
+                    cout << "cannot include robot marker point with i: "
+                         << i_float << " and j: " << j_float
+                         << " on map with image size " << IMAGE_SIZE << "x"
+                         << IMAGE_SIZE << endl;
+                } else {
+                    const auto j = static_cast<int>(j_float);
+                    const auto i = static_cast<int>(i_float);
+                    cv::circle(mat, cv::Point(i, j), 5 /* radius */,
+                               cv::Scalar(0, 0, 255) /* red */, cv::FILLED);
+                }
             }
 
             // Encode the image as a jpeg.
