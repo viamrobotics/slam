@@ -581,6 +581,36 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return 1;
     }
 
+    // Creates a simple map containing a 2x4x8 rectangular prism with the robot
+    // in the center, for testing GetMap and GetPosition.
+    void process_rgbd_for_testing(ORB_SLAM3::System *SLAM) {
+        std::vector<Eigen::Vector3f> worldPos{{0, 0, 0}, {0, 0, 8}, {0, 4, 0},
+                                              {0, 4, 8}, {2, 0, 0}, {2, 0, 8},
+                                              {2, 4, 0}, {2, 4, 8}};
+        std::vector<ORB_SLAM3::MapPoint> mapPoints(8);
+        for (size_t i = 0; i < worldPos.size(); i++) {
+            mapPoints[i].SetWorldPos(worldPos[i]);
+        }
+
+        Sophus::SO3f so3;
+        Eigen::Vector3f translation{1, 2, 4};
+
+        {
+            std::lock_guard<std::mutex> lock(slam_mutex);
+            currMapPoints.clear();
+            for (auto &&p : mapPoints) {
+                currMapPoints.push_back(&p);
+            }
+            poseGrpc = Sophus::SE3f(so3, translation);
+        }
+        cout << "Finished creating map for testing" << endl;
+
+        // Continue to serve requests.
+        while (b_continue_session) {
+            usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+        }
+    }
+
     string path_to_data;
     string path_to_sequence;
     string camera_name;
@@ -745,6 +775,7 @@ int main(int argc, char **argv) {
             slamService.process_rgbd_online(SLAM.get());
         }
         // slamService.process_rgbd_old(SLAM);
+        // slamService.process_rgbd_for_testing(SLAM.get());
 
     } else if (slam_mode == "mono") {
         // TODO implement MONO
