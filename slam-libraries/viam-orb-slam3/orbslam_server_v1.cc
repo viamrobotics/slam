@@ -52,6 +52,7 @@ using namespace boost::filesystem;
 #define FILENAME_CONST 6
 #define IMAGE_SIZE 300
 #define CHECK_FOR_SHUTDOWN_INTERVAL 1e5
+#define MAX_COLOR_VALUE 255
 enum class FileParserMethod { Recent, Closest };
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -217,7 +218,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // Create a new cv::Mat that can hold all of the MapPoints.
             cv::Mat mat(IMAGE_SIZE /* rows */, IMAGE_SIZE /* cols */,
-                        16 /* RGB */,
+                        CV_8UC3 /* RGB */,
                         cv::Scalar::all(0) /* initialize to black */);
 
             // Add each point to the cv::Mat. Project onto the XZ plane (since
@@ -249,9 +250,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 const auto j = static_cast<int>(j_float);
                 const auto i = static_cast<int>(i_float);
                 auto &matPoint = mat.at<cv::Vec3b>(cv::Point(i, j));
-                matPoint[0] = 255;
-                matPoint[1] = 255;
-                matPoint[2] = 255;
+                matPoint[0] = MAX_COLOR_VALUE;
+                matPoint[1] = MAX_COLOR_VALUE;
+                matPoint[2] = MAX_COLOR_VALUE;
             }
 
             // Optionally add the robot marker to the image.
@@ -279,7 +280,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     const auto j = static_cast<int>(j_float);
                     const auto i = static_cast<int>(i_float);
                     cv::circle(mat, cv::Point(i, j), 5 /* radius */,
-                               cv::Scalar(0, 0, 255) /* red */, cv::FILLED);
+                               cv::Scalar(0, 0, MAX_COLOR_VALUE) /* red */,
+                               cv::FILLED);
                 }
             }
 
@@ -341,7 +343,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 float val = v.y();
                 auto ratio = (val - min) / span;
                 clr = (char)(offsetRGB + (ratio * spanRGB));
-                if (clr > 255) clr = 255;
+                if (clr > MAX_COLOR_VALUE) clr = MAX_COLOR_VALUE;
                 if (clr < 0) clr = 0;
                 int rgb = 0;
                 rgb = rgb | (clr << 16);
