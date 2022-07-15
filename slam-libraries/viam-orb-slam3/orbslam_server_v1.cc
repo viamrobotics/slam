@@ -410,7 +410,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 i = parseDataDir(files, FileParserMethod::Recent,
                                  prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
-                    BOOST_LOG_TRIVIAL(debug) << "No new frames found";
                     usleep(frame_delay * 1e3);
                 } else {
                     timeStamp = currTime - fileTimeStart;
