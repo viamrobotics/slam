@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cfenv>
 #include <chrono>
 #include <ctime>
 #include <filesystem>
@@ -44,10 +45,14 @@
 #include "proto/api/common/v1/common.pb.h"
 #include "proto/api/service/slam/v1/slam.grpc.pb.h"
 #include "proto/api/service/slam/v1/slam.pb.h"
+#pragma STDC FENV_ACCESS ON
 #define _USE_MATH_DEFINES
 using namespace std;
 using namespace boost::filesystem;
 #define FILENAME_CONST 6
+#define IMAGE_SIZE 300
+#define CHECK_FOR_SHUTDOWN_INTERVAL 1e5
+#define MAX_COLOR_VALUE 255
 enum class FileParserMethod { Recent, Closest };
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -141,20 +146,169 @@ class SLAMServiceImpl final : public SLAMService::Service {
         float min = 10000;
         auto mime_type = request->mime_type();
         response->set_mime_type(mime_type);
+        std::vector<ORB_SLAM3::MapPoint *> actualMap;
+        Sophus::SE3f currPose;
+        {
+            std::lock_guard<std::mutex> lk(slam_mutex);
+            actualMap = currMapPoints;
+            currPose = poseGrpc;
+        }
+
+        if (actualMap.size() == 0) {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "currently no map points exist");
+        }
 
         if (mime_type == "image/jpeg") {
-            // TODO: determine how to make 2D map
-            // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-131
+            // Determine the height and width of the image. Height is determined
+            // using the z values, since we're projecting onto the XZ plan
+            // (since z is currently coming out of the lens).
+            auto minX = std::numeric_limits<float>::max();
+            auto maxX = std::numeric_limits<float>::lowest();
+            auto minZ = std::numeric_limits<float>::max();
+            auto maxZ = std::numeric_limits<float>::lowest();
+            for (auto &&p : actualMap) {
+                const auto v = p->GetWorldPos();
+                minX = std::min(minX, v.x());
+                maxX = std::max(maxX, v.x());
+                minZ = std::min(minZ, v.z());
+                maxZ = std::max(maxZ, v.z());
+            }
+            if (request->include_robot_marker()) {
+                const auto actualPose = currPose.params();
+                minX = std::min(minX, actualPose[4]);
+                maxX = std::max(maxX, actualPose[4]);
+                minZ = std::min(minZ, actualPose[6]);
+                maxZ = std::max(maxZ, actualPose[6]);
+            }
+
+            std::feclearexcept(FE_ALL_EXCEPT);
+            const auto originalWidth = maxX - minX;
+            const auto originalHeight = maxZ - minZ;
+            // Only check for overflow and underflow. Division by zero and
+            // domain error would be unexpected. Inexact results are okay.
+            if (std::fetestexcept(FE_OVERFLOW) ||
+                std::fetestexcept(FE_UNDERFLOW)) {
+                std::ostringstream oss;
+                oss << "cannot create image from map with min X: " << minX
+                    << ", max X: " << maxX << ", min Z: " << minZ
+                    << ", and max Z: " << maxZ;
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
+
+            if (originalWidth <= 0 || originalHeight <= 0) {
+                std::ostringstream oss;
+                oss << "cannot create image from map with width: "
+                    << originalWidth << " and height: " << originalHeight;
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
+
+            // Scale to constant size image.
+            std::feclearexcept(FE_ALL_EXCEPT);
+            const auto widthScale = (IMAGE_SIZE - 2) / originalWidth;
+            const auto heightScale = (IMAGE_SIZE - 2) / originalHeight;
+            if (std::fetestexcept(FE_OVERFLOW) ||
+                std::fetestexcept(FE_UNDERFLOW)) {
+                std::ostringstream oss;
+                oss << "cannot create image from map with original width: "
+                    << originalWidth << ", original height: " << originalHeight
+                    << ", and image size: " << IMAGE_SIZE << "x" << IMAGE_SIZE;
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
+
+            // Create a new cv::Mat that can hold all of the MapPoints.
+            cv::Mat mat(IMAGE_SIZE /* rows */, IMAGE_SIZE /* cols */,
+                        CV_8UC3 /* RGB */,
+                        cv::Scalar::all(0) /* initialize to black */);
+
+            // Add each point to the cv::Mat. Project onto the XZ plane (since
+            // z is currently coming out of the lens).
+            cout << "Adding " << actualMap.size() << " points to image" << endl;
+            for (auto &&p : actualMap) {
+                const auto v = p->GetWorldPos();
+
+                std::feclearexcept(FE_ALL_EXCEPT);
+                const auto j_float = widthScale * (v.x() - minX);
+                const auto i_float = heightScale * (v.z() - minZ);
+                if (std::fetestexcept(FE_OVERFLOW) ||
+                    std::fetestexcept(FE_UNDERFLOW)) {
+                    std::ostringstream oss;
+                    oss << "cannot scale point with X: " << v.x()
+                        << " and Z: " << v.z()
+                        << " to include on map with min X: " << minX
+                        << ", min Z: " << minZ << ", widthScale: " << widthScale
+                        << ", and heightScale: " << heightScale;
+                    return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                        oss.str());
+                }
+
+                if (i_float < 0 || i_float >= IMAGE_SIZE || j_float < 0 ||
+                    j_float >= IMAGE_SIZE) {
+                    continue;
+                }
+
+                const auto j = static_cast<int>(j_float);
+                const auto i = static_cast<int>(i_float);
+                auto &matPoint = mat.at<cv::Vec3b>(cv::Point(i, j));
+                matPoint[0] = MAX_COLOR_VALUE;
+                matPoint[1] = MAX_COLOR_VALUE;
+                matPoint[2] = MAX_COLOR_VALUE;
+            }
+
+            // Optionally add the robot marker to the image.
+            if (request->include_robot_marker()) {
+                const auto actualPose = currPose.params();
+
+                std::feclearexcept(FE_ALL_EXCEPT);
+                const auto j_float = widthScale * (actualPose[4] - minX);
+                const auto i_float = heightScale * (actualPose[6] - minZ);
+                if (std::fetestexcept(FE_OVERFLOW) ||
+                    std::fetestexcept(FE_UNDERFLOW)) {
+                    cout << "cannot scale robot marker point with X: "
+                         << actualPose[4] << " and Z: " << actualPose[6]
+                         << " to include on map with min X: " << minX
+                         << ", min Z: " << minZ
+                         << ", widthScale: " << widthScale
+                         << ", and heightScale: " << heightScale << endl;
+                } else if (i_float < 0 || i_float >= IMAGE_SIZE ||
+                           j_float < 0 || j_float >= IMAGE_SIZE) {
+                    cout << "cannot include robot marker point with i: "
+                         << i_float << " and j: " << j_float
+                         << " on map with image size " << IMAGE_SIZE << "x"
+                         << IMAGE_SIZE << endl;
+                } else {
+                    const auto j = static_cast<int>(j_float);
+                    const auto i = static_cast<int>(i_float);
+                    cv::circle(mat, cv::Point(i, j), 5 /* radius */,
+                               cv::Scalar(0, 0, MAX_COLOR_VALUE) /* red */,
+                               cv::FILLED);
+                }
+            }
+
+            // Encode the image as a jpeg.
+            std::vector<uchar> buffer;
+            try {
+                cv::imencode(".jpeg", mat, buffer);
+            } catch (std::exception &e) {
+                std::ostringstream oss;
+                oss << "error encoding image " << e.what();
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
+
+            // Write the image to the response.
+            try {
+                response->set_image(std::string(buffer.begin(), buffer.end()));
+            } catch (std::exception &e) {
+                std::ostringstream oss;
+                oss << "error writing image to response " << e.what();
+                return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            }
 
         } else if (mime_type == "pointcloud/pcd") {
             // take sparse slam map and convert into a pcd. Orientation of PCD
             // is wrt the camera (z is coming out of the lens) so may need to
             // transform.
-            std::vector<ORB_SLAM3::MapPoint *> actualMap;
-            {
-                std::lock_guard<std::mutex> lk(slam_mutex);
-                actualMap = currMapPoints;
-            }
+
             std::stringbuf buffer;
             std::ostream oss(&buffer);
 
@@ -189,7 +343,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 float val = v.y();
                 auto ratio = (val - min) / span;
                 clr = (char)(offsetRGB + (ratio * spanRGB));
-                if (clr > 255) clr = 255;
+                if (clr > MAX_COLOR_VALUE) clr = MAX_COLOR_VALUE;
                 if (clr < 0) clr = 0;
                 int rgb = 0;
                 rgb = rgb | (clr << 16);
@@ -197,6 +351,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 rgb = rgb | (clr << 0);
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
+                buffer.sputn((const char *)&v.z(), 4);
                 buffer.sputn((const char *)&rgb, 4);
             }
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
@@ -428,6 +583,36 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return 1;
     }
 
+    // Creates a simple map containing a 2x4x8 rectangular prism with the robot
+    // in the center, for testing GetMap and GetPosition.
+    void process_rgbd_for_testing(ORB_SLAM3::System *SLAM) {
+        std::vector<Eigen::Vector3f> worldPos{{0, 0, 0}, {0, 0, 8}, {0, 4, 0},
+                                              {0, 4, 8}, {2, 0, 0}, {2, 0, 8},
+                                              {2, 4, 0}, {2, 4, 8}};
+        std::vector<ORB_SLAM3::MapPoint> mapPoints(8);
+        for (size_t i = 0; i < worldPos.size(); i++) {
+            mapPoints[i].SetWorldPos(worldPos[i]);
+        }
+
+        Sophus::SO3f so3;
+        Eigen::Vector3f translation{1, 2, 4};
+
+        {
+            std::lock_guard<std::mutex> lock(slam_mutex);
+            currMapPoints.clear();
+            for (auto &&p : mapPoints) {
+                currMapPoints.push_back(&p);
+            }
+            poseGrpc = Sophus::SE3f(so3, translation);
+        }
+        cout << "Finished creating map for testing" << endl;
+
+        // Continue to serve requests.
+        while (b_continue_session) {
+            usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+        }
+    }
+
     string path_to_data;
     string path_to_sequence;
     string camera_name;
@@ -583,11 +768,16 @@ int main(int argc, char **argv) {
         if (slamService.offlineFlag) {
             cout << "Running in offline mode" << endl;
             slamService.process_rgbd_offline(SLAM.get());
+            // Continue to serve requests.
+            while (b_continue_session) {
+                usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+            }
         } else {
             cout << "Running in online mode" << endl;
             slamService.process_rgbd_online(SLAM.get());
         }
         // slamService.process_rgbd_old(SLAM);
+        // slamService.process_rgbd_for_testing(SLAM.get());
 
     } else if (slam_mode == "mono") {
         // TODO implement MONO
