@@ -40,6 +40,9 @@
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/trivial.hpp>
 
 #include "proto/api/common/v1/common.grpc.pb.h"
 #include "proto/api/common/v1/common.pb.h"
@@ -73,7 +76,7 @@ using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
 std::atomic<bool> b_continue_session{true};
 void exit_loop_handler(int s) {
-    cout << "Finishing session" << endl;
+    BOOST_LOG_TRIVIAL(info) << "Finishing session";
     b_continue_session = false;
 }
 
@@ -223,7 +226,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // Add each point to the cv::Mat. Project onto the XZ plane (since
             // z is currently coming out of the lens).
-            cout << "Adding " << actualMap.size() << " points to image" << endl;
+            BOOST_LOG_TRIVIAL(debug)
+                << "Adding " << actualMap.size() << " points to image";
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
 
@@ -264,18 +268,19 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 const auto i_float = heightScale * (actualPose[6] - minZ);
                 if (std::fetestexcept(FE_OVERFLOW) ||
                     std::fetestexcept(FE_UNDERFLOW)) {
-                    cout << "cannot scale robot marker point with X: "
-                         << actualPose[4] << " and Z: " << actualPose[6]
-                         << " to include on map with min X: " << minX
-                         << ", min Z: " << minZ
-                         << ", widthScale: " << widthScale
-                         << ", and heightScale: " << heightScale << endl;
+                    BOOST_LOG_TRIVIAL(debug)
+                        << "Cannot scale robot marker point with X: "
+                        << actualPose[4] << " and Z: " << actualPose[6]
+                        << " to include on map with min X: " << minX
+                        << ", min Z: " << minZ << ", widthScale: " << widthScale
+                        << ", and heightScale: " << heightScale;
                 } else if (i_float < 0 || i_float >= IMAGE_SIZE ||
                            j_float < 0 || j_float >= IMAGE_SIZE) {
-                    cout << "cannot include robot marker point with i: "
-                         << i_float << " and j: " << j_float
-                         << " on map with image size " << IMAGE_SIZE << "x"
-                         << IMAGE_SIZE << endl;
+                    BOOST_LOG_TRIVIAL(debug)
+                        << "Cannot include robot marker point with i: "
+                        << i_float << " and j: " << j_float
+                        << " on map with image size " << IMAGE_SIZE << "x"
+                        << IMAGE_SIZE;
                 } else {
                     const auto j = static_cast<int>(j_float);
                     const auto i = static_cast<int>(i_float);
@@ -375,7 +380,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                      &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
-            cout << "No new files found" << endl;
+            BOOST_LOG_TRIVIAL(debug) << "No new files found";
             usleep(frame_delay * 1e3);
             files = listFilesInDirectoryForCamera(path_to_data, ".both",
                                                   camera_name);
@@ -405,7 +410,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 i = parseDataDir(files, FileParserMethod::Recent,
                                  prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
-                    cerr << "No new frames found " << endl;
+                    BOOST_LOG_TRIVIAL(debug) << "No new frames found";
                     usleep(frame_delay * 1e3);
                 } else {
                     timeStamp = currTime - fileTimeStart;
@@ -417,13 +422,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // Throw an error to skip this frame if the frames are bad
             if (depth.empty()) {
-                cerr << endl << "Failed to load depth at: " << files[i] << endl;
+                BOOST_LOG_TRIVIAL(error)
+                    << "Failed to load depth at: " << files[i];
             } else if (im.empty()) {
-                cerr << endl
-                     << "Failed to load png image at: " << files[i] << endl;
+                BOOST_LOG_TRIVIAL(error)
+                    << "Failed to load png image at: " << files[i];
             } else {
                 // Pass the image to the SLAM system
-                cout << "SLAMMIN" << endl;
+                BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
                 auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
                 // Update the copy of the current map whenever a change in
                 // keyframes occurs
@@ -443,7 +449,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             i = -1;
         }
-        cout << "Finished Processing Live Images\n" << endl;
+        BOOST_LOG_TRIVIAL(info) << "Finished processing live images";
         return;
     }
 
@@ -452,7 +458,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         std::vector<std::string> files =
             listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
         if (files.size() == 0) {
-            cout << "no files found" << endl;
+            BOOST_LOG_TRIVIAL(debug) << "No files found";
             return;
         }
 
@@ -462,7 +468,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         int locClosest = parseDataDir(files, FileParserMethod::Closest,
                                       yamlTime, &fileTimeStart);
         if (locClosest == -1) {
-            cerr << "No new images to process in directory" << endl;
+            BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
             return;
         }
         int nkeyframes = 0;
@@ -481,13 +487,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
             decodeBOTH(path_to_data + "/" + files[i], im, depth);
             // Throw an error to skip this frame if not found
             if (depth.empty()) {
-                cerr << endl << "Failed to load depth at: " << files[i] << endl;
+                BOOST_LOG_TRIVIAL(error)
+                    << "Failed to load depth at: " << files[i];
             } else if (im.empty()) {
-                cerr << endl
-                     << "Failed to load png image at: " << files[i] << endl;
+                BOOST_LOG_TRIVIAL(error)
+                    << "Failed to load png image at: " << files[i];
             } else {
                 // Pass the image to the SLAM system
-                cout << "SLAMMIN  " << endl;
+                BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
                 auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
@@ -509,7 +516,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             if (!b_continue_session) break;
         }
 
-        cout << "Finished Processing Offline Images\n" << endl;
+        BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
         return;
     }
 
@@ -537,11 +544,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // Check consistency in the number of images and depthmaps
         nImages = vstrImageFilenamesRGB.size();
         if (vstrImageFilenamesRGB.empty()) {
-            cerr << endl << "No images found in provided path." << endl;
+            BOOST_LOG_TRIVIAL(error) << "No images found in provided path";
             return 1;
         } else if (vstrImageFilenamesD.size() != vstrImageFilenamesRGB.size()) {
-            cerr << endl
-                 << "Different number of images for rgb and depth." << endl;
+            BOOST_LOG_TRIVIAL(error)
+                << "Different number of images for rgb and depth";
             return 1;
         }
 
@@ -555,9 +562,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
             double tframe = vTimestamps[ni];
 
             if (imRGB.empty()) {
-                cerr << endl
-                     << "Failed to load image at: " << vstrImageFilenamesRGB[ni]
-                     << endl;
+                BOOST_LOG_TRIVIAL(error)
+                    << "Failed to load image at: " << vstrImageFilenamesRGB[ni];
                 return 1;
             }
 
@@ -578,7 +584,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             if (!b_continue_session) break;
         }
 
-        cout << "Finished Processing Images\n" << endl;
+        BOOST_LOG_TRIVIAL(info) << "Finished processing images";
 
         return 1;
     }
@@ -605,7 +611,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             poseGrpc = Sophus::SE3f(so3, translation);
         }
-        cout << "Finished creating map for testing" << endl;
+        BOOST_LOG_TRIVIAL(info) << "Finished creating map for testing";
 
         // Continue to serve requests.
         while (b_continue_session) {
@@ -637,20 +643,30 @@ int main(int argc, char **argv) {
     sigaction(SIGINT, &sigIntHandler, NULL);
 
     if (argc < 6) {
-        cerr << "No args found. Expected: \n"
-             << endl
-             << "./bin/orb_grpc_server "
-                "-data_dir=path_to_data "
-                "-config_param={mode=slam_mode,} "
-                "-port=grpc_port "
-                "-sensors=sensor_name "
-                "-data_rate_ms=frame_delay"
-             << endl;
+        BOOST_LOG_TRIVIAL(fatal) << "No args found. Expected: \n"
+                                 << "./bin/orb_grpc_server "
+                                    "-data_dir=path_to_data "
+                                    "-config_param={mode=slam_mode,} "
+                                    "-port=grpc_port "
+                                    "-sensors=sensor_name "
+                                    "-data_rate_ms=frame_delay";
         return 1;
     }
 
+    string config_params = argParser(argc, argv, "-config_param=");
+
+    const auto debugParam = configMapParser(config_params, "debug=");
+    bool isDebugTrue;
+    bool isDebugOne;
+    istringstream(debugParam) >> std::boolalpha >> isDebugTrue;
+    istringstream(debugParam) >> std::noboolalpha >> isDebugOne;
+    if (!isDebugTrue && !isDebugOne) {
+        boost::log::core::get()->set_filter(boost::log::trivial::severity >=
+                                            boost::log::trivial::info);
+    }
+
     for (int i = 0; i < argc; ++i) {
-        printf("Argument #%d is %s\n", i, argv[i]);
+        BOOST_LOG_TRIVIAL(debug) << "Argument #" << i << " is " << argv[i];
     }
     // setup the SLAM server
     SLAMServiceImpl slamService;
@@ -658,7 +674,7 @@ int main(int argc, char **argv) {
 
     string actual_path = argParser(argc, argv, "-data_dir=");
     if (actual_path.empty()) {
-        cerr << "no data directory given" << endl;
+        BOOST_LOG_TRIVIAL(fatal) << "No data directory given";
         return 1;
     }
     string path_to_vocab = actual_path + "/config/ORBvoc.txt";
@@ -671,30 +687,28 @@ int main(int argc, char **argv) {
     // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
     // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
     // slamService.path_to_sequence = "Out_file.txt";
-
-    string config_params = argParser(argc, argv, "-config_param=");
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
-        cerr << "no SLAM mode given" << endl;
+        BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
         return 1;
     }
 
     string slam_port = argParser(argc, argv, "-port=");
     if (slam_port.empty()) {
-        cerr << "no gRPC port given" << endl;
+        BOOST_LOG_TRIVIAL(fatal) << "No gRPC port given";
         return 1;
     }
 
     string frames = argParser(argc, argv, "-data_rate_ms=");
     if (frames.empty()) {
-        cerr << "No camera data rate specified" << endl;
+        BOOST_LOG_TRIVIAL(fatal) << "No camera data rate specified";
         return 1;
     }
     slamService.frame_delay = stoi(frames);
 
     slamService.camera_name = argParser(argc, argv, "-sensors=");
     if (slamService.camera_name.empty()) {
-        cout << "No camera given -> running in offline mode" << endl;
+        BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
         slamService.offlineFlag = true;
     }
 
@@ -703,7 +717,7 @@ int main(int argc, char **argv) {
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    printf("Server listening on %s\n", slam_port.c_str());
+    BOOST_LOG_TRIVIAL(info) << "Server listening on " << slam_port.c_str();
 
     // Determine which settings file to use(.yaml)
     const path myPath(path_to_settings);
@@ -726,23 +740,25 @@ int main(int argc, char **argv) {
         }
     }
     if (latest.empty()) {
-        cerr << "no correctly formatted .yaml file found, Expected:\n"
-                "{sensor}_data_{dateformat}.yaml\n";
+        BOOST_LOG_TRIVIAL(fatal)
+            << "No correctly formatted .yaml file found, Expected:\n"
+               "{sensor}_data_{dateformat}.yaml";
         return 1;
     }
 
     // report the current yaml file check if it matches our format
     const string myYAML = latest.stem().string();
-    cout << "Our yaml file: " << myYAML << endl;
+    BOOST_LOG_TRIVIAL(debug) << "Our yaml file: " << myYAML;
     string full_path_to_settings =
         path_to_settings + "/" + latest.filename().string();
     if (slamService.offlineFlag) {
         if (myYAML.find("_data_") != string::npos)
             slamService.camera_name = myYAML.substr(0, myYAML.find("_data_"));
         else {
-            cerr << "no correctly formatted .yaml file found, Expected:\n"
-                    "{sensor}_data_{dateformat}.yaml\n"
-                    "as most the recent config in directory\n";
+            BOOST_LOG_TRIVIAL(fatal)
+                << "No correctly formatted .yaml file found, Expected:\n"
+                   "{sensor}_data_{dateformat}.yaml\n"
+                   "as most the recent config in directory";
             return 1;
         }
     }
@@ -750,15 +766,16 @@ int main(int argc, char **argv) {
     // Grab timestamp from yaml
     slamService.yamlTime = readTimeFromFilename(
         myYAML.substr(myYAML.find("_data_") + FILENAME_CONST));
-    cout << "The time from our config is: " << slamService.yamlTime
-         << " seconds" << endl;
+    BOOST_LOG_TRIVIAL(debug)
+        << "The time from our config is: " << slamService.yamlTime
+        << " seconds";
 
     // Start SLAM
     SlamPtr SLAM = nullptr;
     boost::algorithm::to_lower(slam_mode);
 
     if (slam_mode == "rgbd") {
-        cout << "RGBD Selected" << endl;
+        BOOST_LOG_TRIVIAL(info) << "RGBD selected";
 
         // Create SLAM system. It initializes all system threads and gets ready
         // to process frames.
@@ -766,14 +783,14 @@ int main(int argc, char **argv) {
             path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD,
             false, 0);
         if (slamService.offlineFlag) {
-            cout << "Running in offline mode" << endl;
+            BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
             slamService.process_rgbd_offline(SLAM.get());
             // Continue to serve requests.
             while (b_continue_session) {
                 usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
             }
         } else {
-            cout << "Running in online mode" << endl;
+            BOOST_LOG_TRIVIAL(info) << "Running in online mode";
             slamService.process_rgbd_online(SLAM.get());
         }
         // slamService.process_rgbd_old(SLAM);
@@ -783,12 +800,12 @@ int main(int argc, char **argv) {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
     } else {
-        cerr << "Error: Invalid slam_mode= " << slam_mode << endl;
+        BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
     }
 
     SLAM->Shutdown();
-    cout << "System shutdown!\n" << endl;
+    BOOST_LOG_TRIVIAL(info) << "System shutdown";
 
     return 0;
 }
@@ -903,7 +920,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     cv::Mat rawData;
     std::ifstream fin(filename + ".both");
     if (fin.peek() == std::ifstream::traits_type::eof()) {
-        cerr << "Bad File, found EOF" << endl;
+        BOOST_LOG_TRIVIAL(error) << "Bad file, found EOF";
         return;
     }
     std::vector<char> contents((std::istreambuf_iterator<char>(fin)),
