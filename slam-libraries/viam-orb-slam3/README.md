@@ -5,8 +5,9 @@ ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
 ## Installation instructions
+
 ### Install Dependencies
-Make sure to follow all steps as outline in this [here](../../README.md#setup).
+Make sure to follow all steps as outline in [the setup section here](../../README.md#setup).
 
 ```bash
 # Install & build Pangolin (includes eigen)
@@ -83,3 +84,77 @@ Besides that, it might happen that other changes are needed to be made in [CMake
 
 ## Running ORB_SLAM3
 You can run the binary `./bin/orb_grpc_server` directly.
+
+### Local Development with saved data
+The following describes how one can set up a dev environment using RDK and locally saved data on an RPI.
+
+In [orbslam_server_v1.cc](./orbslam_server_v1.cc), find the following lines in the function `int main(...)`:
+
+```cpp
+    // leaving commented for possible testing
+    // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
+    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
+    // slamService.path_to_sequence = "Out_file.txt";
+```
+
+and uncomment them. Change the paths to point to the directory that contains your data.
+
+Also, find this part of the code in the `main` function:
+
+```cpp
+    if (slam_mode == "rgbd") {
+        BOOST_LOG_TRIVIAL(info) << "RGBD selected";
+
+        // Create SLAM system. It initializes all system threads and gets ready
+        // to process frames.
+        SLAM = std::make_unique<ORB_SLAM3::System>(
+            path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD,
+            false, 0);
+        if (slamService.offlineFlag) {
+            BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
+            slamService.process_rgbd_offline(SLAM.get());
+            // Continue to serve requests.
+            while (b_continue_session) {
+                usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+            }
+        } else {
+            BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+            slamService.process_rgbd_online(SLAM.get());
+        }
+        // slamService.process_rgbd_old(SLAM);
+        // slamService.process_rgbd_for_testing(SLAM.get());
+
+    } else if (slam_mode == "mono") {
+        ...
+    }
+```
+
+and make sure to copy/paste the `slamService.process_rgbd_old(SLAM);` line into this `if` statement:
+
+```cpp
+    if (slamService.offlineFlag) {
+        BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
+        // slamService.process_rgbd_offline(SLAM.get());
+        slamService.process_rgbd_old(SLAM);
+        ...
+```
+
+
+Your data folder should have the following structure:
+
+```
+YOUR_PATH_TO_DATA
+ |
+ |- config
+ |  |- YOUR.yaml
+ |  |- ORBvoc.txt
+ |- YOUR_DATA
+    |- depth/...
+    |- rgb/...
+    |- sampleDataset.osa
+    |- sampleDatasetTXT.osa
+```
+
+After that, build the code and copy/paste the binary file as described above. Run RDK with an appropriate `MY_CONFIG.json` file: `go run web/cmd/server/main.go MY_CONFIG.json `.
+
+If you have questions or need files/data, ask John, Tess, Jeremy, or Kat.
