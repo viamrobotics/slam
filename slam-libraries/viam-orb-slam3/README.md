@@ -158,6 +158,18 @@ YOUR_PATH_TO_DATA
 
 After that, build the code and copy/paste the binary file as described above. Run RDK with an appropriate `MY_CONFIG.json` file: `go run web/cmd/server/main.go MY_CONFIG.json `.
 
-Every time you make an edit, you have to build and copy/paste the binary file as described above.
+Every time you make an edit, you have to build and copy/paste the binary file as described above. 
+
+Alternatively, you can edit code in RDK to point to the binary that's saved at `bin/orb_grpc_server` by editing `BinaryLocation` in `services/slam/slamlibraries.go` like this:
+
+```go
+var orbslamv3Metadata = LibraryMetadata{
+    AlgoName:       "orbslamv3",
+    AlgoType:       sparse,
+    SlamMode:       map[string]mode{"mono": mono, "rgbd": rgbd},
+    BinaryLocation: "YOUR_PATH_TO_SLAM_LIBRARY/slam/slam-libraries/viam-orb-slam3/bin/orb_grpc_server",
+}
+```
+This way, you won't have to copy the binary to `/usr/local/bin` everytime you build orbslam.
 
 If you have questions or need files/data, ask John, Tess, Jeremy, or Kat.
