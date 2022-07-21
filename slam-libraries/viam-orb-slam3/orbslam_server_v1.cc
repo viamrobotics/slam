@@ -554,7 +554,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // Main loop
         cv::Mat imRGB, imD;
         for (int ni = 0; ni < nImages; ni++) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
             // Read image and depthmap from file
             imRGB = cv::imread(vstrImageFilenamesRGB[ni], cv::IMREAD_UNCHANGED);
             imD = cv::imread(vstrImageFilenamesD[ni], cv::IMREAD_UNCHANGED);
@@ -567,17 +566,21 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
 
             // Pass the image to the SLAM system
-            poseGrpc = SLAM->TrackRGBD(imRGB, imD, tframe);
+            auto tmpPose = SLAM->TrackRGBD(imRGB, imD, tframe);
 
             // Update the copy of the current map whenever a change in keyframes
             // occurs
             ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
             std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                 currMap->GetAllKeyFrames();
+            {
+                std::lock_guard<std::mutex> lock(slam_mutex);
+                poseGrpc = tmpPose;
             if (SLAM->GetTrackingState() ==
                     ORB_SLAM3::Tracking::eTrackingState::OK &&
                 nkeyframes != keyframes.size()) {
                 currMapPoints = currMap->GetAllMapPoints();
+            }
             }
             nkeyframes = keyframes.size();
             if (!b_continue_session) break;
