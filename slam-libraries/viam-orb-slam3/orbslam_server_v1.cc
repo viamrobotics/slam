@@ -576,11 +576,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 poseGrpc = tmpPose;
-            if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK &&
-                nkeyframes != keyframes.size()) {
-                currMapPoints = currMap->GetAllMapPoints();
-            }
+                if (SLAM->GetTrackingState() ==
+                        ORB_SLAM3::Tracking::eTrackingState::OK &&
+                    nkeyframes != keyframes.size()) {
+                    currMapPoints = currMap->GetAllMapPoints();
+                }
             }
             nkeyframes = keyframes.size();
             if (!b_continue_session) break;
@@ -686,9 +686,9 @@ int main(int argc, char **argv) {
         actual_path + "/data";  // will change in DATA 127/181
 
     // leaving commented for possible testing
-    // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
-    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
-    // slamService.path_to_sequence = "Out_file.txt";
+    string dummyPath = "/home/kkufieta/slam/slam-libraries/viam-orb-slam3/";
+    slamService.path_to_data = dummyPath + "/data_outer/data";
+    slamService.path_to_sequence = "Out_file.txt";
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
@@ -786,14 +786,15 @@ int main(int argc, char **argv) {
             false, 0);
         if (slamService.offlineFlag) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
-            slamService.process_rgbd_offline(SLAM.get());
+            // slamService.process_rgbd_offline(SLAM.get());
+            slamService.process_rgbd_old(SLAM);
             // Continue to serve requests.
             while (b_continue_session) {
                 usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
             }
         } else {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-            slamService.process_rgbd_online(SLAM.get());
+            // slamService.process_rgbd_online(SLAM.get());
         }
         // slamService.process_rgbd_old(SLAM);
         // slamService.process_rgbd_for_testing(SLAM.get());
