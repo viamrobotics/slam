@@ -7,7 +7,7 @@ For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLA
 ## Installation instructions
 
 ### Install Dependencies
-Make sure to follow all steps as outline in [the setup section here](../../README.md#setup).
+Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
 
 ```bash
 # Install & build Pangolin (includes eigen)
@@ -88,7 +88,7 @@ You can run the binary `./bin/orb_grpc_server` directly.
 ### Local Development with saved data
 The following describes how one can set up a dev environment using RDK and locally saved data on an RPI.
 
-In [orbslam_server_v1.cc](./orbslam_server_v1.cc), find the following lines in the function `int main(...)`:
+In [orbslam_server_v1.cc](./orbslam_server_v1.cc), find the following lines in the `main` function:
 
 ```cpp
     // leaving commented for possible testing
@@ -148,6 +148,7 @@ YOUR_PATH_TO_DATA
  |- config
  |  |- YOUR.yaml
  |  |- ORBvoc.txt
+ |
  |- YOUR_DATA
     |- depth/...
     |- rgb/...

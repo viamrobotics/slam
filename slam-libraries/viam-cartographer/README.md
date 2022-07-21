@@ -9,7 +9,7 @@ Learn more at [the official Docs site](https://google-cartographer.readthedocs.i
 
 
 ## Installation instructions
-Make sure to follow all steps as outline in [the setup section here](../../README.md#setup).
+Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
 
 ### OSx
 
