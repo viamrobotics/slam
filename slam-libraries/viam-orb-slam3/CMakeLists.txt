@@ -8,7 +8,7 @@ endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -DBOOST_LOG_DYN_LINK")
 
 if(DEFINED ENV{RDK_SOURCE_DIR})
   set(RDK_SOURCE_DIR $ENV{RDK_SOURCE_DIR})
@@ -110,6 +110,7 @@ if(EXISTS ${SRCDIR})
     ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
     -lboost_serialization
     -lboost_filesystem
+    -lboost_log
     -lcrypto
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
