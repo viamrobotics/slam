@@ -158,4 +158,6 @@ YOUR_PATH_TO_DATA
 
 After that, build the code and copy/paste the binary file as described above. Run RDK with an appropriate `MY_CONFIG.json` file: `go run web/cmd/server/main.go MY_CONFIG.json `.
 
+Every time you make an edit, you have to build and copy/paste the binary file as described above.
+
 If you have questions or need files/data, ask John, Tess, Jeremy, or Kat.
