@@ -808,7 +808,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     // Save the map here - once
-    SaveAtlasAsOsaWithTimestamp(SLAM.get(), dummyPath + "/output/")
+    SaveAtlasAsOsaWithTimestamp(SLAM.get(), dummyPath + "/output/");
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
