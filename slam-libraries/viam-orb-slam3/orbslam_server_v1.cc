@@ -622,6 +622,19 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
     }
 
+    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path, int rate) {
+        auto start = chrono::high_resolution_clock::now();
+        {
+            std::lock_guard<std::mutex> lock(slam_mutex);
+            cout << "Saving Atlas as *.osa with timestamp" << endl;
+            SLAM->SaveAtlasAsOsaWithTimestamp(path);
+            cout << "Done saving Atlas as *.osa" << endl;
+        }
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        cout << "Saving the map takes " << duration.count() << endl;
+    }
+
     string path_to_data;
     string path_to_sequence;
     string camera_name;
@@ -687,7 +700,7 @@ int main(int argc, char **argv) {
         actual_path + "/data";  // will change in DATA 127/181
 
     // leaving commented for possible testing
-    string dummyPath = "/home/${USER}/slam/slam-libraries/viam-orb-slam3/";
+    string dummyPath = "/home/kkufieta/slam/slam-libraries/viam-orb-slam3/";
     slamService.path_to_data = dummyPath + "/data_outer/data";
     slamService.path_to_sequence = "Out_file.txt";
     string slam_mode = configMapParser(config_params, "mode=");
@@ -808,18 +821,12 @@ int main(int argc, char **argv) {
         return 1;
     }
     // Save the map here - once
-    SaveAtlasAsOsaWithTimestamp(SLAM.get(), dummyPath + "/output/");
+    slamService.save_atlas_as_osa_with_timestamp(SLAM.get(), dummyPath, 10);
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
 
     return 0;
-}
-
-void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM, string path) {
-    cout << "Saving Atlas as *.osa with timestamp" << endl;
-    SLAM->SaveAtlasAsOsaWithTimestamp(path);
-    cout << "Done saving Atlas as *.osa" << endl;
 }
 
 void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
