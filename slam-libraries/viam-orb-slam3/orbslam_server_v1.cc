@@ -94,6 +94,7 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest);
+void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM, string path);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -686,7 +687,7 @@ int main(int argc, char **argv) {
         actual_path + "/data";  // will change in DATA 127/181
 
     // leaving commented for possible testing
-    string dummyPath = "/home/kkufieta/slam/slam-libraries/viam-orb-slam3/";
+    string dummyPath = "/home/${USER}/slam/slam-libraries/viam-orb-slam3/";
     slamService.path_to_data = dummyPath + "/data_outer/data";
     slamService.path_to_sequence = "Out_file.txt";
     string slam_mode = configMapParser(config_params, "mode=");
@@ -806,11 +807,19 @@ int main(int argc, char **argv) {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
     }
+    // Save the map here - once
+    SaveAtlasAsOsaWithTimestamp(SLAM.get(), dummyPath + "/output/")
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
 
     return 0;
+}
+
+void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM, string path) {
+    cout << "Saving Atlas as *.osa with timestamp" << endl;
+    SLAM->SaveAtlasAsOsaWithTimestamp(path);
+    cout << "Done saving Atlas as *.osa" << endl;
 }
 
 void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
