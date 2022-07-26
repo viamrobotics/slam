@@ -622,17 +622,16 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
     }
 
-    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path, int rate) {
+    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path) {
         auto start = chrono::high_resolution_clock::now();
+        cout << "Saving Atlas as *.osa with timestamp at a rate of " << map_rate_sec << endl;
         {
             std::lock_guard<std::mutex> lock(slam_mutex);
-            cout << "Saving Atlas as *.osa with timestamp" << endl;
             SLAM->SaveAtlasAsOsaWithTimestamp(path);
-            cout << "Done saving Atlas as *.osa" << endl;
         }
         auto stop = chrono::high_resolution_clock::now();
+        cout << "Done saving Atlas as *.osa" << endl;
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-        cout << "Saving the map takes " << duration.count() << endl;
     }
 
     string path_to_data;
@@ -640,6 +639,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string camera_name;
     double yamlTime;
     int frame_delay;
+    int map_rate_sec;
     bool offlineFlag = false;
 
     std::mutex slam_mutex;
@@ -665,7 +665,8 @@ int main(int argc, char **argv) {
                                     "-config_param={mode=slam_mode,} "
                                     "-port=grpc_port "
                                     "-sensors=sensor_name "
-                                    "-data_rate_ms=frame_delay";
+                                    "-data_rate_ms=frame_delay"
+                                    "-map_rate_sec=map_rate_sec";
         return 1;
     }
 
@@ -721,6 +722,13 @@ int main(int argc, char **argv) {
         return 1;
     }
     slamService.frame_delay = stoi(frames);
+
+    string map_rate_sec = argParser(argc, argv, "-map_rate_sec=");
+    if (map_rate_sec.empty()) {
+        BOOST_LOG_TRIVIAL(fatal) << "No map capture rate specified";
+        return 1;
+    }
+    slamService.map_rate_sec = stoi(map_rate_sec);
 
     slamService.camera_name = argParser(argc, argv, "-sensors=");
     if (slamService.camera_name.empty()) {
@@ -821,7 +829,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     // Save the map here - once
-    slamService.save_atlas_as_osa_with_timestamp(SLAM.get(), dummyPath, 10);
+    slamService.save_atlas_as_osa_with_timestamp(SLAM.get(), dummyPath);
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
