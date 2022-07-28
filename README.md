@@ -24,16 +24,15 @@ make pull-rdk
 
 This will grab a minimal version of rdk to build gRPC with.
 
-## Contributing
 
-### Linting
+## Linting
 
 ```bash
 brew install clang-format
 make format
 ```
 
-## Linting
+## Working with submodules
 When working with submodules, it is important to follow this order:
 
 ### Clone & pull
