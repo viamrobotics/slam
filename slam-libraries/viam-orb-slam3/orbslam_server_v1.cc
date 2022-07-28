@@ -241,7 +241,11 @@ int main(int argc, char **argv) {
         if (slamService.offlineFlag) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
             // slamService.process_rgbd_offline(SLAM.get());
+            std::cout << "--- orbslam_server_v1.cc: START SAVE ATLAS AS OSA, dummyPath: " << dummyPath << endl;
+            slamService.start_save_atlas_as_osa(SLAM.get(), dummyPath + "output/");
             slamService.process_rgbd_old(SLAM);
+            std::cout << "--- orbslam_server_v1.cc: STOP SAVING ATLAS AS OSA" << endl;
+            slamService.stop_save_atlas_as_osa();
             // Continue to serve requests.
             while (b_continue_session) {
                 usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
@@ -260,8 +264,6 @@ int main(int argc, char **argv) {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
     }
-    // Save the map here - once
-    slamService.save_atlas_as_osa_with_timestamp(SLAM.get(), dummyPath);
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";

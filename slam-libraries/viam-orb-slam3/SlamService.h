@@ -589,29 +589,50 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
     }
 
-    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path) {
-        auto start = chrono::high_resolution_clock::now();
-        cout << "Saving Atlas as *.osa with timestamp at a rate of " << map_rate_sec << endl;
-        {
-            std::lock_guard<std::mutex> lock(slam_mutex);
-            SLAM->SaveAtlasAsOsaWithTimestamp(path);
-        }
-        auto stop = chrono::high_resolution_clock::now();
-        cout << "Done saving Atlas as *.osa" << endl;
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM, string path_save_atlas) {
+        thread_save_atlas_as_osa_with_timestamp = new thread(
+            [&](ORB_SLAM3::System *SLAM, string path_save_atlas) {
+                this->save_atlas_as_osa_with_timestamp(SLAM, path_save_atlas);
+            }, SLAM, path_save_atlas);
     }
 
-        string path_to_data;
-        string path_to_sequence;
-        string camera_name;
-        double yamlTime;
-        int frame_delay;
-        int map_rate_sec;
-        bool offlineFlag = false;
+    void stop_save_atlas_as_osa() {
+        thread_save_atlas_as_osa_with_timestamp->join();
+    }
 
-        std::mutex slam_mutex;
-        Sophus::SE3f poseGrpc;
-        std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
+    string path_to_data;
+    string path_to_sequence;
+    string camera_name;
+    double yamlTime;
+    int frame_delay;
+    bool offlineFlag = false;
+    int map_rate_sec;
+
+    std::mutex slam_mutex;
+    Sophus::SE3f poseGrpc;
+    std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
+
+   private:
+
+    std::thread* thread_save_atlas_as_osa_with_timestamp;
+
+    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path_save_atlas) {
+        while(b_continue_session) {
+            std::time_t t = std::time(nullptr);
+            char timestamp[100];
+            std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S", std::gmtime(&t));
+            // Save the current atlas map in *.osa style
+            string pathSaveFileName = path_save_atlas;
+            pathSaveFileName = pathSaveFileName.append("atlas_");
+            pathSaveFileName = pathSaveFileName.append(timestamp);
+            pathSaveFileName = pathSaveFileName.append(".osa");
+            {
+                std::lock_guard<std::mutex> lock(slam_mutex);
+                SLAM->SaveAtlasAsOsaWithTimestamp(pathSaveFileName);
+            }
+            this_thread::sleep_for(chrono::seconds(map_rate_sec));
+        }
+    }
     };
 
 }
