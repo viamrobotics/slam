@@ -46,7 +46,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 
 // take .both files from rdk and process them to use with ORBSLAM. this will be
 // changed in
-// https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
+// https://viam.atlassian.net/browse/DATA-254
 void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
 
 // Find the next frame based off the current interest given a directory of
@@ -161,7 +161,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 
 // take .both files from rdk and process them to use with ORBSLAM. this will be
 // changed in
-// https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
+// https://viam.atlassian.net/browse/DATA-254
 
 void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
     cv::Mat rawData;

@@ -363,7 +363,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         while (true) {
             // TBD: Possibly split this function into RGBD and MONO processing
             // modes
-            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+            // https://viam.atlassian.net/browse/DATA-182
             if (!b_continue_session) return;
 
             prevTimeStamp = timeStamp;
@@ -444,7 +444,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         for (int i = locClosest; i < files.size(); i++) {
             // TBD: Possibly split this function into RGBD and MONO processing
             // modes
-            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+            // https://viam.atlassian.net/browse/DATA-182
             //  record timestamp
             timeStamp = viam::utils::readTimeFromFilename(files[i].substr(
                             files[i].find("_data_") + FILENAME_CONST)) -
