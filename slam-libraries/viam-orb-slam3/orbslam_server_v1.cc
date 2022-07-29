@@ -865,8 +865,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 
-   private:
-
     std::thread* thread_save_atlas_as_osa_with_timestamp;
 
     void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path_save_atlas) {
