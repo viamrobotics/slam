@@ -15,3 +15,6 @@
 
 # grpc
 slam-libraries/grpc
+
+# rdk
+slam-libraries/rdk-minimal
