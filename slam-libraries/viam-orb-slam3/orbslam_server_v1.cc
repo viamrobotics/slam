@@ -456,7 +456,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
         // find all images used for our rgbd camera
         std::vector<std::string> files =
-            listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
+            listFilesInDirectoryForCamera(path_to_data + "/rgb", ".png", camera_name);
         if (files.size() == 0) {
             BOOST_LOG_TRIVIAL(debug) << "No files found";
             return;
@@ -495,6 +495,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             } else {
                 // Pass the image to the SLAM system
                 BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
+                
                 auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
@@ -720,7 +721,7 @@ int main(int argc, char **argv) {
                                     "-data_rate_ms=frame_delay";
         return 1;
     }
-
+    
     string config_params = argParser(argc, argv, "-config_param=");
 
     const auto debugParam = configMapParser(config_params, "debug=");
@@ -847,6 +848,9 @@ int main(int argc, char **argv) {
 
         // Create SLAM system. It initializes all system threads and gets ready
         // to process frames.
+        // SLAM = std::make_unique<ORB_SLAM3::System>(
+        //     path_to_vocab, full_path_to_settings, ORB_SLAM3::System::MONOCULAR,
+        //     false, 0);
         SLAM = std::make_unique<ORB_SLAM3::System>(
             path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD,
             false, 0);
@@ -867,6 +871,10 @@ int main(int argc, char **argv) {
     } else if (slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+        // SLAM = std::make_unique<ORB_SLAM3::System>(
+        //     path_to_vocab, full_path_to_settings, ORB_SLAM3::System::MONOCULAR,
+        //     false, 0);
+        // auto tmpPose = SLAM->TrackMonocular(im,timeStamp);
     } else {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
@@ -988,6 +996,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
     for (const auto &entry : directory_iterator(data_directory)) {
         currFile = (entry.path()).stem().string();
         if (camera_name == currFile.substr(0, currFile.find("_data_"))) {
+            
             file_paths.push_back(currFile);
         }
     }
