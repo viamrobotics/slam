@@ -358,8 +358,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
                 buffer.sputn((const char *)&v.z(), 4);
+                // cout << v.x() << "  " << v.y() << "  " << v.z() << endl;
                 buffer.sputn((const char *)&rgb, 4);
             }
+            auto actualPose = poseGrpc.params();
+            // cout << actualPose[4] << "  " << actualPose[5] << "  " << actualPose[6] << endl;
             PointCloudObject *myPointCloud = response->mutable_point_cloud();
             myPointCloud->set_point_cloud(buffer.str());
         } else {
@@ -373,7 +376,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
         std::vector<std::string> files =
-            listFilesInDirectoryForCamera(path_to_data + "/rgb", ".png", camera_name);
+            listFilesInDirectoryForCamera(path_to_data + "/depth", ".png", camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
@@ -383,7 +386,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
             usleep(frame_delay * 1e3);
-            files = listFilesInDirectoryForCamera(path_to_data + "/rgb", ".png",
+            files = listFilesInDirectoryForCamera(path_to_data + "/depth", ".png",
                                                   camera_name);
             locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime,
                                      &fileTimeStart);
@@ -404,7 +407,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // Currently pauses based off frame_delay if no image is found
             while (i == -1) {
                 if (!b_continue_session) return;
-                files = listFilesInDirectoryForCamera(path_to_data + "/rgb", ".png",
+                files = listFilesInDirectoryForCamera(path_to_data + "/depth", ".png",
                                                       camera_name);
                 // In online mode we want the most recent frames, so parse the
                 // data directory with this in mind
@@ -472,7 +475,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             return;
         }
         int nkeyframes = 0;
-
+        float imageScale = SLAM->GetImageScale();
         // iterate over all remaining files in directory
         for (int i = locClosest; i < files.size(); i++) {
             // TBD: Possibly split this function into RGBD and MONO processing
@@ -484,7 +487,23 @@ class SLAMServiceImpl final : public SLAMService::Service {
                         fileTimeStart;
             // decode images
             cv::Mat im, depth;
-            loadRGBD(path_to_data, files[i], im, depth);
+            // loadRGBD(path_to_data, files[i], im, depth);
+            // write out filenames and paths for each respective image
+            std::string colorName = path_to_data + "/rgb/"  + files[i] + ".png";
+            std::string depthName = path_to_data + "/depth/"  + files[i] + ".png";
+
+            //check if the depth image exists, if it does then load in the images
+            if (boost::filesystem::exists( colorName )){
+                im = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+                depth = cv::imread(depthName, cv::IMREAD_GRAYSCALE);
+            } 
+            if(imageScale != 1.f)
+        {
+            int width = im.cols * imageScale;
+            int height = im.rows * imageScale;
+            cv::resize(im, im, cv::Size(width, height));
+            cv::resize(depth, depth, cv::Size(width, height));
+        }
             // Throw an error to skip this frame if not found
             if (depth.empty()) {
                 BOOST_LOG_TRIVIAL(error)
@@ -495,7 +514,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             } else {
                 // Pass the image to the SLAM system
                 BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
-                
+                cout << "SLAMMIN " << depthName << endl;
                 auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
@@ -609,7 +628,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         string pathSeq(path_to_data);
         LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB,
                        vstrImageFilenamesD, vTimestamps);
-
+    cout << strAssociationFilename << endl;
         // Check consistency in the number of images and depthmaps
         nImages = vstrImageFilenamesRGB.size();
         if (vstrImageFilenamesRGB.empty()) {
@@ -624,7 +643,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // Main loop
         cv::Mat imRGB, imD;
         for (int ni = 0; ni < nImages; ni++) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
+            
             // Read image and depthmap from file
             imRGB = cv::imread(vstrImageFilenamesRGB[ni], cv::IMREAD_UNCHANGED);
             imD = cv::imread(vstrImageFilenamesD[ni], cv::IMREAD_UNCHANGED);
@@ -635,20 +654,25 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     << "Failed to load image at: " << vstrImageFilenamesRGB[ni];
                 return 1;
             }
-
+            cout << vstrImageFilenamesD[ni] << endl;
             // Pass the image to the SLAM system
-            poseGrpc = SLAM->TrackRGBD(imRGB, imD, tframe);
+            auto tmpPose = SLAM->TrackRGBD(imRGB, imD, tframe);
 
             // Update the copy of the current map whenever a change in keyframes
             // occurs
             ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
             std::vector<ORB_SLAM3::KeyFrame *> keyframes =
                 currMap->GetAllKeyFrames();
-            if (SLAM->GetTrackingState() ==
+                {
+                    std::lock_guard<std::mutex> lock(slam_mutex);
+                    poseGrpc = tmpPose;
+                    if (SLAM->GetTrackingState() ==
                     ORB_SLAM3::Tracking::eTrackingState::OK &&
                 nkeyframes != keyframes.size()) {
                 currMapPoints = currMap->GetAllMapPoints();
             }
+                }
+            
             nkeyframes = keyframes.size();
             if (!b_continue_session) break;
         }
@@ -753,8 +777,8 @@ int main(int argc, char **argv) {
         actual_path + "/data";  // will change in DATA 127/181
 
     // leaving commented for possible testing
-    // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
-    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
+    // string dummyPath = "/home/kat/johnstuff/slam/slam-libraries/viam-orb-slam3";
+    // slamService.path_to_data = dummyPath + "/officePics6";
     // slamService.path_to_sequence = "Out_file.txt";
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
@@ -857,6 +881,7 @@ int main(int argc, char **argv) {
         if (slamService.offlineFlag) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
             slamService.process_rgbd_offline(SLAM.get());
+            // slamService.process_rgbd_old(SLAM);
             // Continue to serve requests.
             while (b_continue_session) {
                 usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
@@ -879,7 +904,7 @@ int main(int argc, char **argv) {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
     }
-
+    
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
 
@@ -893,7 +918,7 @@ void loadRGBD(std::string path_to_data, std::string filename, cv::Mat &im, cv::M
     std::string depthName = path_to_data + "/depth/"  + filename + ".png";
 
     //check if the depth image exists, if it does then load in the images
-    if (boost::filesystem::exists( depthName )){
+    if (boost::filesystem::exists( colorName )){
         im = cv::imread(colorName, cv::IMREAD_UNCHANGED);
         depth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
     } 
