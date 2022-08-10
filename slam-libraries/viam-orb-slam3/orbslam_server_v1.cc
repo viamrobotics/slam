@@ -290,6 +290,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                cv::FILLED);
                 }
             }
+            const auto j = static_cast<int>(-widthScale *minX);
+            const auto i = static_cast<int>(-widthScale * minZ);
+            cv::circle(mat, cv::Point(i, j), 2 /* radius */,
+                        cv::Scalar(MAX_COLOR_VALUE, MAX_COLOR_VALUE, 0) /* green */,
+                        cv::FILLED);
 
             // Encode the image as a jpeg.
             std::vector<uchar> buffer;
@@ -320,46 +325,23 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // write our PCD file. we are writing as a binary
             oss << "VERSION .7\n"
-                << "FIELDS x y z rgb\n"
-                << "SIZE 4 4 4 4\n"
-                << "TYPE F F F I\n"
-                << "COUNT 1 1 1 1\n"
+                << "FIELDS x y z\n"
+                << "SIZE 4 4 4\n"
+                << "TYPE F F F\n"
+                << "COUNT 1 1 1\n"
                 << "WIDTH " << actualMap.size() << "\n"
                 << "HEIGHT " << 1 << "\n"
                 << "VIEWPOINT 0 0 0 1 0 0 0\n"
                 << "POINTS " << actualMap.size() << "\n"
                 << "DATA binary\n";
 
-            // initial loop to determine color bounds for PCD.
+            // write the map
             for (auto p : actualMap) {
                 Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-                float val = v.y();
-                if (max < val) max = val;
-                if (min > val) min = val;
-            }
-            float span = max - min;
-            char clr = 0;
-            int offsetRGB = 60;
-            int spanRGB = 192;
-
-            // write the map with simple rgb colors based off height from the
-            // "ground". Map written as a binary
-            for (auto p : actualMap) {
-                Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-                float val = v.y();
-                auto ratio = (val - min) / span;
-                clr = (char)(offsetRGB + (ratio * spanRGB));
-                if (clr > MAX_COLOR_VALUE) clr = MAX_COLOR_VALUE;
-                if (clr < 0) clr = 0;
-                int rgb = 0;
-                rgb = rgb | (clr << 16);
-                rgb = rgb | (clr << 8);
-                rgb = rgb | (clr << 0);
+               
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
                 buffer.sputn((const char *)&v.z(), 4);
-                // cout << v.x() << "  " << v.y() << "  " << v.z() << endl;
-                buffer.sputn((const char *)&rgb, 4);
             }
             auto actualPose = poseGrpc.params();
             // cout << actualPose[4] << "  " << actualPose[5] << "  " << actualPose[6] << endl;
