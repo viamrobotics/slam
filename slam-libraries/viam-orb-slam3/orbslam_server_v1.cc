@@ -845,7 +845,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
 
 // Find the next frame based off the current interest given a directory of
-// data and time to search from
+// data and time to search from, and confirm a corresponding depth image
 int parseBothDataDir(std::string path_to_data,
                      const std::vector<std::string> &filesRGB,
                      FileParserMethod interest, double configTime,
