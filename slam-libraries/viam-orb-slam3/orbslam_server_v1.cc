@@ -63,7 +63,8 @@ using grpc::ServerContext;
 using grpc::ServerReader;
 using grpc::ServerReaderWriter;
 using grpc::ServerWriter;
-
+const std::string strRGB = "/rgb";
+const std::string strDepth = "/depth";
 using proto::api::common::v1::PointCloudObject;
 using proto::api::common::v1::Pose;
 using proto::api::common::v1::PoseInFrame;
@@ -75,6 +76,7 @@ using proto::api::service::slam::v1::SLAMService;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
 std::atomic<bool> b_continue_session{true};
+
 void exit_loop_handler(int s) {
     BOOST_LOG_TRIVIAL(info) << "Finishing session";
     b_continue_session = false;
@@ -90,10 +92,15 @@ double readTimeFromFilename(const string filename);
 std::vector<std::string> listFilesInDirectoryForCamera(
     const std::string data_directory, const std::string extension,
     const std::string camera_name);
-void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
+bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
+              cv::Mat &imDepth);
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest);
+int parseBothDataDir(std::string path_to_data,
+                     const std::vector<std::string> &filesRGB,
+                     FileParserMethod interest, double configTime,
+                     double *timeInterest);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -371,23 +378,25 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
-        std::vector<std::string> files =
-            listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
+        std::vector<std::string> filesRGB = listFilesInDirectoryForCamera(
+            path_to_data + strRGB, ".png", camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
-        int locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime,
-                                     &fileTimeStart);
+        int locRecent = -1;
+        locRecent =
+            parseBothDataDir(path_to_data, filesRGB, FileParserMethod::Recent,
+                             yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
             usleep(frame_delay * 1e3);
-            files = listFilesInDirectoryForCamera(path_to_data, ".both",
-                                                  camera_name);
-            locRecent = parseDataDir(files, FileParserMethod::Recent, yamlTime,
-                                     &fileTimeStart);
+            filesRGB = listFilesInDirectoryForCamera(path_to_data + strRGB,
+                                                     ".png", camera_name);
+            locRecent = parseBothDataDir(path_to_data, filesRGB,
+                                         FileParserMethod::Recent, yamlTime,
+                                         &fileTimeStart);
         }
-
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
         int nkeyframes = 0;
@@ -403,33 +412,32 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // Currently pauses based off frame_delay if no image is found
             while (i == -1) {
                 if (!b_continue_session) return;
-                files = listFilesInDirectoryForCamera(path_to_data, ".both",
-                                                      camera_name);
+                filesRGB = listFilesInDirectoryForCamera(path_to_data + strRGB,
+                                                         ".png", camera_name);
                 // In online mode we want the most recent frames, so parse the
-                // data directory with this in mind
-                i = parseDataDir(files, FileParserMethod::Recent,
-                                 prevTimeStamp + fileTimeStart, &currTime);
+                // data directorys with this in mind
+                i = parseBothDataDir(path_to_data, filesRGB,
+                                     FileParserMethod::Recent,
+                                     prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
                     usleep(frame_delay * 1e3);
                 } else {
                     timeStamp = currTime - fileTimeStart;
                 }
             }
+
             // decode images
-            cv::Mat im, depth;
-            decodeBOTH(path_to_data + "/" + files[i], im, depth);
+            cv::Mat imRGB, imDepth;
+            bool ok = loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
 
             // Throw an error to skip this frame if the frames are bad
-            if (depth.empty()) {
+            if (!ok) {
                 BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load depth at: " << files[i];
-            } else if (im.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load png image at: " << files[i];
+                    << "Failed to load frame at: " << filesRGB[i];
             } else {
                 // Pass the image to the SLAM system
                 BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
-                auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
+                auto tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
                 // Update the copy of the current map whenever a change in
                 // keyframes occurs
                 ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
@@ -454,18 +462,20 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
         // find all images used for our rgbd camera
-        std::vector<std::string> files =
-            listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
-        if (files.size() == 0) {
-            BOOST_LOG_TRIVIAL(debug) << "No files found";
+        std::vector<std::string> filesRGB = listFilesInDirectoryForCamera(
+            path_to_data + strRGB, ".png", camera_name);
+        if (filesRGB.size() == 0) {
+            BOOST_LOG_TRIVIAL(debug) << "No files found in " << strRGB;
             return;
         }
 
         double fileTimeStart = yamlTime, timeStamp = 0;
         // In offline mode we want the to parse all frames since our map/yaml
         // file was generated
-        int locClosest = parseDataDir(files, FileParserMethod::Closest,
-                                      yamlTime, &fileTimeStart);
+        int locClosest = -1;
+        locClosest =
+            parseBothDataDir(path_to_data, filesRGB, FileParserMethod::Recent,
+                             yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
             return;
@@ -473,28 +483,26 @@ class SLAMServiceImpl final : public SLAMService::Service {
         int nkeyframes = 0;
 
         // iterate over all remaining files in directory
-        for (int i = locClosest; i < files.size(); i++) {
+        for (int i = locClosest; i < filesRGB.size(); i++) {
             // TBD: Possibly split this function into RGBD and MONO processing
             // modes
             //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
             //  record timestamp
-            timeStamp = readTimeFromFilename(files[i].substr(
-                            files[i].find("_data_") + FILENAME_CONST)) -
+            timeStamp = readTimeFromFilename(filesRGB[i].substr(
+                            filesRGB[i].find("_data_") + FILENAME_CONST)) -
                         fileTimeStart;
             // decode images
-            cv::Mat im, depth;
-            decodeBOTH(path_to_data + "/" + files[i], im, depth);
+            cv::Mat imRGB, imDepth;
+            bool ok = loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
             // Throw an error to skip this frame if not found
-            if (depth.empty()) {
+            if (!ok) {
                 BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load depth at: " << files[i];
-            } else if (im.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load png image at: " << files[i];
+                    << "Failed to load frame at: " << filesRGB[i];
             } else {
                 // Pass the image to the SLAM system
                 BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
-                auto tmpPose = SLAM->TrackRGBD(im, depth, timeStamp);
+
+                auto tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
                 // keyframes occurs
@@ -517,75 +525,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
         BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
         return;
-    }
-
-    int process_rgbd_old(std::unique_ptr<ORB_SLAM3::System> &SLAM) {
-        // Function used for ORB_SLAM with an rgbd camera. Currently returns int
-        // as a placeholder for error signals should the server have to restart
-        // itself.
-
-        // This function will be removed in a future update. Currently this is
-        // only used with a previous dataset
-
-        int nImages = 0;
-        int nkeyframes = 0;
-
-        // Retrieve paths to images
-        vector<string> vstrImageFilenamesRGB;
-        vector<string> vstrImageFilenamesD;
-        vector<double> vTimestamps;
-        string strAssociationFilename =
-            string(path_to_data) + "/" + string(path_to_sequence);
-        string pathSeq(path_to_data);
-        LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB,
-                       vstrImageFilenamesD, vTimestamps);
-
-        // Check consistency in the number of images and depthmaps
-        nImages = vstrImageFilenamesRGB.size();
-        if (vstrImageFilenamesRGB.empty()) {
-            BOOST_LOG_TRIVIAL(error) << "No images found in provided path";
-            return 1;
-        } else if (vstrImageFilenamesD.size() != vstrImageFilenamesRGB.size()) {
-            BOOST_LOG_TRIVIAL(error)
-                << "Different number of images for rgb and depth";
-            return 1;
-        }
-
-        // Main loop
-        cv::Mat imRGB, imD;
-        for (int ni = 0; ni < nImages; ni++) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
-            // Read image and depthmap from file
-            imRGB = cv::imread(vstrImageFilenamesRGB[ni], cv::IMREAD_UNCHANGED);
-            imD = cv::imread(vstrImageFilenamesD[ni], cv::IMREAD_UNCHANGED);
-            double tframe = vTimestamps[ni];
-
-            if (imRGB.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load image at: " << vstrImageFilenamesRGB[ni];
-                return 1;
-            }
-
-            // Pass the image to the SLAM system
-            poseGrpc = SLAM->TrackRGBD(imRGB, imD, tframe);
-
-            // Update the copy of the current map whenever a change in keyframes
-            // occurs
-            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                currMap->GetAllKeyFrames();
-            if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK &&
-                nkeyframes != keyframes.size()) {
-                currMapPoints = currMap->GetAllMapPoints();
-            }
-            nkeyframes = keyframes.size();
-            if (!b_continue_session) break;
-        }
-
-        BOOST_LOG_TRIVIAL(info) << "Finished processing images";
-
-        return 1;
     }
 
     // Creates a simple map containing a 2x4x8 rectangular prism with the robot
@@ -682,10 +621,6 @@ int main(int argc, char **argv) {
     slamService.path_to_data =
         actual_path + "/data";  // will change in DATA 127/181
 
-    // leaving commented for possible testing
-    // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
-    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
-    // slamService.path_to_sequence = "Out_file.txt";
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
@@ -792,12 +727,12 @@ int main(int argc, char **argv) {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
             slamService.process_rgbd_online(SLAM.get());
         }
-        // slamService.process_rgbd_old(SLAM);
         // slamService.process_rgbd_for_testing(SLAM.get());
 
     } else if (slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+
     } else {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
@@ -809,33 +744,24 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
-                    vector<string> &vstrImageFilenamesRGB,
-                    vector<string> &vstrImageFilenamesD,
-                    vector<double> &vTimeStamps) {
-    // This function will be removed in a future update. Currently this is only
-    // used with a previous dataset
-    string pathCam0 = pathSeq + "/rgb";
-    string pathCam1 = pathSeq + "/depth";
-    std::ifstream fTimes;
-    fTimes.open(strPathTimes.c_str());
-    vTimeStamps.reserve(5000);
-    vstrImageFilenamesRGB.reserve(5000);
-    vstrImageFilenamesD.reserve(5000);
-    while (!fTimes.eof()) {
-        string s;
-        getline(fTimes, s);
-        if (!s.empty()) {
-            stringstream ss;
-            ss << s;
-            vstrImageFilenamesRGB.push_back(pathCam0 + "/" + ss.str());
-            vstrImageFilenamesD.push_back(pathCam1 + "/" + ss.str());
-            string timestring = s.substr(0, s.find_last_of("."));
-            std::string::size_type sz;
-            double t = std::stod(timestring, &sz);
-            vTimeStamps.push_back(t);
-        }
+// this function loads in a rgbd pair of images to be used by ORBSLAM, and
+// returns whether the current pair is okay
+bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
+              cv::Mat &imDepth) {
+    // write out filenames and paths for each respective image
+    std::string colorName = path_to_data + strRGB + "/" + filename + ".png";
+    std::string depthName = path_to_data + strDepth + "/" + filename + ".png";
+
+    // check if the rgb and depth image exists, if it does then load in the
+    // images
+    if (boost::filesystem::exists(colorName) &&
+        boost::filesystem::exists(depthName)) {
+        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
+        if(imRGB.empty() || imDepth.empty()) return false;
+        return true;
     }
+    return false;
 }
 
 // find a specific input argument from rdk and write the value to a string.
@@ -915,55 +841,40 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 // changed in
 // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
 
-void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth) {
-    cv::Mat rawData;
-    std::ifstream fin(filename + ".both");
-    if (fin.peek() == std::ifstream::traits_type::eof()) {
-        BOOST_LOG_TRIVIAL(error) << "Bad file, found EOF";
-        return;
-    }
-    std::vector<char> contents((std::istreambuf_iterator<char>(fin)),
-                               std::istreambuf_iterator<char>());
-    char *buffer = &contents[0];
-    int frameWidth;
-    int frameHeight;
-    int location = 0;
-    long j;
-    int nSize = contents.size();
+// Find the next frame based off the current interest given a directory of
+// data and time to search from, and confirm a corresponding depth image
+int parseBothDataDir(std::string path_to_data,
+                     const std::vector<std::string> &filesRGB,
+                     FileParserMethod interest, double configTime,
+                     double *timeInterest) {
+    if (interest == FileParserMethod::Closest) {
+        // for closest file, just parse the rgb directory. as loadRGBD will
+        // filter any MONOCULAR frames
+        double rgbTimeInterest = configTime;
+        int rgbLoc =
+            parseDataDir(filesRGB, interest, configTime, &rgbTimeInterest);
+        *timeInterest = rgbTimeInterest;
+        return rgbLoc;
 
-    // exit if no frame width or height is found
-    if (nSize < sizeof(__int64_t) * 2) return;
-    memcpy(&j, buffer + location, sizeof(__int64_t));
-    location = location + sizeof(__int64_t);
-    frameWidth = (int)j;
+    } else if (interest == FileParserMethod::Recent) {
+        // for the most recent file, search the rgb directory until a
+        // corresponding depth image is found
+        std::string depthPath = path_to_data + strDepth + "/";
+        for (int i = filesRGB.size() - 2; i >= 0; i--) {
+            
+            double fileTime = readTimeFromFilename(
+            filesRGB[i].substr(files[i].find("_data_") + FILENAME_CONST));
 
-    memcpy(&j, buffer + location, sizeof(__int64_t));
-    location = location + sizeof(__int64_t);
-    frameHeight = (int)j;
-    // exit if depth map is not complete(assumes 8bit)
-    if (nSize < (8 * frameWidth * frameHeight)) return;
+            // if we found no new files return -1 as an error
+            if(fileTime < configTime) return -1;
 
-    int depthFrame[frameWidth][frameHeight];
-    // copy depth map into 2D vector
-    for (int x = 0; x < frameWidth; x++) {
-        for (int y = 0; y < frameHeight; y++) {
-            memcpy(&j, buffer + location, sizeof(__int64_t));
-            depthFrame[x][y] = (int)j;
-            location = location + sizeof(__int64_t);
+            if (boost::filesystem::exists(depthPath + filesRGB[i] + ".png")) {
+                *timeInterest = fileTime;
+                return i;
+            }
         }
+        return -1;
     }
-    if (nSize <= location) {
-        return;
-    }
-    // grab location of the png(occurs after depth map completes)
-    char *pngBuf = &contents[location];
-
-    // format frames with opencv
-    depth = cv::Mat(cv::Size(frameWidth, frameHeight), CV_16U, depthFrame,
-                    cv::Mat::AUTO_STEP);
-    rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1, (void *)pngBuf,
-                      cv::IMREAD_COLOR);
-    im = cv::imdecode(rawData, cv::IMREAD_COLOR);
 }
 
 // Find the next frame based off the current interest given a directory of
@@ -986,6 +897,10 @@ int parseDataDir(const std::vector<std::string> &files,
     // Find the file generated most recently, used mostly in online mode
     else if (interest == FileParserMethod::Recent) {
         int i = files.size() - 2;
+
+        //if we have no files return -1 as an error
+        if(i < 0) return -1;
+
         double fileTime = readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
         double delTime = fileTime - configTime;

@@ -12,6 +12,12 @@ bufsetup:
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 	pkg-config openssl || export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
 
+cleanorb:
+	rm -rf viam-orb-slam3/build
+	rm -rf viam-orb-slam3/ORB_SLAM3/build
+	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/DBoW2/build
+	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/g2o/build
+	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/Sophus/build
 
 format:
 	find . -type f -not -path \
