@@ -94,7 +94,6 @@ std::vector<std::string> listFilesInDirectoryForCamera(
     const std::string camera_name);
 void loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
               cv::Mat &imDepth);
-void decodeBOTH(std::string filename, cv::Mat &imRGB, cv::Mat &imDepth);
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest);
@@ -556,142 +555,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return;
     }
 
-    void process_rgbd_old_both(ORB_SLAM3::System *SLAM) {
-        // find all images used for our rgbd camera
-        std::vector<std::string> files =
-            listFilesInDirectoryForCamera(path_to_data, ".both", camera_name);
-        if (files.size() == 0) {
-            BOOST_LOG_TRIVIAL(debug) << "No files found";
-            return;
-        }
-
-        double fileTimeStart = yamlTime, timeStamp = 0;
-        // In offline mode we want the to parse all frames since our map/yaml
-        // file was generated
-        int locClosest = parseDataDir(files, FileParserMethod::Closest,
-                                      yamlTime, &fileTimeStart);
-        if (locClosest == -1) {
-            BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
-            return;
-        }
-        int nkeyframes = 0;
-
-        // iterate over all remaining files in directory
-        for (int i = locClosest; i < files.size(); i++) {
-            // TBD: Possibly split this function into RGBD and MONO processing
-            // modes
-            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
-            //  record timestamp
-            timeStamp = readTimeFromFilename(files[i].substr(
-                            files[i].find("_data_") + FILENAME_CONST)) -
-                        fileTimeStart;
-            // decode images
-            cv::Mat imRGB, imDepth;
-            decodeBOTH(path_to_data + "/" + files[i], imRGB, imDepth);
-            // Throw an error to skip this frame if not found
-            if (imDepth.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load depth at: " << files[i];
-            } else if (imRGB.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load png image at: " << files[i];
-            } else {
-                // Pass the image to the SLAM system
-                BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
-                auto tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
-
-                // Update the copy of the current map whenever a change in
-                // keyframes occurs
-                ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-                std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                    currMap->GetAllKeyFrames();
-                {
-                    std::lock_guard<std::mutex> lock(slam_mutex);
-                    poseGrpc = tmpPose;
-                    if (SLAM->GetTrackingState() ==
-                            ORB_SLAM3::Tracking::eTrackingState::OK &&
-                        nkeyframes != keyframes.size()) {
-                        currMapPoints = currMap->GetAllMapPoints();
-                    }
-                }
-                nkeyframes = keyframes.size();
-            }
-            if (!b_continue_session) break;
-        }
-
-        BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
-        return;
-    }
-
-    int process_rgbd_old(std::unique_ptr<ORB_SLAM3::System> &SLAM) {
-        // Function used for ORB_SLAM with an rgbd camera. Currently returns int
-        // as a placeholder for error signals should the server have to restart
-        // itself.
-
-        // This function will be removed in a future update. Currently this is
-        // only used with a previous dataset
-
-        int nImages = 0;
-        int nkeyframes = 0;
-
-        // Retrieve paths to images
-        vector<string> vstrImageFilenamesRGB;
-        vector<string> vstrImageFilenamesD;
-        vector<double> vTimestamps;
-        string strAssociationFilename =
-            string(path_to_data) + "/" + string(path_to_sequence);
-        string pathSeq(path_to_data);
-        LoadImagesRGBD(pathSeq, strAssociationFilename, vstrImageFilenamesRGB,
-                       vstrImageFilenamesD, vTimestamps);
-
-        // Check consistency in the number of images and depthmaps
-        nImages = vstrImageFilenamesRGB.size();
-        if (vstrImageFilenamesRGB.empty()) {
-            BOOST_LOG_TRIVIAL(error) << "No images found in provided path";
-            return 1;
-        } else if (vstrImageFilenamesD.size() != vstrImageFilenamesRGB.size()) {
-            BOOST_LOG_TRIVIAL(error)
-                << "Different number of images for rgb and depth";
-            return 1;
-        }
-
-        // Main loop
-        cv::Mat imRGB, imD;
-        for (int ni = 0; ni < nImages; ni++) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
-            // Read image and depthmap from file
-            imRGB = cv::imread(vstrImageFilenamesRGB[ni], cv::IMREAD_UNCHANGED);
-            imD = cv::imread(vstrImageFilenamesD[ni], cv::IMREAD_UNCHANGED);
-            double tframe = vTimestamps[ni];
-
-            if (imRGB.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Failed to load image at: " << vstrImageFilenamesRGB[ni];
-                return 1;
-            }
-
-            // Pass the image to the SLAM system
-            poseGrpc = SLAM->TrackRGBD(imRGB, imD, tframe);
-
-            // Update the copy of the current map whenever a change in keyframes
-            // occurs
-            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                currMap->GetAllKeyFrames();
-            if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK &&
-                nkeyframes != keyframes.size()) {
-                currMapPoints = currMap->GetAllMapPoints();
-            }
-            nkeyframes = keyframes.size();
-            if (!b_continue_session) break;
-        }
-
-        BOOST_LOG_TRIVIAL(info) << "Finished processing images";
-
-        return 1;
-    }
-
     // Creates a simple map containing a 2x4x8 rectangular prism with the robot
     // in the center, for testing GetMap and GetPosition.
     void process_rgbd_for_testing(ORB_SLAM3::System *SLAM) {
@@ -896,16 +759,12 @@ int main(int argc, char **argv) {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
             slamService.process_rgbd_online(SLAM.get());
         }
-        // slamService.process_rgbd_old(SLAM);
         // slamService.process_rgbd_for_testing(SLAM.get());
 
     } else if (slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
-        // SLAM = std::make_unique<ORB_SLAM3::System>(
-        //     path_to_vocab, full_path_to_settings,
-        //     ORB_SLAM3::System::MONOCULAR, false, 0);
-        // auto tmpPose = SLAM->TrackMonocular(imRGB,timeStamp);
+
     } else {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
@@ -1037,57 +896,6 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 // take .both files from rdk and process them to use with ORBSLAM. this will be
 // changed in
 // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
-
-void decodeBOTH(std::string filename, cv::Mat &imRGB, cv::Mat &imDepth) {
-    cv::Mat rawData;
-    std::ifstream fin(filename + ".both");
-    if (fin.peek() == std::ifstream::traits_type::eof()) {
-        BOOST_LOG_TRIVIAL(error) << "Bad file, found EOF";
-        return;
-    }
-    std::vector<char> contents((std::istreambuf_iterator<char>(fin)),
-                               std::istreambuf_iterator<char>());
-    char *buffer = &contents[0];
-    int frameWidth;
-    int frameHeight;
-    int location = 0;
-    long j;
-    int nSize = contents.size();
-
-    // exit if no frame width or height is found
-    if (nSize < sizeof(__int64_t) * 2) return;
-    memcpy(&j, buffer + location, sizeof(__int64_t));
-    location = location + sizeof(__int64_t);
-    frameWidth = (int)j;
-
-    memcpy(&j, buffer + location, sizeof(__int64_t));
-    location = location + sizeof(__int64_t);
-    frameHeight = (int)j;
-    // exit if depth map is not complete(assumes 8bit)
-    if (nSize < (8 * frameWidth * frameHeight)) return;
-
-    int depthFrame[frameWidth][frameHeight];
-    // copy depth map into 2D vector
-    for (int x = 0; x < frameWidth; x++) {
-        for (int y = 0; y < frameHeight; y++) {
-            memcpy(&j, buffer + location, sizeof(__int64_t));
-            depthFrame[x][y] = (int)j;
-            location = location + sizeof(__int64_t);
-        }
-    }
-    if (nSize <= location) {
-        return;
-    }
-    // grab location of the png(occurs after depth map completes)
-    char *pngBuf = &contents[location];
-
-    // format frames with opencv
-    imDepth = cv::Mat(cv::Size(frameWidth, frameHeight), CV_16U, depthFrame,
-                    cv::Mat::AUTO_STEP);
-    rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1, (void *)pngBuf,
-                      cv::IMREAD_COLOR);
-    imRGB = cv::imdecode(rawData, cv::IMREAD_COLOR);
-}
 
 // Find the next frame based off the current interest given a directory of
 // data and time to search from
