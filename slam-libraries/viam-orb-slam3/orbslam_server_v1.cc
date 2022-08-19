@@ -860,10 +860,16 @@ int parseBothDataDir(std::string path_to_data,
         // for the most recent file, search the rgb directory until a
         // corresponding depth image is found
         std::string depthPath = path_to_data + strDepth + "/";
-        for (int i = filesRGB.size() - 2; i > 0; i--) {
+        for (int i = filesRGB.size() - 2; i >= 0; i--) {
+            
+            double fileTime = readTimeFromFilename(
+            filesRGB[i].substr(files[i].find("_data_") + FILENAME_CONST));
+
+            // if we found no new files return -1 as an error
+            if(fileTime < configTime) return -1;
+
             if (boost::filesystem::exists(depthPath + filesRGB[i] + ".png")) {
-                *timeInterest = readTimeFromFilename(filesRGB[i].substr(
-                    filesRGB[i].find("_data_") + FILENAME_CONST));
+                *timeInterest = fileTime;
                 return i;
             }
         }
@@ -871,6 +877,8 @@ int parseBothDataDir(std::string path_to_data,
     }
 }
 
+// Find the next frame based off the current interest given a directory of
+// data and time to search from
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest) {
@@ -889,6 +897,10 @@ int parseDataDir(const std::vector<std::string> &files,
     // Find the file generated most recently, used mostly in online mode
     else if (interest == FileParserMethod::Recent) {
         int i = files.size() - 2;
+
+        //if we have no files return -1 as an error
+        if(i < 0) return -1;
+
         double fileTime = readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
         double delTime = fileTime - configTime;
