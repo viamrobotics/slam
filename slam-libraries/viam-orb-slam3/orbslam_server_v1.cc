@@ -621,10 +621,6 @@ int main(int argc, char **argv) {
     slamService.path_to_data =
         actual_path + "/data";  // will change in DATA 127/181
 
-    // leaving commented for possible testing
-    // string dummyPath = "/home/johnn193/slam/slam-libraries/viam-orb-slam3/";
-    // slamService.path_to_data = dummyPath + "/ORB_SLAM3/officePics3";
-    // slamService.path_to_sequence = "Out_file.txt";
     string slam_mode = configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
@@ -762,6 +758,7 @@ bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
         boost::filesystem::exists(depthName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
+        if(imRGB.empty() || imDepth.empty()) return false;
         return true;
     }
     return false;
