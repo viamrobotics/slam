@@ -100,8 +100,8 @@ int parseDataDir(const std::vector<std::string> &files,
                  double *timeInterest);
 string parseBothDataDir(const std::vector<std::string> &filesRGB,
                         const std::vector<std::string> &filesDepth,
-                        FileParserMethod interest, double configTime,
-                        double *timeInterest, int *locInterest);
+                 FileParserMethod interest, double configTime,
+                 double *timeInterest, int *locInterest);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -402,7 +402,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 parseBothDataDir(filesRGB, filesDepth, FileParserMethod::Recent,
                                  yamlTime, &fileTimeStart, &locRecent);
         }
-        cout << locRecent << endl;
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
         int nkeyframes = 0;
@@ -427,7 +426,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 whichCam = parseBothDataDir(
                     filesRGB, filesDepth, FileParserMethod::Recent,
                     prevTimeStamp + fileTimeStart, &currTime, &i);
-                cout << whichCam << "    " << i << endl;
                 if (i == -1) {
                     usleep(frame_delay * 1e3);
                 } else {
@@ -439,11 +437,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 files = filesRGB;
             else
                 files = filesDepth;
-            cout << "yo"
-                 << "    " << i << endl;
-            cout << "size rgb: " << filesRGB.size() << endl;
-            cout << "size depth: " << filesDepth.size() << endl;
-            cout << "size files: " << files.size() << endl;
 
             // decode images
             cv::Mat imRGB, imDepth;
@@ -514,7 +507,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             files = filesRGB;
         else
             files = filesDepth;
-
+            
         // iterate over all remaining files in directory
         for (int i = locClosest; i < files.size(); i++) {
             // TBD: Possibly split this function into RGBD and MONO processing
@@ -537,7 +530,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             } else {
                 // Pass the image to the SLAM system
                 BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
-
+                
                 auto tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
 
                 // Update the copy of the current map whenever a change in
@@ -762,7 +755,7 @@ int main(int argc, char **argv) {
                                     "-data_rate_ms=frame_delay";
         return 1;
     }
-
+    
     string config_params = argParser(argc, argv, "-config_param=");
 
     const auto debugParam = configMapParser(config_params, "debug=");
@@ -935,7 +928,7 @@ void loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
     if (boost::filesystem::exists(colorName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
-    }
+    } 
     return;
 }
 
@@ -1090,7 +1083,7 @@ void decodeBOTH(std::string filename, cv::Mat &imRGB, cv::Mat &imDepth) {
 
     // format frames with opencv
     imDepth = cv::Mat(cv::Size(frameWidth, frameHeight), CV_16U, depthFrame,
-                      cv::Mat::AUTO_STEP);
+                    cv::Mat::AUTO_STEP);
     rawData = cv::Mat(cv::Size(1, nSize - location), CV_8UC1, (void *)pngBuf,
                       cv::IMREAD_COLOR);
     imRGB = cv::imdecode(rawData, cv::IMREAD_COLOR);
@@ -1100,7 +1093,7 @@ void decodeBOTH(std::string filename, cv::Mat &imRGB, cv::Mat &imDepth) {
 // data and time to search from
 string parseBothDataDir(const std::vector<std::string> &filesRGB,
                         const std::vector<std::string> &filesDepth,
-                        FileParserMethod interest, double configTime,
+                 FileParserMethod interest, double configTime,
                         double *timeInterest, int *locInterest) {
     double rgbTimeInterest = configTime;
     double depthTimeInterest = configTime;
