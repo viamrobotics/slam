@@ -863,7 +863,7 @@ int parseBothDataDir(std::string path_to_data,
         for (int i = filesRGB.size() - 2; i >= 0; i--) {
             
             double fileTime = readTimeFromFilename(
-            filesRGB[i].substr(files[i].find("_data_") + FILENAME_CONST));
+            filesRGB[i].substr(filesRGB[i].find("_data_") + FILENAME_CONST));
 
             // if we found no new files return -1 as an error
             if(fileTime < configTime) return -1;
