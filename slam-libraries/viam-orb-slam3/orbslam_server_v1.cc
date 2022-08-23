@@ -790,7 +790,7 @@ int main(int argc, char **argv) {
             }
         } else {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-            // slamService.process_rgbd_online(SLAM.get());
+            slamService.process_rgbd_online(SLAM.get());
         }
         // slamService.process_rgbd_for_testing(SLAM.get());
 
