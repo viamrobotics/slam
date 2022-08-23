@@ -170,13 +170,41 @@ class SLAMServiceImpl final : public SLAMService::Service {
             auto maxX = std::numeric_limits<float>::lowest();
             auto minZ = std::numeric_limits<float>::max();
             auto maxZ = std::numeric_limits<float>::lowest();
+
+            std::vector<float> xPCValues;
+            std::vector<float> zPCValues;
+
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
+
+                xPCValues.append(v.x());
+                zPCValues.append(v.z());
+                
                 minX = std::min(minX, v.x());
                 maxX = std::max(maxX, v.x());
                 minZ = std::min(minZ, v.z());
                 maxZ = std::max(maxZ, v.z());
             }
+
+            auto size = sizeof(xPCValues)/sizeof(xPCValues[0]);
+            
+            if size > 1 {
+
+                int sigmaLevel = 5;
+
+                xMedian = std::median(xPCValues, size)
+                zMedian = std::median(zPCValues, size)
+                
+                xSD = standard_dev(xPCValues)
+                zSD = standard_dev(zPCValues)
+
+                minX =  xMedian - sigmaLevel*xSD;  
+                maxX =  xMedian + sigmaLevel*xSD; 
+
+                minZ = zMedian - sigmaLevel*zSD;  
+                maxZ = zMedian + sigmaLevel*zSD;    
+            }
+
             if (request->include_robot_marker()) {
                 const auto actualPose = currPose.params();
                 minX = std::min(minX, actualPose[4]);
@@ -232,6 +260,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 const auto v = p->GetWorldPos();
 
                 std::feclearexcept(FE_ALL_EXCEPT);
+
+                if v.x() < minX || v.x() > maxX || v.z() < minZ || v.z() > maxZ {
+                    continue;
+                }
+
                 const auto j_float = widthScale * (v.x() - minX);
                 const auto i_float = heightScale * (v.z() - minZ);
                 if (std::fetestexcept(FE_OVERFLOW) ||
@@ -348,7 +381,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 float val = v.y();
                 auto ratio = (val - min) / span;
                 clr = (char)(offsetRGB + (ratio * spanRGB));
-                if (clr > MAX_COLOR_VALUE) clr = MAX_COLOR_VALUE;
+                if (clr > MAX_COLOR_VALUE) {
+                    console.log("over max " + MAX_COLOR_VALUE + " < " + clr);
+                    clr = MAX_COLOR_VALUE; // attempt max_colord_value/2
+                }
                 if (clr < 0) clr = 0;
                 int rgb = 0;
                 rgb = rgb | (clr << 16);
@@ -996,4 +1032,25 @@ int parseDataDir(const std::vector<std::string> &files,
     }
     // if we do not find a file return -1 as an error
     return -1;
+}
+
+// compute variance
+double variance(const std::vector<float>& vals) {
+  // was int, but your now vector is of type double
+  double sum = std::accumulate((double)vals.begin(), (double)vals.end(), 0);
+  double mean = sum / static_cast<double>(vals.size());
+
+  // variance
+  double squaredDifference = 0;
+  for (unsigned int i = 0; i < vals.size(); i++)
+    squaredDifference += std::pow(vals[i] - mean, 2);
+  // Might be possible to get this with std::accumulate, but my first go didn't
+  // work.
+
+  return squaredDifference / static_cast<double>(vals.size());
+}
+
+// compute standard deviation
+float standard_dev(const std::vector<float>& vals) {
+  return std::sqrt(variance(vals));
 }
