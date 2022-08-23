@@ -11,15 +11,7 @@ else
     exit 1
 fi
 
-# Build and install Cartographer with the viam wrapper.
-pushd cartographer
-cp ../cartographer_build_utils/CMakeLists.txt CMakeLists.txt
-rm -rf build
-mkdir build
+# Rebuild viam cartographer.
 pushd build
-
-cmake .. -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH=`brew --prefix`
 ninja
-sudo ninja install
-popd
 popd

@@ -43,12 +43,29 @@ brew install sphinx-doc
 Run: `./scripts/build_cartographer.sh`
 
 Installation & building tested on:
-- [x] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
-- [x] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
-- [x] M1
+- [ ] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
+- [ ] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
+- [ ] M1
 
-### Raspberry Pi Viam Image (Or other Debian 11+, including canon-shell)
+This needs to be built only once.
+
+**Build viam-cartographer**
+
+Run: `./scripts/build_viam_cartographer.sh`
+
+Installation & building tested on:
+- [ ] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
+- [ ] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
+- [ ] M1
+
+This is run frequently, as this is where we're building our code.
+
+A second build script is therefore provided for local development: `./scripts/rebuild_viam_cartographer.sh`.
+
+### [TODO: needs update] Raspberry Pi Viam Image (Or other Debian 11+, including canon-shell)
 TODO[kat]: Make sure this is correct & works - haven't tested in a long time.
+NOTE[05/31/22]: This has not been tested with the refactored code, where the main
+cartographer repo was split from the viam-cartographer wrapper code.
 
 ```bash
 sudo apt install cmake \
