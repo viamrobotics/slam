@@ -792,12 +792,8 @@ int main(int argc, char **argv) {
             false, 0);
         if (slamService.offlineFlag) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
-            // TODO[kat]: Delete cout messages
-            std::cout << "--- orbslam_server_v1.cc: START SAVE ATLAS AS OSA, at path: " << slamService.path_to_map << endl;
             slamService.start_save_atlas_as_osa(SLAM.get());
             slamService.process_rgbd_offline(SLAM.get());
-            // TODO[kat]: Delete cout messages
-            std::cout << "--- orbslam_server_v1.cc: STOP SAVING ATLAS AS OSA" << endl;
             slamService.stop_save_atlas_as_osa();
             // Continue to serve requests.
             while (b_continue_session) {
@@ -805,7 +801,9 @@ int main(int argc, char **argv) {
             }
         } else {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+            slamService.start_save_atlas_as_osa(SLAM.get());
             slamService.process_rgbd_online(SLAM.get());
+            slamService.stop_save_atlas_as_osa();
         }
         // slamService.process_rgbd_for_testing(SLAM.get());
 
