@@ -574,11 +574,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
         }
     }
 
-    void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM, string path_save_atlas) {
+    void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM) {
         thread_save_atlas_as_osa_with_timestamp = new thread(
-            [&](ORB_SLAM3::System *SLAM, string path_save_atlas) {
-                this->save_atlas_as_osa_with_timestamp(SLAM, path_save_atlas);
-            }, SLAM, path_save_atlas);
+            [&](ORB_SLAM3::System *SLAM) {
+                this->save_atlas_as_osa_with_timestamp(SLAM);
+            }, SLAM);
     }
 
     void stop_save_atlas_as_osa() {
@@ -600,19 +600,16 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     std::thread* thread_save_atlas_as_osa_with_timestamp;
 
-    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM, string path_save_atlas) {
+    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM) {
         while(b_continue_session) {
             std::time_t t = std::time(nullptr);
             char timestamp[100];
             std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S", std::gmtime(&t));
             // Save the current atlas map in *.osa style
-            string pathSaveFileName = path_save_atlas;
-            pathSaveFileName = pathSaveFileName.append("atlas_");
-            pathSaveFileName = pathSaveFileName.append(timestamp);
-            pathSaveFileName = pathSaveFileName.append(".osa");
+            string path_save_file_name = path_to_map + "/" + camera_name + "_data_" + timestamp + ".osa";
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
-                SLAM->SaveAtlasAsOsaWithTimestamp(pathSaveFileName);
+                SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
             // Sleep for map_rate_sec duration, but check frequently for shutdown
             auto start = std::chrono::high_resolution_clock::now();
@@ -797,7 +794,7 @@ int main(int argc, char **argv) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
             // TODO[kat]: Delete cout messages
             std::cout << "--- orbslam_server_v1.cc: START SAVE ATLAS AS OSA, at path: " << slamService.path_to_map << endl;
-            slamService.start_save_atlas_as_osa(SLAM.get(), slamService.path_to_map + "/");
+            slamService.start_save_atlas_as_osa(SLAM.get());
             slamService.process_rgbd_offline(SLAM.get());
             // TODO[kat]: Delete cout messages
             std::cout << "--- orbslam_server_v1.cc: STOP SAVING ATLAS AS OSA" << endl;
