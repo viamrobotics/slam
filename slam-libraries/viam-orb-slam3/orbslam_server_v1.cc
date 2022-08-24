@@ -94,7 +94,6 @@ string argParser(int argc, char **argv, const string varName);
 // string. Returns empty if the variable is not found within the map.
 string configMapParser(string map, string varName);
 
-
 // Converts UTC time string to a double value.
 double readTimeFromFilename(const string filename);
 
@@ -113,17 +112,16 @@ int parseBothDataDir(std::string path_to_data,
                      FileParserMethod interest, double configTime,
                      double *timeInterest);
 
-}
-}
+}  // namespace utils
+}  // namespace viam
 
 namespace viam {
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
-
     ::grpc::Status GetPosition(ServerContext *context,
-                                const GetPositionRequest *request,
-                                GetPositionResponse *response) override {
+                               const GetPositionRequest *request,
+                               GetPositionResponse *response) override {
         Sophus::SE3f currPose;
         // Copy pose to new location
         {
@@ -168,7 +166,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
-                            GetMapResponse *response) override {
+                          GetMapResponse *response) override {
         float max = 0;
         float min = 10000;
         auto mime_type = request->mime_type();
@@ -299,7 +297,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                         << ", min Z: " << minZ << ", widthScale: " << widthScale
                         << ", and heightScale: " << heightScale;
                 } else if (i_float < 0 || i_float >= IMAGE_SIZE ||
-                            j_float < 0 || j_float >= IMAGE_SIZE) {
+                           j_float < 0 || j_float >= IMAGE_SIZE) {
                     BOOST_LOG_TRIVIAL(debug)
                         << "Cannot include robot marker point with i: "
                         << i_float << " and j: " << j_float
@@ -309,8 +307,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     const auto j = static_cast<int>(j_float);
                     const auto i = static_cast<int>(i_float);
                     cv::circle(mat, cv::Point(i, j), 5 /* radius */,
-                                cv::Scalar(0, 0, MAX_COLOR_VALUE) /* red */,
-                                cv::FILLED);
+                               cv::Scalar(0, 0, MAX_COLOR_VALUE) /* red */,
+                               cv::FILLED);
                 }
             }
 
@@ -395,24 +393,25 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
-        std::vector<std::string> filesRGB = viam::utils::listFilesInDirectoryForCamera(
-            path_to_data + strRGB, ".png", camera_name);
+        std::vector<std::string> filesRGB =
+            viam::utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
+                                                       ".png", camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
         int locRecent = -1;
-        locRecent =
-            viam::utils::parseBothDataDir(path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
-                             yamlTime, &fileTimeStart);
+        locRecent = viam::utils::parseBothDataDir(
+            path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
+            yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
             usleep(frame_delay * 1e3);
-            filesRGB = viam::utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                     ".png", camera_name);
-            locRecent = viam::utils::parseBothDataDir(path_to_data, filesRGB,
-                                         viam::utils::FileParserMethod::Recent, yamlTime,
-                                         &fileTimeStart);
+            filesRGB = viam::utils::listFilesInDirectoryForCamera(
+                path_to_data + strRGB, ".png", camera_name);
+            locRecent = viam::utils::parseBothDataDir(
+                path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
+                yamlTime, &fileTimeStart);
         }
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
@@ -429,13 +428,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // Currently pauses based off frame_delay if no image is found
             while (i == -1) {
                 if (!b_continue_session) return;
-                filesRGB = viam::utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                         ".png", camera_name);
+                filesRGB = viam::utils::listFilesInDirectoryForCamera(
+                    path_to_data + strRGB, ".png", camera_name);
                 // In online mode we want the most recent frames, so parse the
                 // data directorys with this in mind
-                i = viam::utils::parseBothDataDir(path_to_data, filesRGB,
-                                     viam::utils::FileParserMethod::Recent,
-                                     prevTimeStamp + fileTimeStart, &currTime);
+                i = viam::utils::parseBothDataDir(
+                    path_to_data, filesRGB,
+                    viam::utils::FileParserMethod::Recent,
+                    prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
                     usleep(frame_delay * 1e3);
                 } else {
@@ -445,7 +445,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = viam::utils::loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
+            bool ok = viam::utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
+                                            imDepth);
 
             // Throw an error to skip this frame if the frames are bad
             if (!ok) {
@@ -479,8 +480,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
         // find all images used for our rgbd camera
-        std::vector<std::string> filesRGB = viam::utils::listFilesInDirectoryForCamera(
-            path_to_data + strRGB, ".png", camera_name);
+        std::vector<std::string> filesRGB =
+            viam::utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
+                                                       ".png", camera_name);
         if (filesRGB.size() == 0) {
             BOOST_LOG_TRIVIAL(debug) << "No files found in " << strRGB;
             return;
@@ -490,9 +492,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // In offline mode we want the to parse all frames since our map/yaml
         // file was generated
         int locClosest = -1;
-        locClosest =
-            viam::utils::parseBothDataDir(path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
-                             yamlTime, &fileTimeStart);
+        locClosest = viam::utils::parseBothDataDir(
+            path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
+            yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
             return;
@@ -510,7 +512,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                         fileTimeStart;
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = viam::utils::loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
+            bool ok = viam::utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
+                                            imDepth);
             // Throw an error to skip this frame if not found
             if (!ok) {
                 BOOST_LOG_TRIVIAL(error)
@@ -548,8 +551,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // in the center, for testing GetMap and GetPosition.
     void process_rgbd_for_testing(ORB_SLAM3::System *SLAM) {
         std::vector<Eigen::Vector3f> worldPos{{0, 0, 0}, {0, 0, 8}, {0, 4, 0},
-                                                {0, 4, 8}, {2, 0, 0}, {2, 0, 8},
-                                                {2, 4, 0}, {2, 4, 8}};
+                                              {0, 4, 8}, {2, 0, 0}, {2, 0, 8},
+                                              {2, 4, 0}, {2, 4, 8}};
         std::vector<ORB_SLAM3::MapPoint> mapPoints(8);
         for (size_t i = 0; i < worldPos.size(); i++) {
             mapPoints[i].SetWorldPos(worldPos[i]);
@@ -578,7 +581,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         thread_save_atlas_as_osa_with_timestamp = new thread(
             [&](ORB_SLAM3::System *SLAM) {
                 this->save_atlas_as_osa_with_timestamp(SLAM);
-            }, SLAM);
+            },
+            SLAM);
     }
 
     void stop_save_atlas_as_osa() {
@@ -598,29 +602,35 @@ class SLAMServiceImpl final : public SLAMService::Service {
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 
-    std::thread* thread_save_atlas_as_osa_with_timestamp;
+    std::thread *thread_save_atlas_as_osa_with_timestamp;
 
     void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM) {
-        while(b_continue_session) {
+        while (b_continue_session) {
             std::time_t t = std::time(nullptr);
             char timestamp[100];
-            std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S", std::gmtime(&t));
+            std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
+                          std::gmtime(&t));
             // Save the current atlas map in *.osa style
-            string path_save_file_name = path_to_map + "/" + camera_name + "_data_" + timestamp + ".osa";
+            string path_save_file_name =
+                path_to_map + "/" + camera_name + "_data_" + timestamp + ".osa";
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
-            // Sleep for map_rate_sec duration, but check frequently for shutdown
+            // Sleep for map_rate_sec duration, but check frequently for
+            // shutdown
             auto start = std::chrono::high_resolution_clock::now();
             auto map_rate_msec = chrono::milliseconds(int(map_rate_sec * 1e3));
-            auto check_for_shutdown_interval_usec = chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
+            auto check_for_shutdown_interval_usec =
+                chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
             while (b_continue_session) {
-                std::chrono::duration<double, std::milli> time_elapsed_msec = std::chrono::high_resolution_clock::now() - start;
+                std::chrono::duration<double, std::milli> time_elapsed_msec =
+                    std::chrono::high_resolution_clock::now() - start;
                 if (time_elapsed_msec >= map_rate_msec) {
                     break;
                 }
-                if (map_rate_msec - time_elapsed_msec >= check_for_shutdown_interval_usec) {
+                if (map_rate_msec - time_elapsed_msec >=
+                    check_for_shutdown_interval_usec) {
                     this_thread::sleep_for(check_for_shutdown_interval_usec);
                 } else {
                     this_thread::sleep_for(map_rate_msec - time_elapsed_msec);
@@ -629,9 +639,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
         }
     }
-    };
+};
 
-}
+}  // namespace viam
 
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
@@ -658,7 +668,8 @@ int main(int argc, char **argv) {
 
     string config_params = viam::utils::argParser(argc, argv, "-config_param=");
 
-    const auto debugParam = viam::utils::configMapParser(config_params, "debug=");
+    const auto debugParam =
+        viam::utils::configMapParser(config_params, "debug=");
     bool isDebugTrue;
     bool isDebugOne;
     istringstream(debugParam) >> std::boolalpha >> isDebugTrue;
@@ -685,8 +696,7 @@ int main(int argc, char **argv) {
 
     slamService.path_to_data =
         data_dir + "/data";  // will change in DATA 127/181
-    slamService.path_to_map =
-        data_dir + "/map";
+    slamService.path_to_map = data_dir + "/map";
 
     string slam_mode = viam::utils::configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
@@ -838,7 +848,7 @@ bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
         boost::filesystem::exists(depthName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
-        if(imRGB.empty() || imDepth.empty()) return false;
+        if (imRGB.empty() || imDepth.empty()) return false;
         return true;
     }
     return false;
@@ -941,12 +951,11 @@ int parseBothDataDir(std::string path_to_data,
         // corresponding depth image is found
         std::string depthPath = path_to_data + strDepth + "/";
         for (int i = filesRGB.size() - 2; i >= 0; i--) {
-            
-            double fileTime = readTimeFromFilename(
-            filesRGB[i].substr(filesRGB[i].find("_data_") + FILENAME_CONST));
+            double fileTime = readTimeFromFilename(filesRGB[i].substr(
+                filesRGB[i].find("_data_") + FILENAME_CONST));
 
             // if we found no new files return -1 as an error
-            if(fileTime < configTime) return -1;
+            if (fileTime < configTime) return -1;
 
             if (boost::filesystem::exists(depthPath + filesRGB[i] + ".png")) {
                 *timeInterest = fileTime;
@@ -960,8 +969,8 @@ int parseBothDataDir(std::string path_to_data,
 // Find the next frame based off the current interest given a directory of
 // data and time to search from
 int parseDataDir(const std::vector<std::string> &files,
-                FileParserMethod interest, double configTime,
-                double *timeInterest) {
+                 FileParserMethod interest, double configTime,
+                 double *timeInterest) {
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
@@ -978,8 +987,8 @@ int parseDataDir(const std::vector<std::string> &files,
     else if (interest == viam::utils::FileParserMethod::Recent) {
         int i = files.size() - 2;
 
-        //if we have no files return -1 as an error
-        if(i < 0) return -1;
+        // if we have no files return -1 as an error
+        if (i < 0) return -1;
 
         double fileTime = viam::utils::readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
@@ -993,5 +1002,5 @@ int parseDataDir(const std::vector<std::string> &files,
     return -1;
 }
 
-}
-}
+}  // namespace utils
+}  // namespace viam
