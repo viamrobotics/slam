@@ -94,6 +94,9 @@ void decodeBOTH(std::string filename, cv::Mat &im, cv::Mat &depth);
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest);
+float variance(const std::vector<float>& vals);
+float standard_dev(const std::vector<float>& vals);
+float median(std::vector<float> arr, int size);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -177,8 +180,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
 
-                xPCValues.append(v.x());
-                zPCValues.append(v.z());
+                xPCValues.push_back(v.x());
+                zPCValues.push_back(v.z());
                 
                 minX = std::min(minX, v.x());
                 maxX = std::max(maxX, v.x());
@@ -188,21 +191,21 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             auto size = sizeof(xPCValues)/sizeof(xPCValues[0]);
             
-            if size > 1 {
+            if (size > 1) {
 
-                int sigmaLevel = 5;
+                float sigmaLevel = 5.;
 
-                xMedian = std::median(xPCValues, size)
-                zMedian = std::median(zPCValues, size)
+                float xMedian = median(xPCValues, size);
+                float zMedian = median(zPCValues, size);
                 
-                xSD = standard_dev(xPCValues)
-                zSD = standard_dev(zPCValues)
+                float xSD = standard_dev(xPCValues);
+                float zSD = standard_dev(zPCValues);
 
-                minX =  xMedian - sigmaLevel*xSD;  
-                maxX =  xMedian + sigmaLevel*xSD; 
+                // minX =  xMedian - sigmaLevel*xSD;  
+                // maxX =  xMedian + sigmaLevel*xSD; 
 
-                minZ = zMedian - sigmaLevel*zSD;  
-                maxZ = zMedian + sigmaLevel*zSD;    
+                // minZ = zMedian - sigmaLevel*zSD;  
+                // maxZ = zMedian + sigmaLevel*zSD;    
             }
 
             if (request->include_robot_marker()) {
@@ -261,9 +264,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
                 std::feclearexcept(FE_ALL_EXCEPT);
 
-                if v.x() < minX || v.x() > maxX || v.z() < minZ || v.z() > maxZ {
-                    continue;
-                }
+                // if ((v.x() < minX) || (v.x() > maxX) || (v.z() < minZ) || (v.z() > maxZ)) {
+                //     continue;
+                // }
 
                 const auto j_float = widthScale * (v.x() - minX);
                 const auto i_float = heightScale * (v.z() - minZ);
@@ -382,7 +385,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 auto ratio = (val - min) / span;
                 clr = (char)(offsetRGB + (ratio * spanRGB));
                 if (clr > MAX_COLOR_VALUE) {
-                    console.log("over max " + MAX_COLOR_VALUE + " < " + clr);
+                    oss << "over max " << MAX_COLOR_VALUE << " < " << clr;
                     clr = MAX_COLOR_VALUE; // attempt max_colord_value/2
                 }
                 if (clr < 0) clr = 0;
@@ -1035,22 +1038,27 @@ int parseDataDir(const std::vector<std::string> &files,
 }
 
 // compute variance
-double variance(const std::vector<float>& vals) {
-  // was int, but your now vector is of type double
-  double sum = std::accumulate((double)vals.begin(), (double)vals.end(), 0);
-  double mean = sum / static_cast<double>(vals.size());
+float variance(const std::vector<float>& vals) {
+  float sum = std::accumulate(vals.begin(), vals.end(), 0);
+  float mean = sum / static_cast<float>(vals.size());
+  float squaredDifference = 0;
 
-  // variance
-  double squaredDifference = 0;
-  for (unsigned int i = 0; i < vals.size(); i++)
+  for (unsigned int i = 0; i < vals.size(); i++) {
     squaredDifference += std::pow(vals[i] - mean, 2);
-  // Might be possible to get this with std::accumulate, but my first go didn't
-  // work.
+  }
 
-  return squaredDifference / static_cast<double>(vals.size());
+  return squaredDifference / static_cast<float>(vals.size());
 }
 
 // compute standard deviation
 float standard_dev(const std::vector<float>& vals) {
   return std::sqrt(variance(vals));
+}
+
+// compute median
+float median(std::vector<float> arr, int size){
+   std::sort(arr.begin(), arr.end());
+   if (size % 2 != 0)
+      return arr[size/2];
+   return (arr[(size-1)/2] + arr[size/2])/2.0;
 }
