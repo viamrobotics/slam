@@ -586,6 +586,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     string path_to_data;
+    string path_to_map;
     string path_to_sequence;
     string camera_name;
     double yamlTime;
@@ -662,19 +663,19 @@ int main(int argc, char **argv) {
     viam::SLAMServiceImpl slamService;
     ServerBuilder builder;
 
-    string actual_path = viam::utils::argParser(argc, argv, "-data_dir=");
-    if (actual_path.empty()) {
+    string data_dir = viam::utils::argParser(argc, argv, "-data_dir=");
+    if (data_dir.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No data directory given";
         return 1;
     }
-    string path_to_vocab = actual_path + "/config/ORBvoc.txt";
-    string path_to_settings = actual_path + "/config";  // testORB.yaml";
+    string path_to_vocab = data_dir + "/config/ORBvoc.txt";
+    string path_to_settings = data_dir + "/config";  // testORB.yaml";
 
     slamService.path_to_data =
-        actual_path + "/data";  // will change in DATA 127/181
+        data_dir + "/data";  // will change in DATA 127/181
+    slamService.path_to_map =
+        data_dir + "/map";
 
-    // TODO[kat]: Delete dummyPath once done with it
-    string dummyPath = "/home/kkufieta/slam/slam-libraries/viam-orb-slam3/";
     string slam_mode = viam::utils::configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
@@ -779,9 +780,11 @@ int main(int argc, char **argv) {
             false, 0);
         if (slamService.offlineFlag) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
-            std::cout << "--- orbslam_server_v1.cc: START SAVE ATLAS AS OSA, dummyPath: " << dummyPath << endl;
-            slamService.start_save_atlas_as_osa(SLAM.get(), dummyPath + "output/");
+            // TODO[kat]: Delete cout messages
+            std::cout << "--- orbslam_server_v1.cc: START SAVE ATLAS AS OSA, at path: " << slamService.path_to_map << endl;
+            slamService.start_save_atlas_as_osa(SLAM.get(), slamService.path_to_map + "/");
             slamService.process_rgbd_offline(SLAM.get());
+            // TODO[kat]: Delete cout messages
             std::cout << "--- orbslam_server_v1.cc: STOP SAVING ATLAS AS OSA" << endl;
             slamService.stop_save_atlas_as_osa();
             // Continue to serve requests.
