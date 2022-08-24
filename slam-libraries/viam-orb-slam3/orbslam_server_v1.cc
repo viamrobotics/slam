@@ -54,7 +54,7 @@ using namespace std;
 using namespace boost::filesystem;
 #define FILENAME_CONST 6
 #define IMAGE_SIZE 300
-#define CHECK_FOR_SHUTDOWN_INTERVAL 1e5
+#define CHECK_FOR_SHUTDOWN_INTERVAL_USEC 1e5
 #define MAX_COLOR_VALUE 255
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -570,7 +570,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
         // Continue to serve requests.
         while (b_continue_session) {
-            usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+            usleep(CHECK_FOR_SHUTDOWN_INTERVAL_USEC);
         }
     }
 
@@ -614,7 +614,22 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(pathSaveFileName);
             }
-            this_thread::sleep_for(chrono::seconds(map_rate_sec));
+            // Sleep for map_rate_sec duration, but check frequently for shutdown
+            auto start = std::chrono::high_resolution_clock::now();
+            auto map_rate_msec = chrono::milliseconds(int(map_rate_sec * 1e3));
+            auto check_for_shutdown_interval_usec = chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
+            while (b_continue_session) {
+                std::chrono::duration<double, std::milli> time_elapsed_msec = std::chrono::high_resolution_clock::now() - start;
+                if (time_elapsed_msec >= map_rate_msec) {
+                    break;
+                }
+                if (map_rate_msec - time_elapsed_msec >= check_for_shutdown_interval_usec) {
+                    this_thread::sleep_for(check_for_shutdown_interval_usec);
+                } else {
+                    this_thread::sleep_for(map_rate_msec - time_elapsed_msec);
+                    break;
+                }
+            }
         }
     }
     };
@@ -789,7 +804,7 @@ int main(int argc, char **argv) {
             slamService.stop_save_atlas_as_osa();
             // Continue to serve requests.
             while (b_continue_session) {
-                usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+                usleep(CHECK_FOR_SHUTDOWN_INTERVAL_USEC);
             }
         } else {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
