@@ -1,14 +1,29 @@
 # SLAM
 
-SLAM Service V1: Wrapped slam algorithms with grpc interface to allow easy integration within the viam rdk.
+This repo contains various slam algorithms that are wrapped with the [SLAM service grpc interface](https://github.com/viamrobotics/rdk/tree/main/proto/api/service/slam/v1) to allow easy integration within the viam rdk.
 
-**Download & install:** `git clone --recurse-submodules git@github.com:viamrobotics/slam.git`
+## Setup
+
+### Download & install
+```bash
+git clone --recurse-submodules git@github.com:viamrobotics/slam.git
+```
 
 If you happened to use `git clone` only, you won't see the libraries in the `slam-libraries` folder and will need to fetch them like this:
 
 `git submodule update --init`
 
 * [slam-libraries](./slam-libraries) contains all slam implementations we currently support.
+
+### Install dependencies
+To setup gRPC, run:
+
+```bash
+make pull-rdk
+```
+
+This will grab a minimal version of rdk to build gRPC with.
+
 
 ## Linting
 
@@ -17,7 +32,7 @@ brew install clang-format
 make format
 ```
 
-## Contributing
+## Working with submodules
 When working with submodules, it is important to follow this order:
 
 ### Clone & pull
