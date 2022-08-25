@@ -113,9 +113,6 @@ int parseBothDataDir(std::string path_to_data,
                      double *timeInterest);
 
 }  // namespace utils
-}  // namespace viam
-
-namespace viam {
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -394,23 +391,23 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
         std::vector<std::string> filesRGB =
-            viam::utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
                                                        ".png", camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
         int locRecent = -1;
-        locRecent = viam::utils::parseBothDataDir(
-            path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
+        locRecent = utils::parseBothDataDir(
+            path_to_data, filesRGB, utils::FileParserMethod::Recent,
             yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
             usleep(frame_delay * 1e3);
-            filesRGB = viam::utils::listFilesInDirectoryForCamera(
+            filesRGB = utils::listFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
-            locRecent = viam::utils::parseBothDataDir(
-                path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
+            locRecent = utils::parseBothDataDir(
+                path_to_data, filesRGB, utils::FileParserMethod::Recent,
                 yamlTime, &fileTimeStart);
         }
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
@@ -428,13 +425,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // Currently pauses based off frame_delay if no image is found
             while (i == -1) {
                 if (!b_continue_session) return;
-                filesRGB = viam::utils::listFilesInDirectoryForCamera(
+                filesRGB = utils::listFilesInDirectoryForCamera(
                     path_to_data + strRGB, ".png", camera_name);
                 // In online mode we want the most recent frames, so parse the
                 // data directorys with this in mind
-                i = viam::utils::parseBothDataDir(
+                i = utils::parseBothDataDir(
                     path_to_data, filesRGB,
-                    viam::utils::FileParserMethod::Recent,
+                    utils::FileParserMethod::Recent,
                     prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
                     usleep(frame_delay * 1e3);
@@ -445,7 +442,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = viam::utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
+            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
                                             imDepth);
 
             // Throw an error to skip this frame if the frames are bad
@@ -481,7 +478,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
         // find all images used for our rgbd camera
         std::vector<std::string> filesRGB =
-            viam::utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
                                                        ".png", camera_name);
         if (filesRGB.size() == 0) {
             BOOST_LOG_TRIVIAL(debug) << "No files found in " << strRGB;
@@ -492,8 +489,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // In offline mode we want the to parse all frames since our map/yaml
         // file was generated
         int locClosest = -1;
-        locClosest = viam::utils::parseBothDataDir(
-            path_to_data, filesRGB, viam::utils::FileParserMethod::Recent,
+        locClosest = utils::parseBothDataDir(
+            path_to_data, filesRGB, utils::FileParserMethod::Recent,
             yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
@@ -507,12 +504,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // modes
             // https://viam.atlassian.net/browse/DATA-182
             //  record timestamp
-            timeStamp = viam::utils::readTimeFromFilename(filesRGB[i].substr(
+            timeStamp = utils::readTimeFromFilename(filesRGB[i].substr(
                             filesRGB[i].find("_data_") + FILENAME_CONST)) -
                         fileTimeStart;
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = viam::utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
+            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
                                             imDepth);
             // Throw an error to skip this frame if not found
             if (!ok) {
@@ -935,7 +932,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 // data and time to search from, and confirm a corresponding depth image
 int parseBothDataDir(std::string path_to_data,
                      const std::vector<std::string> &filesRGB,
-                     viam::utils::FileParserMethod interest, double configTime,
+                     FileParserMethod interest, double configTime,
                      double *timeInterest) {
     if (interest == FileParserMethod::Closest) {
         // for closest file, just parse the rgb directory. as loadRGBD will
@@ -974,7 +971,7 @@ int parseDataDir(const std::vector<std::string> &files,
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         for (int i = 0; i < files.size() - 1; i++) {
-            double fileTime = viam::utils::readTimeFromFilename(
+            double fileTime = readTimeFromFilename(
                 files[i].substr(files[i].find("_data_") + FILENAME_CONST));
             double delTime = fileTime - configTime;
             if (delTime > 0) {
@@ -984,13 +981,13 @@ int parseDataDir(const std::vector<std::string> &files,
         }
     }
     // Find the file generated most recently, used mostly in online mode
-    else if (interest == viam::utils::FileParserMethod::Recent) {
+    else if (interest == FileParserMethod::Recent) {
         int i = files.size() - 2;
 
         // if we have no files return -1 as an error
         if (i < 0) return -1;
 
-        double fileTime = viam::utils::readTimeFromFilename(
+        double fileTime = readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
         double delTime = fileTime - configTime;
         if (delTime > 0) {
