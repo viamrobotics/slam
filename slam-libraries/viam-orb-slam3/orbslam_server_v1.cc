@@ -607,12 +607,16 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // Save the current atlas map in *.osa style
             string path_save_file_name =
                 path_to_map + "/" + camera_name + "_data_" + timestamp + ".osa";
+            if (offlineFlag && finished_processing_offline) {
+                {
+                    std::lock_guard<std::mutex> lock(slam_mutex);
+                    SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
+                }
+                return;
+            }
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
-            }
-            if (offlineFlag && finished_processing_offline) {
-                break;
             }
             // Sleep for map_rate_sec duration, but check frequently for
             // shutdown
@@ -640,8 +644,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     chrono::milliseconds frame_delay_msec;
     chrono::seconds map_rate_sec;
     double yamlTime;
-    bool offlineFlag = false;
-    bool finished_processing_offline = false;
+    std::atomic<bool> offlineFlag{false};
+    std::atomic<bool> finished_processing_offline{false};
 
     std::thread *thread_save_atlas_as_osa_with_timestamp;
     std::mutex slam_mutex;
