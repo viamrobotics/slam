@@ -575,6 +575,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM) {
+        if (map_rate_sec == 0) {
+            return;
+        }
         thread_save_atlas_as_osa_with_timestamp = new thread(
             [&](ORB_SLAM3::System *SLAM) {
                 this->save_atlas_as_osa_with_timestamp(SLAM);
@@ -583,6 +586,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void stop_save_atlas_as_osa() {
+        if (map_rate_sec == 0) {
+            return;
+        }
         thread_save_atlas_as_osa_with_timestamp->join();
     }
 
@@ -650,7 +656,7 @@ int main(int argc, char **argv) {
 
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-    if (argc < 6) {
+    if (argc < 7) {
         BOOST_LOG_TRIVIAL(fatal) << "No args found. Expected: \n"
                                  << "./bin/orb_grpc_server "
                                     "-data_dir=path_to_data "
@@ -715,8 +721,7 @@ int main(int argc, char **argv) {
 
     string map_rate_sec = viam::utils::argParser(argc, argv, "-map_rate_sec=");
     if (map_rate_sec.empty()) {
-        BOOST_LOG_TRIVIAL(fatal) << "No map capture rate specified";
-        return 1;
+        map_rate_sec = "0";
     }
     slamService.map_rate_sec = stoi(map_rate_sec);
 
