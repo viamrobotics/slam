@@ -476,6 +476,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
+        finished_processing_offline = false;
         // find all images used for our rgbd camera
         std::vector<std::string> filesRGB =
             utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
@@ -539,7 +540,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             if (!b_continue_session) break;
         }
-
+        finished_processing_offline = true;
         BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
         return;
     }
@@ -605,6 +606,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
+            if (offlineFlag && finished_processing_offline) {
+                break;
+            }
             // Sleep for map_rate_sec duration, but check frequently for
             // shutdown
             auto start = std::chrono::high_resolution_clock::now();
@@ -635,6 +639,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double yamlTime;
     int frame_delay;
     bool offlineFlag = false;
+    bool finished_processing_offline = false;
     int map_rate_sec;
 
     std::thread *thread_save_atlas_as_osa_with_timestamp;
