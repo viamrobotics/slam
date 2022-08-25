@@ -586,21 +586,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
         thread_save_atlas_as_osa_with_timestamp->join();
     }
 
-    string path_to_data;
-    string path_to_map;
-    string path_to_sequence;
-    string camera_name;
-    double yamlTime;
-    int frame_delay;
-    bool offlineFlag = false;
-    int map_rate_sec;
-
-    std::mutex slam_mutex;
-    Sophus::SE3f poseGrpc;
-    std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
-
-    std::thread *thread_save_atlas_as_osa_with_timestamp;
-
     void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM) {
         while (b_continue_session) {
             std::time_t t = std::time(nullptr);
@@ -636,6 +621,20 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
         }
     }
+
+    string path_to_data;
+    string path_to_map;
+    string path_to_sequence;
+    string camera_name;
+    double yamlTime;
+    int frame_delay;
+    bool offlineFlag = false;
+    int map_rate_sec;
+
+    std::thread *thread_save_atlas_as_osa_with_timestamp;
+    std::mutex slam_mutex;
+    Sophus::SE3f poseGrpc;
+    std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 };
 
 }  // namespace viam
