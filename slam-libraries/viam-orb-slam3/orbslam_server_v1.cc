@@ -403,7 +403,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
-            usleep(frame_delay * 1e3);
+            this_thread::sleep_for(frame_delay_msec);
             filesRGB = utils::listFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
             locRecent = utils::parseBothDataDir(
@@ -422,7 +422,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             prevTimeStamp = timeStamp;
             // Look for new frames based off current timestamp
-            // Currently pauses based off frame_delay if no image is found
+            // Currently pauses based off frame_delay_msec if no image is found
             while (i == -1) {
                 if (!b_continue_session) return;
                 filesRGB = utils::listFilesInDirectoryForCamera(
@@ -434,7 +434,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                     utils::FileParserMethod::Recent,
                     prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
-                    usleep(frame_delay * 1e3);
+                    this_thread::sleep_for(frame_delay_msec);
                 } else {
                     timeStamp = currTime - fileTimeStart;
                 }
@@ -570,13 +570,15 @@ class SLAMServiceImpl final : public SLAMService::Service {
         BOOST_LOG_TRIVIAL(info) << "Finished creating map for testing";
 
         // Continue to serve requests.
+        auto check_for_shutdown_interval_usec =
+            chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
         while (b_continue_session) {
-            usleep(CHECK_FOR_SHUTDOWN_INTERVAL_USEC);
+            this_thread::sleep_for(check_for_shutdown_interval_usec);
         }
     }
 
     void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM) {
-        if (map_rate_sec == 0) {
+        if (map_rate_sec == chrono::seconds(0)) {
             return;
         }
         thread_save_atlas_as_osa_with_timestamp = new thread(
@@ -587,14 +589,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void stop_save_atlas_as_osa() {
-        if (map_rate_sec == 0) {
+        if (map_rate_sec == chrono::seconds(0)) {
             return;
         }
         thread_save_atlas_as_osa_with_timestamp->join();
     }
 
     void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM) {
+        auto check_for_shutdown_interval_usec =
+            chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
         while (b_continue_session) {
+            auto start = std::chrono::high_resolution_clock::now();
             std::time_t t = std::time(nullptr);
             char timestamp[100];
             std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
@@ -611,21 +616,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             // Sleep for map_rate_sec duration, but check frequently for
             // shutdown
-            auto start = std::chrono::high_resolution_clock::now();
-            auto map_rate_msec = chrono::milliseconds(int(map_rate_sec * 1e3));
-            auto check_for_shutdown_interval_usec =
-                chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
             while (b_continue_session) {
                 std::chrono::duration<double, std::milli> time_elapsed_msec =
                     std::chrono::high_resolution_clock::now() - start;
-                if (time_elapsed_msec >= map_rate_msec) {
+                if (time_elapsed_msec >= map_rate_sec) {
                     break;
                 }
-                if (map_rate_msec - time_elapsed_msec >=
+                if (map_rate_sec - time_elapsed_msec >=
                     check_for_shutdown_interval_usec) {
                     this_thread::sleep_for(check_for_shutdown_interval_usec);
                 } else {
-                    this_thread::sleep_for(map_rate_msec - time_elapsed_msec);
+                    this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
                     break;
                 }
             }
@@ -636,11 +637,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string path_to_map;
     string path_to_sequence;
     string camera_name;
+    chrono::milliseconds frame_delay_msec;
+    chrono::seconds map_rate_sec;
     double yamlTime;
-    int frame_delay;
     bool offlineFlag = false;
     bool finished_processing_offline = false;
-    int map_rate_sec;
 
     std::thread *thread_save_atlas_as_osa_with_timestamp;
     std::mutex slam_mutex;
@@ -717,18 +718,18 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    string frames = viam::utils::argParser(argc, argv, "-data_rate_ms=");
-    if (frames.empty()) {
+    string data_rate_msec = viam::utils::argParser(argc, argv, "-data_rate_ms=");
+    if (data_rate_msec.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No camera data rate specified";
         return 1;
     }
-    slamService.frame_delay = stoi(frames);
+    slamService.frame_delay_msec = chrono::milliseconds(stoi(data_rate_msec));
 
     string map_rate_sec = viam::utils::argParser(argc, argv, "-map_rate_sec=");
     if (map_rate_sec.empty()) {
         map_rate_sec = "0";
     }
-    slamService.map_rate_sec = stoi(map_rate_sec);
+    slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
 
     slamService.camera_name = viam::utils::argParser(argc, argv, "-sensors=");
     if (slamService.camera_name.empty()) {
@@ -812,8 +813,10 @@ int main(int argc, char **argv) {
             slamService.process_rgbd_offline(SLAM.get());
             slamService.stop_save_atlas_as_osa();
             // Continue to serve requests.
+            auto check_for_shutdown_interval_usec =
+                chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
             while (b_continue_session) {
-                usleep(CHECK_FOR_SHUTDOWN_INTERVAL_USEC);
+                this_thread::sleep_for(check_for_shutdown_interval_usec);
             }
         } else {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
