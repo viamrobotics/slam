@@ -646,8 +646,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double yamlTime;
     std::atomic<bool> offlineFlag{false};
     std::atomic<bool> finished_processing_offline{false};
-
     std::thread *thread_save_atlas_as_osa_with_timestamp;
+
     std::mutex slam_mutex;
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
