@@ -10,5 +10,10 @@
 *.DS_Store
 *.swp
 
+# generate folders
+grpc/
+rdk-minimal/
+viam-orb-slam3/ORB_SLAM3/
+
 # code editor settings
 .vscode

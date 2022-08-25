@@ -101,6 +101,10 @@ int parseBothDataDir(std::string path_to_data,
                      const std::vector<std::string> &filesRGB,
                      FileParserMethod interest, double configTime,
                      double *timeInterest);
+float mean(const std::vector<float>& vals);
+float variance(const std::vector<float>& vals);
+float standard_dev(const std::vector<float>& vals);
+std::vector<int> HSVtoRGB(float H, float S,float V);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -177,13 +181,38 @@ class SLAMServiceImpl final : public SLAMService::Service {
             auto maxX = std::numeric_limits<float>::lowest();
             auto minZ = std::numeric_limits<float>::max();
             auto maxZ = std::numeric_limits<float>::lowest();
+
+            std::vector<float> xPCValues;
+            std::vector<float> zPCValues;
+
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
+
+                xPCValues.push_back(v.x());
+                zPCValues.push_back(v.z());
+                
                 minX = std::min(minX, v.x());
                 maxX = std::max(maxX, v.x());
                 minZ = std::min(minZ, v.z());
                 maxZ = std::max(maxZ, v.z());
             }
+
+            auto size = sizeof(xPCValues)/sizeof(xPCValues[0]);
+            
+            if (size > 1) {
+                float sigmaLevel = 3.;
+
+                float minCalX =  mean(xPCValues) - sigmaLevel*standard_dev(xPCValues);  
+                float maxCalX =  mean(xPCValues) + sigmaLevel*standard_dev(xPCValues); 
+                float minCalZ = mean(zPCValues) - sigmaLevel*standard_dev(zPCValues);  
+                float maxCalZ = mean(zPCValues) + sigmaLevel*standard_dev(zPCValues);    
+                
+                minX = std::max(minX, minCalX);
+                maxX = std::min(maxX, maxCalX);
+                minZ = std::max(minZ, minCalZ);
+                maxZ = std::min(maxZ, maxCalZ);
+            }
+
             if (request->include_robot_marker()) {
                 const auto actualPose = currPose.params();
                 minX = std::min(minX, actualPose[4]);
@@ -343,24 +372,28 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 if (max < val) max = val;
                 if (min > val) min = val;
             }
+
+            float mid = (max + min) / 2.;
             float span = max - min;
-            char clr = 0;
-            int offsetRGB = 60;
-            int spanRGB = 192;
+            int offsetRGB = 180;
+            int spanRGB = 90;
+            int clr = 0;
+            std::vector<int> valRGB;
 
             // write the map with simple rgb colors based off height from the
             // "ground". Map written as a binary
             for (auto p : actualMap) {
                 Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
                 float val = v.y();
-                auto ratio = (val - min) / span;
-                clr = (char)(offsetRGB + (ratio * spanRGB));
-                if (clr > MAX_COLOR_VALUE) clr = MAX_COLOR_VALUE;
-                if (clr < 0) clr = 0;
+                auto ratio = (val - mid) / span;
+
+                clr = (int)(offsetRGB + (ratio * spanRGB));
+                valRGB = HSVtoRGB (clr, 100, 100);
+    
                 int rgb = 0;
-                rgb = rgb | (clr << 16);
-                rgb = rgb | (clr << 8);
-                rgb = rgb | (clr << 0);
+                rgb = rgb | (valRGB[0] << 16);
+                rgb = rgb | (valRGB[1] << 8);
+                rgb = rgb | (valRGB[2] << 0);
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
                 buffer.sputn((const char *)&v.z(), 4);
@@ -911,4 +944,68 @@ int parseDataDir(const std::vector<std::string> &files,
     }
     // if we do not find a file return -1 as an error
     return -1;
+}
+
+
+// compute mean
+float mean(const std::vector<float>& vals) {
+    return 1.0 * std::accumulate(vals.begin(), vals.end(), 0) / vals.size();
+}
+
+// compute variance
+float variance(const std::vector<float>& vals) {
+  float meanVal = mean(vals);
+  float squaredDifference = 0;
+
+  for (unsigned int i = 0; i < vals.size(); i++) {
+    squaredDifference += std::pow(vals[i] - meanVal, 2);
+  }
+
+  return squaredDifference / vals.size();
+}
+
+// compute standard deviation
+float standard_dev(const std::vector<float>& vals) {
+  return std::sqrt(variance(vals));
+}
+
+// convert HSV colorspace to RGB
+std::vector<int> HSVtoRGB(float H, float S,float V) {
+    if(H>360 || H<0 || S>100 || S<0 || V>100 || V<0){
+        cout<<"The givem HSV values are not in valid range"<<endl;
+        std::vector<int> valRGB(3,255);
+        return valRGB;
+    }
+    float s = S/100;
+    float v = V/100;
+    float C = s*v;
+    float X = C*(1-abs(fmod(H/60.0, 2)-1));
+    float m = v-C;
+    float r,g,b;
+    
+    if(H >= 0 && H < 60){
+        r = C,g = X,b = 0;
+    }
+    else if(H >= 60 && H < 120){
+        r = X,g = C,b = 0;
+    }
+    else if(H >= 120 && H < 180){
+        r = 0,g = C,b = X;
+    }
+    else if(H >= 180 && H < 240){
+        r = 0,g = X,b = C;
+    }
+    else if(H >= 240 && H < 300){
+        r = X,g = 0,b = C;
+    }
+    else{
+        r = C,g = 0,b = X;
+    }
+
+    int R = (r+m)*255;
+    int G = (g+m)*255;
+    int B = (b+m)*255;
+
+    std::vector<int> valRGB{R, G, B};
+    return valRGB;
 }
