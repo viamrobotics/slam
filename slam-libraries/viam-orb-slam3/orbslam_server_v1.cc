@@ -389,7 +389,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return grpc::Status::OK;
     }
 
-    void process_rgbd_online(ORB_SLAM3::System *SLAM) {
+    void process_data_online(ORB_SLAM3::System *SLAM) {
         std::vector<std::string> filesRGB =
             utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
                                                        ".png", camera_name);
@@ -475,7 +475,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         return;
     }
 
-    void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
+    void process_data_offline(ORB_SLAM3::System *SLAM) {
         finished_processing_offline = false;
         // find all images used for our rgbd camera
         std::vector<std::string> filesRGB =
@@ -547,7 +547,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // Creates a simple map containing a 2x4x8 rectangular prism with the robot
     // in the center, for testing GetMap and GetPosition.
-    void process_rgbd_for_testing(ORB_SLAM3::System *SLAM) {
+    void process_data_for_testing(ORB_SLAM3::System *SLAM) {
         std::vector<Eigen::Vector3f> worldPos{{0, 0, 0}, {0, 0, 8}, {0, 4, 0},
                                               {0, 4, 8}, {2, 0, 0}, {2, 0, 8},
                                               {2, 4, 0}, {2, 4, 8}};
@@ -641,6 +641,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string path_to_map;
     string path_to_sequence;
     string camera_name;
+    string slam_mode;
     chrono::milliseconds frame_delay_msec;
     chrono::seconds map_rate_sec;
     double yamlTime;
@@ -715,6 +716,12 @@ int main(int argc, char **argv) {
         BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
         return 1;
     }
+    boost::algorithm::to_lower(slam_mode);
+    if (slam_mode != "rgbd" && slam_mode != "mono") {
+        BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
+        return 1;
+    }
+    slamService.slam_mode = slam_mode;
 
     string slam_port = viam::utils::argParser(argc, argv, "-port=");
     if (slam_port.empty()) {
@@ -801,43 +808,42 @@ int main(int argc, char **argv) {
 
     // Start SLAM
     SlamPtr SLAM = nullptr;
-    boost::algorithm::to_lower(slam_mode);
 
-    if (slam_mode == "rgbd") {
+    // Create SLAM system. It initializes all system threads and gets ready
+    // to process frames.
+    if (slamService.slam_mode == "rgbd") {
         BOOST_LOG_TRIVIAL(info) << "RGBD selected";
-
-        // Create SLAM system. It initializes all system threads and gets ready
-        // to process frames.
         SLAM = std::make_unique<ORB_SLAM3::System>(
             path_to_vocab, full_path_to_settings, ORB_SLAM3::System::RGBD,
             false, 0);
-        if (slamService.offlineFlag) {
-            BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
-            slamService.start_save_atlas_as_osa(SLAM.get());
-            slamService.process_rgbd_offline(SLAM.get());
-            slamService.stop_save_atlas_as_osa();
-            // Continue to serve requests.
-            auto check_for_shutdown_interval_usec =
-                chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
-            while (b_continue_session) {
-                this_thread::sleep_for(check_for_shutdown_interval_usec);
-            }
-        } else {
-            BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-            slamService.start_save_atlas_as_osa(SLAM.get());
-            slamService.process_rgbd_online(SLAM.get());
-            slamService.stop_save_atlas_as_osa();
-        }
-        // slamService.process_rgbd_for_testing(SLAM.get());
-
-    } else if (slam_mode == "mono") {
-        // TODO implement MONO
-        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
-
+    } else if (slamService.slam_mode == "mono") {
+        BOOST_LOG_TRIVIAL(info) << "Mono selected";
+        SLAM = std::make_unique<ORB_SLAM3::System>(
+            path_to_vocab, full_path_to_settings, ORB_SLAM3::System::MONOCULAR,
+            false, 0);
     } else {
         BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         return 1;
     }
+
+    if (slamService.offlineFlag) {
+        BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
+        slamService.start_save_atlas_as_osa(SLAM.get());
+        slamService.process_data_offline(SLAM.get());
+        slamService.stop_save_atlas_as_osa();
+        // Continue to serve requests.
+        auto check_for_shutdown_interval_usec =
+            chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
+        while (b_continue_session) {
+            this_thread::sleep_for(check_for_shutdown_interval_usec);
+        }
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+        slamService.start_save_atlas_as_osa(SLAM.get());
+        slamService.process_data_online(SLAM.get());
+        slamService.stop_save_atlas_as_osa();
+    }
+    // slamService.process_data_for_testing(SLAM.get());
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
