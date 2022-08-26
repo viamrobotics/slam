@@ -7,8 +7,14 @@ For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLA
 ## Installation instructions
 
 ### Install Dependencies
+To install dependencies, use the target 
+```
+./setup_orbslam.sh
+```
 Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
 
+
+### Manual Install
 ```bash
 # Install & build Pangolin (includes eigen)
 git clone --recursive https://github.com/stevenlovegrove/Pangolin.git

@@ -15,6 +15,7 @@ bufsetup:
 clean-all: cleanorb
 	rm -rf grpc
 	rm -rf rdk-minimal
+	
 cleanorb:
 	rm -rf viam-orb-slam3/Pangolin/build
 	rm -rf viam-orb-slam3/build

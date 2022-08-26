@@ -17,6 +17,16 @@ ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and 
 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
+To setup ORB_SLAM3 use 
+```
+make setuporb
+```
+
+to build ORB_SLAM3 use
+```
+make buildorb
+```
+
 ### Getting started
 Follow the instruction as described in [viam-orb-slam3/README.md](./viam-orb-slam3/README.md).
 
