@@ -34,8 +34,9 @@ FILE=$BASEDIR/ORB_SLAM3/Vocabulary/ORBvoc.txt
 if [ -f "$FILE" ]; then
     echo "Vocabulary already uncompressed."
 else 
-    echo "Uncompress vocabulary ..."
+    echo "Uncompressing vocabulary..."
     tar -xf Vocabulary/ORBvoc.txt.tar.gz -C Vocabulary/
+    echo "Do not forget to move vocabulary to your data directory!"
 fi
 
 cd $BASEDIR
@@ -43,4 +44,4 @@ mkdir bin
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j3
+make -j2
