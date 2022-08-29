@@ -186,16 +186,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
                 valsX.push_back(v.x());
                 valsZ.push_back(v.z());
-                
+
                 minX = std::min(minX, v.x());
                 maxX = std::max(maxX, v.x());
                 minZ = std::min(minZ, v.z());
                 maxZ = std::max(maxZ, v.z());
             }
-            
-            // Determine the max and min values based on distance away from mean using
-            // standard deviation. The less extreme value is then chosen to be the 
-            // max/min vlaues in the image in order display the most useful png
+
+            // Determine the max and min values based on distance away from mean
+            // using standard deviation. The less extreme value is then chosen
+            // to be the max/min vlaues in the image in order display the most
+            // useful png
             if (valsX.size() > 1) {
                 float sigmaLevel = 5.;
 
@@ -204,16 +205,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 cv::meanStdDev(valsX, meanX, stdevX);
                 cv::meanStdDev(valsX, meanZ, stdevZ);
 
-                float minCalX =  meanX[0] - sigmaLevel*stdevX[0];  
-                float maxCalX =  meanX[0] + sigmaLevel*stdevX[0]; 
-                float minCalZ = meanZ[0] - sigmaLevel*stdevZ[0];  
-                float maxCalZ = meanZ[0] + sigmaLevel*stdevZ[0];  
+                float minCalX = meanX[0] - sigmaLevel * stdevX[0];
+                float maxCalX = meanX[0] + sigmaLevel * stdevX[0];
+                float minCalZ = meanZ[0] - sigmaLevel * stdevZ[0];
+                float maxCalZ = meanZ[0] + sigmaLevel * stdevZ[0];
 
                 if (std::fetestexcept(FE_OVERFLOW) ||
                     std::fetestexcept(FE_UNDERFLOW)) {
                     std::ostringstream oss;
-                    oss << "cannot calculate mean and standard deviation from image due to over/underflow";
-                    return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+                    oss << "cannot calculate mean and standard deviation from "
+                           "image due to over/underflow";
+                    return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                        oss.str());
                 }
 
                 minX = std::max(minX, minCalX);
@@ -222,8 +225,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 maxZ = std::min(maxZ, maxCalZ);
             }
 
-            // Add robot marker and ensure it exists in the image, varying max/min values as 
-            // needed
+            // Add robot marker and ensure it exists in the image, varying
+            // max/min values as needed
             if (request->include_robot_marker()) {
                 const auto actualPose = currPose.params();
                 minX = std::min(minX, actualPose[4]);
@@ -386,10 +389,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             float mid = (max + min) / 2.;
             float span = max - min;
-            int offsetRGB = 90; 
-            int spanRGB = 70; 
+            int offsetRGB = 90;
+            int spanRGB = 70;
             int clr = 0;
-            cv::Mat hsv(1, 1, CV_8UC3,cv::Scalar(255,255,255));
+            cv::Mat hsv(1, 1, CV_8UC3, cv::Scalar(255, 255, 255));
             cv::Mat valRGB2(hsv.size(), hsv.type());
 
             // write the map with simple rgb colors based off height from the
@@ -401,11 +404,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
                 clr = (int)(offsetRGB + (ratio * spanRGB));
 
-                cv::Vec3b & color = hsv.at<cv::Vec3b>(cv::Point(0,0));
+                cv::Vec3b &color = hsv.at<cv::Vec3b>(cv::Point(0, 0));
                 color[0] = clr;
                 cv::cvtColor(hsv, valRGB2, cv::COLOR_HSV2RGB);
-                cv::Vec3b colorRGB = valRGB2.at<cv::Vec3b>(cv::Point(0,0));
-    
+                cv::Vec3b colorRGB = valRGB2.at<cv::Vec3b>(cv::Point(0, 0));
+
                 int rgb = 0;
                 rgb = rgb | ((int)colorRGB[0] << 16);
                 rgb = rgb | ((int)colorRGB[1] << 8);
@@ -807,7 +810,7 @@ bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
         boost::filesystem::exists(depthName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
-        if(imRGB.empty() || imDepth.empty()) return false;
+        if (imRGB.empty() || imDepth.empty()) return false;
         return true;
     }
     return false;
@@ -910,12 +913,11 @@ int parseBothDataDir(std::string path_to_data,
         // corresponding depth image is found
         std::string depthPath = path_to_data + strDepth + "/";
         for (int i = filesRGB.size() - 2; i >= 0; i--) {
-            
-            double fileTime = readTimeFromFilename(
-            filesRGB[i].substr(filesRGB[i].find("_data_") + FILENAME_CONST));
+            double fileTime = readTimeFromFilename(filesRGB[i].substr(
+                filesRGB[i].find("_data_") + FILENAME_CONST));
 
             // if we found no new files return -1 as an error
-            if(fileTime < configTime) return -1;
+            if (fileTime < configTime) return -1;
 
             if (boost::filesystem::exists(depthPath + filesRGB[i] + ".png")) {
                 *timeInterest = fileTime;
@@ -947,8 +949,8 @@ int parseDataDir(const std::vector<std::string> &files,
     else if (interest == FileParserMethod::Recent) {
         int i = files.size() - 2;
 
-        //if we have no files return -1 as an error
-        if(i < 0) return -1;
+        // if we have no files return -1 as an error
+        if (i < 0) return -1;
 
         double fileTime = readTimeFromFilename(
             files[i].substr(files[i].find("_data_") + FILENAME_CONST));
