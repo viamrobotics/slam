@@ -443,24 +443,24 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
         std::vector<std::string> filesRGB =
-            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                       ".png", camera_name);
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB, ".png",
+                                                 camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
         int locRecent = -1;
-        locRecent = utils::parseBothDataDir(
-            path_to_data, filesRGB, utils::FileParserMethod::Recent,
-            yamlTime, &fileTimeStart);
+        locRecent = utils::parseBothDataDir(path_to_data, filesRGB,
+                                            utils::FileParserMethod::Recent,
+                                            yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
             this_thread::sleep_for(frame_delay_msec);
             filesRGB = utils::listFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
-            locRecent = utils::parseBothDataDir(
-                path_to_data, filesRGB, utils::FileParserMethod::Recent,
-                yamlTime, &fileTimeStart);
+            locRecent = utils::parseBothDataDir(path_to_data, filesRGB,
+                                                utils::FileParserMethod::Recent,
+                                                yamlTime, &fileTimeStart);
         }
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
@@ -482,8 +482,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 // In online mode we want the most recent frames, so parse the
                 // data directorys with this in mind
                 i = utils::parseBothDataDir(
-                    path_to_data, filesRGB,
-                    utils::FileParserMethod::Recent,
+                    path_to_data, filesRGB, utils::FileParserMethod::Recent,
                     prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
                     this_thread::sleep_for(frame_delay_msec);
@@ -494,8 +493,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
-                                            imDepth);
+            bool ok =
+                utils::loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
 
             // Throw an error to skip this frame if the frames are bad
             if (!ok) {
@@ -531,8 +530,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         finished_processing_offline = false;
         // find all images used for our rgbd camera
         std::vector<std::string> filesRGB =
-            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                       ".png", camera_name);
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB, ".png",
+                                                 camera_name);
         if (filesRGB.size() == 0) {
             BOOST_LOG_TRIVIAL(debug) << "No files found in " << strRGB;
             return;
@@ -542,9 +541,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // In offline mode we want the to parse all frames since our map/yaml
         // file was generated
         int locClosest = -1;
-        locClosest = utils::parseBothDataDir(
-            path_to_data, filesRGB, utils::FileParserMethod::Recent,
-            yamlTime, &fileTimeStart);
+        locClosest = utils::parseBothDataDir(path_to_data, filesRGB,
+                                             utils::FileParserMethod::Recent,
+                                             yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
             return;
@@ -562,8 +561,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                         fileTimeStart;
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
-                                            imDepth);
+            bool ok =
+                utils::loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
             // Throw an error to skip this frame if not found
             if (!ok) {
                 BOOST_LOG_TRIVIAL(error)
@@ -774,7 +773,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    string data_rate_msec = viam::utils::argParser(argc, argv, "-data_rate_ms=");
+    string data_rate_msec =
+        viam::utils::argParser(argc, argv, "-data_rate_ms=");
     if (data_rate_msec.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No camera data rate specified";
         return 1;
