@@ -189,13 +189,56 @@ class SLAMServiceImpl final : public SLAMService::Service {
             auto maxX = std::numeric_limits<float>::lowest();
             auto minZ = std::numeric_limits<float>::max();
             auto maxZ = std::numeric_limits<float>::lowest();
+
+            std::vector<float> valsX;
+            std::vector<float> valsZ;
+
             for (auto &&p : actualMap) {
                 const auto v = p->GetWorldPos();
+
+                valsX.push_back(v.x());
+                valsZ.push_back(v.z());
+
                 minX = std::min(minX, v.x());
                 maxX = std::max(maxX, v.x());
                 minZ = std::min(minZ, v.z());
                 maxZ = std::max(maxZ, v.z());
             }
+
+            // Determine the max and min values based on distance away from mean
+            // using standard deviation. The less extreme value is then chosen
+            // to be the max/min vlaues in the image in order display the most
+            // useful png
+            if (valsX.size() > 1) {
+                float sigmaLevel = 7.;
+
+                std::feclearexcept(FE_ALL_EXCEPT);
+                cv::Scalar meanX, stdevX, meanZ, stdevZ;
+                cv::meanStdDev(valsX, meanX, stdevX);
+                cv::meanStdDev(valsX, meanZ, stdevZ);
+
+                float minCalX = meanX[0] - sigmaLevel * stdevX[0];
+                float maxCalX = meanX[0] + sigmaLevel * stdevX[0];
+                float minCalZ = meanZ[0] - sigmaLevel * stdevZ[0];
+                float maxCalZ = meanZ[0] + sigmaLevel * stdevZ[0];
+
+                if (std::fetestexcept(FE_OVERFLOW) ||
+                    std::fetestexcept(FE_UNDERFLOW)) {
+                    std::ostringstream oss;
+                    oss << "cannot calculate mean and standard deviation from "
+                           "image due to over/underflow";
+                    return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                        oss.str());
+                }
+
+                minX = std::max(minX, minCalX);
+                maxX = std::min(maxX, maxCalX);
+                minZ = std::max(minZ, minCalZ);
+                maxZ = std::min(maxZ, maxCalZ);
+            }
+
+            // Add robot marker and ensure it exists in the image, varying
+            // max/min values as needed
             if (request->include_robot_marker()) {
                 const auto actualPose = currPose.params();
                 minX = std::min(minX, actualPose[4]);
@@ -355,24 +398,33 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 if (max < val) max = val;
                 if (min > val) min = val;
             }
+
+            float mid = (max + min) / 2.;
             float span = max - min;
-            char clr = 0;
-            int offsetRGB = 60;
-            int spanRGB = 192;
+            int offsetRGB = 90;
+            int spanRGB = 70;
+            int clr = 0;
+            cv::Mat hsv(1, 1, CV_8UC3, cv::Scalar(255, 255, 255));
+            cv::Mat valRGB2(hsv.size(), hsv.type());
 
             // write the map with simple rgb colors based off height from the
             // "ground". Map written as a binary
             for (auto p : actualMap) {
                 Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
                 float val = v.y();
-                auto ratio = (val - min) / span;
-                clr = (char)(offsetRGB + (ratio * spanRGB));
-                if (clr > MAX_COLOR_VALUE) clr = MAX_COLOR_VALUE;
-                if (clr < 0) clr = 0;
+                auto ratio = (val - mid) / span;
+
+                clr = (int)(offsetRGB + (ratio * spanRGB));
+
+                cv::Vec3b &color = hsv.at<cv::Vec3b>(cv::Point(0, 0));
+                color[0] = clr;
+                cv::cvtColor(hsv, valRGB2, cv::COLOR_HSV2RGB);
+                cv::Vec3b colorRGB = valRGB2.at<cv::Vec3b>(cv::Point(0, 0));
+
                 int rgb = 0;
-                rgb = rgb | (clr << 16);
-                rgb = rgb | (clr << 8);
-                rgb = rgb | (clr << 0);
+                rgb = rgb | ((int)colorRGB[0] << 16);
+                rgb = rgb | ((int)colorRGB[1] << 8);
+                rgb = rgb | ((int)colorRGB[2] << 0);
                 buffer.sputn((const char *)&v.x(), 4);
                 buffer.sputn((const char *)&v.y(), 4);
                 buffer.sputn((const char *)&v.z(), 4);
@@ -391,24 +443,24 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
         std::vector<std::string> filesRGB =
-            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                       ".png", camera_name);
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB, ".png",
+                                                 camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
         int locRecent = -1;
-        locRecent = utils::parseBothDataDir(
-            path_to_data, filesRGB, utils::FileParserMethod::Recent,
-            yamlTime, &fileTimeStart);
+        locRecent = utils::parseBothDataDir(path_to_data, filesRGB,
+                                            utils::FileParserMethod::Recent,
+                                            yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
             this_thread::sleep_for(frame_delay_msec);
             filesRGB = utils::listFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
-            locRecent = utils::parseBothDataDir(
-                path_to_data, filesRGB, utils::FileParserMethod::Recent,
-                yamlTime, &fileTimeStart);
+            locRecent = utils::parseBothDataDir(path_to_data, filesRGB,
+                                                utils::FileParserMethod::Recent,
+                                                yamlTime, &fileTimeStart);
         }
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
@@ -430,8 +482,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                 // In online mode we want the most recent frames, so parse the
                 // data directorys with this in mind
                 i = utils::parseBothDataDir(
-                    path_to_data, filesRGB,
-                    utils::FileParserMethod::Recent,
+                    path_to_data, filesRGB, utils::FileParserMethod::Recent,
                     prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
                     this_thread::sleep_for(frame_delay_msec);
@@ -442,8 +493,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
-                                            imDepth);
+            bool ok =
+                utils::loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
 
             // Throw an error to skip this frame if the frames are bad
             if (!ok) {
@@ -479,8 +530,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         finished_processing_offline = false;
         // find all images used for our rgbd camera
         std::vector<std::string> filesRGB =
-            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                       ".png", camera_name);
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB, ".png",
+                                                 camera_name);
         if (filesRGB.size() == 0) {
             BOOST_LOG_TRIVIAL(debug) << "No files found in " << strRGB;
             return;
@@ -490,9 +541,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // In offline mode we want the to parse all frames since our map/yaml
         // file was generated
         int locClosest = -1;
-        locClosest = utils::parseBothDataDir(
-            path_to_data, filesRGB, utils::FileParserMethod::Recent,
-            yamlTime, &fileTimeStart);
+        locClosest = utils::parseBothDataDir(path_to_data, filesRGB,
+                                             utils::FileParserMethod::Recent,
+                                             yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
             return;
@@ -510,8 +561,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
                         fileTimeStart;
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
-                                            imDepth);
+            bool ok =
+                utils::loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
             // Throw an error to skip this frame if not found
             if (!ok) {
                 BOOST_LOG_TRIVIAL(error)
@@ -722,7 +773,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    string data_rate_msec = viam::utils::argParser(argc, argv, "-data_rate_ms=");
+    string data_rate_msec =
+        viam::utils::argParser(argc, argv, "-data_rate_ms=");
     if (data_rate_msec.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No camera data rate specified";
         return 1;
