@@ -54,9 +54,8 @@ using namespace std;
 using namespace boost::filesystem;
 #define FILENAME_CONST 6
 #define IMAGE_SIZE 300
-#define CHECK_FOR_SHUTDOWN_INTERVAL 1e5
+#define CHECK_FOR_SHUTDOWN_INTERVAL_USEC 1e5
 #define MAX_COLOR_VALUE 255
-enum class FileParserMethod { Recent, Closest };
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -82,18 +81,29 @@ void exit_loop_handler(int s) {
     b_continue_session = false;
 }
 
-void LoadImagesRGBD(const string &pathSeq, const string &strPathTimes,
-                    vector<string> &vstrImageFilenamesRGB,
-                    vector<string> &vstrImageFilenamesD,
-                    vector<double> &vTimeStamps);
+namespace viam {
+namespace utils {
+
+enum class FileParserMethod { Recent, Closest };
+
+// find a specific input argument from rdk and write the value to a string.
+// Returns empty if the argument is not found.
 string argParser(int argc, char **argv, const string varName);
+
+// parse a config map for a specific variable name and return the value as a
+// string. Returns empty if the variable is not found within the map.
 string configMapParser(string map, string varName);
+
+// Converts UTC time string to a double value.
 double readTimeFromFilename(const string filename);
+
 std::vector<std::string> listFilesInDirectoryForCamera(
     const std::string data_directory, const std::string extension,
     const std::string camera_name);
 bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
               cv::Mat &imDepth);
+// Find the next frame based off the current interest given a directory of
+// data and time to search from
 int parseDataDir(const std::vector<std::string> &files,
                  FileParserMethod interest, double configTime,
                  double *timeInterest);
@@ -101,6 +111,8 @@ int parseBothDataDir(std::string path_to_data,
                      const std::vector<std::string> &filesRGB,
                      FileParserMethod interest, double configTime,
                      double *timeInterest);
+
+}  // namespace utils
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -430,24 +442,25 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void process_rgbd_online(ORB_SLAM3::System *SLAM) {
-        std::vector<std::string> filesRGB = listFilesInDirectoryForCamera(
-            path_to_data + strRGB, ".png", camera_name);
+        std::vector<std::string> filesRGB =
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
+                                                       ".png", camera_name);
         double fileTimeStart = yamlTime;
         // In online mode we want the most recent frames, so parse the data
         // directory with this in mind
         int locRecent = -1;
-        locRecent =
-            parseBothDataDir(path_to_data, filesRGB, FileParserMethod::Recent,
-                             yamlTime, &fileTimeStart);
+        locRecent = utils::parseBothDataDir(
+            path_to_data, filesRGB, utils::FileParserMethod::Recent,
+            yamlTime, &fileTimeStart);
         while (locRecent == -1) {
             if (!b_continue_session) return;
             BOOST_LOG_TRIVIAL(debug) << "No new files found";
-            usleep(frame_delay * 1e3);
-            filesRGB = listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                     ".png", camera_name);
-            locRecent = parseBothDataDir(path_to_data, filesRGB,
-                                         FileParserMethod::Recent, yamlTime,
-                                         &fileTimeStart);
+            this_thread::sleep_for(frame_delay_msec);
+            filesRGB = utils::listFilesInDirectoryForCamera(
+                path_to_data + strRGB, ".png", camera_name);
+            locRecent = utils::parseBothDataDir(
+                path_to_data, filesRGB, utils::FileParserMethod::Recent,
+                yamlTime, &fileTimeStart);
         }
         double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
         int i = locRecent;
@@ -456,23 +469,24 @@ class SLAMServiceImpl final : public SLAMService::Service {
         while (true) {
             // TBD: Possibly split this function into RGBD and MONO processing
             // modes
-            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+            // https://viam.atlassian.net/browse/DATA-182
             if (!b_continue_session) return;
 
             prevTimeStamp = timeStamp;
             // Look for new frames based off current timestamp
-            // Currently pauses based off frame_delay if no image is found
+            // Currently pauses based off frame_delay_msec if no image is found
             while (i == -1) {
                 if (!b_continue_session) return;
-                filesRGB = listFilesInDirectoryForCamera(path_to_data + strRGB,
-                                                         ".png", camera_name);
+                filesRGB = utils::listFilesInDirectoryForCamera(
+                    path_to_data + strRGB, ".png", camera_name);
                 // In online mode we want the most recent frames, so parse the
                 // data directorys with this in mind
-                i = parseBothDataDir(path_to_data, filesRGB,
-                                     FileParserMethod::Recent,
-                                     prevTimeStamp + fileTimeStart, &currTime);
+                i = utils::parseBothDataDir(
+                    path_to_data, filesRGB,
+                    utils::FileParserMethod::Recent,
+                    prevTimeStamp + fileTimeStart, &currTime);
                 if (i == -1) {
-                    usleep(frame_delay * 1e3);
+                    this_thread::sleep_for(frame_delay_msec);
                 } else {
                     timeStamp = currTime - fileTimeStart;
                 }
@@ -480,7 +494,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
+            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
+                                            imDepth);
 
             // Throw an error to skip this frame if the frames are bad
             if (!ok) {
@@ -513,9 +528,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     }
 
     void process_rgbd_offline(ORB_SLAM3::System *SLAM) {
+        finished_processing_offline = false;
         // find all images used for our rgbd camera
-        std::vector<std::string> filesRGB = listFilesInDirectoryForCamera(
-            path_to_data + strRGB, ".png", camera_name);
+        std::vector<std::string> filesRGB =
+            utils::listFilesInDirectoryForCamera(path_to_data + strRGB,
+                                                       ".png", camera_name);
         if (filesRGB.size() == 0) {
             BOOST_LOG_TRIVIAL(debug) << "No files found in " << strRGB;
             return;
@@ -525,9 +542,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         // In offline mode we want the to parse all frames since our map/yaml
         // file was generated
         int locClosest = -1;
-        locClosest =
-            parseBothDataDir(path_to_data, filesRGB, FileParserMethod::Recent,
-                             yamlTime, &fileTimeStart);
+        locClosest = utils::parseBothDataDir(
+            path_to_data, filesRGB, utils::FileParserMethod::Recent,
+            yamlTime, &fileTimeStart);
         if (locClosest == -1) {
             BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
             return;
@@ -538,14 +555,15 @@ class SLAMServiceImpl final : public SLAMService::Service {
         for (int i = locClosest; i < filesRGB.size(); i++) {
             // TBD: Possibly split this function into RGBD and MONO processing
             // modes
-            //  https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+            // https://viam.atlassian.net/browse/DATA-182
             //  record timestamp
-            timeStamp = readTimeFromFilename(filesRGB[i].substr(
+            timeStamp = utils::readTimeFromFilename(filesRGB[i].substr(
                             filesRGB[i].find("_data_") + FILENAME_CONST)) -
                         fileTimeStart;
             // decode images
             cv::Mat imRGB, imDepth;
-            bool ok = loadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
+            bool ok = utils::loadRGBD(path_to_data, filesRGB[i], imRGB,
+                                            imDepth);
             // Throw an error to skip this frame if not found
             if (!ok) {
                 BOOST_LOG_TRIVIAL(error)
@@ -574,7 +592,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             }
             if (!b_continue_session) break;
         }
-
+        finished_processing_offline = true;
         BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
         return;
     }
@@ -604,22 +622,90 @@ class SLAMServiceImpl final : public SLAMService::Service {
         BOOST_LOG_TRIVIAL(info) << "Finished creating map for testing";
 
         // Continue to serve requests.
+        auto check_for_shutdown_interval_usec =
+            chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
         while (b_continue_session) {
-            usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+            this_thread::sleep_for(check_for_shutdown_interval_usec);
+        }
+    }
+
+    void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM) {
+        if (map_rate_sec == chrono::seconds(0)) {
+            return;
+        }
+        thread_save_atlas_as_osa_with_timestamp = new thread(
+            [&](ORB_SLAM3::System *SLAM) {
+                this->save_atlas_as_osa_with_timestamp(SLAM);
+            },
+            SLAM);
+    }
+
+    void stop_save_atlas_as_osa() {
+        if (map_rate_sec == chrono::seconds(0)) {
+            return;
+        }
+        thread_save_atlas_as_osa_with_timestamp->join();
+    }
+
+    void save_atlas_as_osa_with_timestamp(ORB_SLAM3::System *SLAM) {
+        auto check_for_shutdown_interval_usec =
+            chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
+        while (b_continue_session) {
+            auto start = std::chrono::high_resolution_clock::now();
+            std::time_t t = std::time(nullptr);
+            char timestamp[100];
+            std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
+                          std::gmtime(&t));
+            // Save the current atlas map in *.osa style
+            string path_save_file_name =
+                path_to_map + "/" + camera_name + "_data_" + timestamp + ".osa";
+            if (offlineFlag && finished_processing_offline) {
+                {
+                    std::lock_guard<std::mutex> lock(slam_mutex);
+                    SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
+                }
+                return;
+            }
+            {
+                std::lock_guard<std::mutex> lock(slam_mutex);
+                SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
+            }
+            // Sleep for map_rate_sec duration, but check frequently for
+            // shutdown
+            while (b_continue_session) {
+                std::chrono::duration<double, std::milli> time_elapsed_msec =
+                    std::chrono::high_resolution_clock::now() - start;
+                if (time_elapsed_msec >= map_rate_sec) {
+                    break;
+                }
+                if (map_rate_sec - time_elapsed_msec >=
+                    check_for_shutdown_interval_usec) {
+                    this_thread::sleep_for(check_for_shutdown_interval_usec);
+                } else {
+                    this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
+                    break;
+                }
+            }
         }
     }
 
     string path_to_data;
+    string path_to_map;
     string path_to_sequence;
     string camera_name;
+    chrono::milliseconds frame_delay_msec;
+    chrono::seconds map_rate_sec;
     double yamlTime;
-    int frame_delay;
-    bool offlineFlag = false;
+    std::atomic<bool> offlineFlag{false};
+    std::atomic<bool> finished_processing_offline{false};
+    std::thread *thread_save_atlas_as_osa_with_timestamp;
 
     std::mutex slam_mutex;
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 };
+
+}  // namespace viam
 
 int main(int argc, char **argv) {
     // TODO: change inputs to match args from rdk
@@ -632,20 +718,22 @@ int main(int argc, char **argv) {
 
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-    if (argc < 6) {
+    if (argc < 7) {
         BOOST_LOG_TRIVIAL(fatal) << "No args found. Expected: \n"
                                  << "./bin/orb_grpc_server "
                                     "-data_dir=path_to_data "
                                     "-config_param={mode=slam_mode,} "
                                     "-port=grpc_port "
                                     "-sensors=sensor_name "
-                                    "-data_rate_ms=frame_delay";
+                                    "-data_rate_ms=frame_delay "
+                                    "-map_rate_sec=map_rate_sec";
         return 1;
     }
 
-    string config_params = argParser(argc, argv, "-config_param=");
+    string config_params = viam::utils::argParser(argc, argv, "-config_param=");
 
-    const auto debugParam = configMapParser(config_params, "debug=");
+    const auto debugParam =
+        viam::utils::configMapParser(config_params, "debug=");
     bool isDebugTrue;
     bool isDebugOne;
     istringstream(debugParam) >> std::boolalpha >> isDebugTrue;
@@ -659,40 +747,47 @@ int main(int argc, char **argv) {
         BOOST_LOG_TRIVIAL(debug) << "Argument #" << i << " is " << argv[i];
     }
     // setup the SLAM server
-    SLAMServiceImpl slamService;
+    viam::SLAMServiceImpl slamService;
     ServerBuilder builder;
 
-    string actual_path = argParser(argc, argv, "-data_dir=");
-    if (actual_path.empty()) {
+    string data_dir = viam::utils::argParser(argc, argv, "-data_dir=");
+    if (data_dir.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No data directory given";
         return 1;
     }
-    string path_to_vocab = actual_path + "/config/ORBvoc.txt";
-    string path_to_settings = actual_path + "/config";  // testORB.yaml";
+    string path_to_vocab = data_dir + "/config/ORBvoc.txt";
+    string path_to_settings = data_dir + "/config";  // testORB.yaml";
 
     slamService.path_to_data =
-        actual_path + "/data";  // will change in DATA 127/181
+        data_dir + "/data";  // will change in DATA 127/181
+    slamService.path_to_map = data_dir + "/map";
 
-    string slam_mode = configMapParser(config_params, "mode=");
+    string slam_mode = viam::utils::configMapParser(config_params, "mode=");
     if (slam_mode.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No SLAM mode given";
         return 1;
     }
 
-    string slam_port = argParser(argc, argv, "-port=");
+    string slam_port = viam::utils::argParser(argc, argv, "-port=");
     if (slam_port.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No gRPC port given";
         return 1;
     }
 
-    string frames = argParser(argc, argv, "-data_rate_ms=");
-    if (frames.empty()) {
+    string data_rate_msec = viam::utils::argParser(argc, argv, "-data_rate_ms=");
+    if (data_rate_msec.empty()) {
         BOOST_LOG_TRIVIAL(fatal) << "No camera data rate specified";
         return 1;
     }
-    slamService.frame_delay = stoi(frames);
+    slamService.frame_delay_msec = chrono::milliseconds(stoi(data_rate_msec));
 
-    slamService.camera_name = argParser(argc, argv, "-sensors=");
+    string map_rate_sec = viam::utils::argParser(argc, argv, "-map_rate_sec=");
+    if (map_rate_sec.empty()) {
+        map_rate_sec = "0";
+    }
+    slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
+
+    slamService.camera_name = viam::utils::argParser(argc, argv, "-sensors=");
     if (slamService.camera_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
         slamService.offlineFlag = true;
@@ -750,7 +845,7 @@ int main(int argc, char **argv) {
     }
 
     // Grab timestamp from yaml
-    slamService.yamlTime = readTimeFromFilename(
+    slamService.yamlTime = viam::utils::readTimeFromFilename(
         myYAML.substr(myYAML.find("_data_") + FILENAME_CONST));
     BOOST_LOG_TRIVIAL(debug)
         << "The time from our config is: " << slamService.yamlTime
@@ -770,14 +865,20 @@ int main(int argc, char **argv) {
             false, 0);
         if (slamService.offlineFlag) {
             BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
+            slamService.start_save_atlas_as_osa(SLAM.get());
             slamService.process_rgbd_offline(SLAM.get());
+            slamService.stop_save_atlas_as_osa();
             // Continue to serve requests.
+            auto check_for_shutdown_interval_usec =
+                chrono::microseconds(int(CHECK_FOR_SHUTDOWN_INTERVAL_USEC));
             while (b_continue_session) {
-                usleep(CHECK_FOR_SHUTDOWN_INTERVAL);
+                this_thread::sleep_for(check_for_shutdown_interval_usec);
             }
         } else {
             BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+            slamService.start_save_atlas_as_osa(SLAM.get());
             slamService.process_rgbd_online(SLAM.get());
+            slamService.stop_save_atlas_as_osa();
         }
         // slamService.process_rgbd_for_testing(SLAM.get());
 
@@ -796,7 +897,9 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-// this function loads in a rgbd pair of images to be used by ORBSLAM, and
+namespace viam {
+namespace utils {
+// loadRGBD loads in a rgbd pair of images to be used by ORBSLAM, and
 // returns whether the current pair is okay
 bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
               cv::Mat &imDepth) {
@@ -891,7 +994,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 
 // take .both files from rdk and process them to use with ORBSLAM. this will be
 // changed in
-// https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-254
+// https://viam.atlassian.net/browse/DATA-254
 
 // Find the next frame based off the current interest given a directory of
 // data and time to search from, and confirm a corresponding depth image
@@ -963,3 +1066,6 @@ int parseDataDir(const std::vector<std::string> &files,
     // if we do not find a file return -1 as an error
     return -1;
 }
+
+}  // namespace utils
+}  // namespace viam
