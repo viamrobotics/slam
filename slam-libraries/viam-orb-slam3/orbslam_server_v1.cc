@@ -210,7 +210,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
             // to be the max/min vlaues in the image in order display the most
             // useful png
             if (valsX.size() > 1) {
-                float sigmaLevel = 5.;
+                float sigmaLevel = 7.;
 
                 std::feclearexcept(FE_ALL_EXCEPT);
                 cv::Scalar meanX, stdevX, meanZ, stdevZ;
