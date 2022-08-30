@@ -15,7 +15,7 @@ bufsetup:
 clean-all: cleanorb
 	rm -rf grpc
 	rm -rf rdk-minimal
-	
+
 cleanorb:
 	rm -rf viam-orb-slam3/Pangolin/build
 	rm -rf viam-orb-slam3/build
@@ -41,5 +41,14 @@ setuporb:
 	cd viam-orb-slam3 && ./setup_orbslam.sh
 
 orbslam-all: setuporb pull-rdk buildorb
+
+appimages: buildorb
+	cd packaging/appimages && appimage-builder --recipe orb_grpc_server-`uname -m`.yml
+	mkdir -p packaging/appimages/deploy/
+	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
+	chmod 755 packaging/appimages/deploy/*.AppImage
+
+appimages-deploy:
+	gsutil -m -h "Cache-Control: no-cache" cp packaging/appimages/deploy/* gs://packages.viam.com/apps/camera-servers/
 
 include *.make
