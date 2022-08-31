@@ -55,6 +55,7 @@ message("OPENCV VERSION:")
 message(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
+set(Pangolin_DIR ${PROJECT_SOURCE_DIR}/Pangolin/build)
 find_package(Pangolin REQUIRED)
 
 include_directories(
@@ -66,6 +67,7 @@ include_directories(
   ${ORBSLAM_SOURCE_DIR}/Thirdparty/Sophus
   ${EIGEN3_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS})
+  # ${Pangolin_INCLUDE_DIRS})
 
 set(SOURCES ${ORBSLAM_SOURCE_DIR}/src/System.cc
             ${ORBSLAM_SOURCE_DIR}/src/Tracking.cc
@@ -128,6 +130,7 @@ set(SOURCES ${ORBSLAM_SOURCE_DIR}/src/System.cc
 
 add_subdirectory(${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o)
 
+# add_subdirectory()
 # Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(viam_main_v1 main_v1.cc ${SOURCES})

@@ -17,7 +17,7 @@ clean-all: cleanorb
 	rm -rf rdk-minimal
 	
 cleanorb:
-	rm -rf viam-orb-slam3/Pangolin/build
+	rm -rf viam-orb-slam3/Pangolin
 	rm -rf viam-orb-slam3/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/DBoW2/build
