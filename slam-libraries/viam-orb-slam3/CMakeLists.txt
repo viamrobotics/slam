@@ -55,94 +55,32 @@ message("OPENCV VERSION:")
 message(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
+set(Pangolin_DIR ${PROJECT_SOURCE_DIR}/Pangolin/build)
 
+find_package(Pangolin REQUIRED)
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${ORBSLAM_SOURCE_DIR}
-  ${ORBSLAM_SOURCE_DIR}/src
   ${ORBSLAM_SOURCE_DIR}/include
   ${ORBSLAM_SOURCE_DIR}/include/CameraModels
   ${ORBSLAM_SOURCE_DIR}/Thirdparty/Sophus
   ${EIGEN3_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS})
-
-set(SOURCES ${ORBSLAM_SOURCE_DIR}/src/System.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Tracking.cc
-            ${ORBSLAM_SOURCE_DIR}/src/LocalMapping.cc
-            ${ORBSLAM_SOURCE_DIR}/src/LoopClosing.cc
-            ${ORBSLAM_SOURCE_DIR}/src/ORBextractor.cc
-            ${ORBSLAM_SOURCE_DIR}/src/ORBmatcher.cc
-            ${ORBSLAM_SOURCE_DIR}/src/FrameDrawer.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Converter.cc
-            ${ORBSLAM_SOURCE_DIR}/src/MapPoint.cc
-            ${ORBSLAM_SOURCE_DIR}/src/KeyFrame.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Atlas.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Map.cc
-            ${ORBSLAM_SOURCE_DIR}/src/MapDrawer.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Optimizer.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Frame.cc
-            ${ORBSLAM_SOURCE_DIR}/src/KeyFrameDatabase.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Sim3Solver.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Viewer.cc
-            ${ORBSLAM_SOURCE_DIR}/src/ImuTypes.cc
-            ${ORBSLAM_SOURCE_DIR}/src/G2oTypes.cc
-            ${ORBSLAM_SOURCE_DIR}/src/CameraModels/Pinhole.cpp
-            ${ORBSLAM_SOURCE_DIR}/src/CameraModels/KannalaBrandt8.cpp
-            ${ORBSLAM_SOURCE_DIR}/src/OptimizableTypes.cpp
-            ${ORBSLAM_SOURCE_DIR}/src/MLPnPsolver.cpp
-            ${ORBSLAM_SOURCE_DIR}/src/GeometricTools.cc
-            ${ORBSLAM_SOURCE_DIR}/src/TwoViewReconstruction.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Config.cc
-            ${ORBSLAM_SOURCE_DIR}/src/Settings.cc
-            ${ORBSLAM_SOURCE_DIR}/include/System.h
-            ${ORBSLAM_SOURCE_DIR}/include/Tracking.h
-            ${ORBSLAM_SOURCE_DIR}/include/LocalMapping.h
-            ${ORBSLAM_SOURCE_DIR}/include/LoopClosing.h
-            ${ORBSLAM_SOURCE_DIR}/include/ORBextractor.h
-            ${ORBSLAM_SOURCE_DIR}/include/ORBmatcher.h
-            ${ORBSLAM_SOURCE_DIR}/include/FrameDrawer.h
-            ${ORBSLAM_SOURCE_DIR}/include/Converter.h
-            ${ORBSLAM_SOURCE_DIR}/include/MapPoint.h
-            ${ORBSLAM_SOURCE_DIR}/include/KeyFrame.h
-            ${ORBSLAM_SOURCE_DIR}/include/Atlas.h
-            ${ORBSLAM_SOURCE_DIR}/include/Map.h
-            ${ORBSLAM_SOURCE_DIR}/include/MapDrawer.h
-            ${ORBSLAM_SOURCE_DIR}/include/Optimizer.h
-            ${ORBSLAM_SOURCE_DIR}/include/Frame.h
-            ${ORBSLAM_SOURCE_DIR}/include/KeyFrameDatabase.h
-            ${ORBSLAM_SOURCE_DIR}/include/Sim3Solver.h
-            ${ORBSLAM_SOURCE_DIR}/include/Viewer.h
-            ${ORBSLAM_SOURCE_DIR}/include/ImuTypes.h
-            ${ORBSLAM_SOURCE_DIR}/include/G2oTypes.h
-            ${ORBSLAM_SOURCE_DIR}/include/CameraModels/GeometricCamera.h
-            ${ORBSLAM_SOURCE_DIR}/include/CameraModels/Pinhole.h
-            ${ORBSLAM_SOURCE_DIR}/include/CameraModels/KannalaBrandt8.h
-            ${ORBSLAM_SOURCE_DIR}/include/OptimizableTypes.h
-            ${ORBSLAM_SOURCE_DIR}/include/MLPnPsolver.h
-            ${ORBSLAM_SOURCE_DIR}/include/GeometricTools.h
-            ${ORBSLAM_SOURCE_DIR}/include/TwoViewReconstruction.h
-            ${ORBSLAM_SOURCE_DIR}/include/SerializationUtils.h
-            ${ORBSLAM_SOURCE_DIR}/include/Config.h
-            ${ORBSLAM_SOURCE_DIR}/include/Settings.h)
-
-add_subdirectory(${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o)
-
+  
 # Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_executable(viam_main_v1 main_v1.cc ${SOURCES})
-target_link_libraries(viam_main_v1 
-${OpenCV_LIBS}
-${EIGEN3_LIBS}
-${Pangolin_LIBRARIES}
-${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
--lboost_serialization
--lboost_filesystem
--lboost_log
--lcrypto)
-
-
+add_executable(viam_main_v1 main_v1.cc)
+target_link_libraries(
+  viam_main_v1
+  ${OpenCV_LIBS}
+  ${EIGEN3_LIBS}
+  ${Pangolin_LIBRARIES}
+  ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+  ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+  ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
+  -lboost_serialization
+  -lboost_filesystem
+  -lcrypto)
 
 if(EXISTS ${SRCDIR})
   find_package(PkgConfig REQUIRED)
@@ -151,7 +89,7 @@ if(EXISTS ${SRCDIR})
   pkg_check_modules(GRPCPP REQUIRED grpc++)
   pkg_check_modules(PROTOBUF REQUIRED protobuf)
 
-  set(SOURCES ${SOURCES} ${SRCDIR}/proto/api/service/slam/v1/slam.grpc.pb.cc
+  set(SOURCES ${SRCDIR}/proto/api/service/slam/v1/slam.grpc.pb.cc
               ${SRCDIR}/proto/api/service/slam/v1/slam.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/proto/api/common/v1/common.grpc.pb.cc
               ${SRCDIR}/proto/api/common/v1/common.pb.cc)
@@ -160,29 +98,31 @@ if(EXISTS ${SRCDIR})
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
 
   add_executable(orb_grpc_server orbslam_server_v1.cc ${SOURCES})
-  target_link_libraries(orb_grpc_server 
-  ${OpenCV_LIBS}
-  ${EIGEN3_LIBS}
-  ${Pangolin_LIBRARIES}
-  ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-  ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-  -lboost_serialization
-  -lboost_filesystem
-  -lboost_log
-  -lcrypto
+  target_link_libraries(
+    orb_grpc_server
+    ${OpenCV_LIBS}
+    ${EIGEN3_LIBS}
+    ${Pangolin_LIBRARIES}
+    ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+    ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+    ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
+    -lboost_serialization
+    -lboost_filesystem
+    -lboost_log
+    -lcrypto
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
   target_include_directories(
     orb_grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
-                       ${PROTOBUF_INCLUDE_DIRS})
+                        ${PROTOBUF_INCLUDE_DIRS})
   target_compile_options(
     orb_grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
-                       ${PROTOBUF_CFLAGS_OTHER})
+                        ${PROTOBUF_CFLAGS_OTHER})
 
 else()
   message(
     FATAL_ERROR
       "RDK C++ gRPC gen files not found. Please specify the absolute path to your RDK_SOURCE_DIR e.g. 'export RDK_SOURCE_DIR=/home/user/rdk'"
   )
-endif()
+endif()  

@@ -39,6 +39,13 @@ else
     echo "Do not forget to move vocabulary to your data directory!"
 fi
 
+echo "Configuring and building ORB_SLAM3..."
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j2
+
+echo "Configuring and building viam-orb-slam3..."
 cd $BASEDIR
 mkdir bin
 mkdir build
