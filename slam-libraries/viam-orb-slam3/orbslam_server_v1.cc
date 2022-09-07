@@ -793,12 +793,13 @@ int main(int argc, char **argv) {
         slamService.offlineFlag = true;
     }
 
-    builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials());
+    std::unique_ptr<int> selected_port = std::make_unique<int>(0);
+    builder.AddListeningPort(slam_port, grpc::InsecureServerCredentials(), selected_port.get());
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    BOOST_LOG_TRIVIAL(info) << "Server listening on " << slam_port.c_str();
+    BOOST_LOG_TRIVIAL(info) << "Server listening on " << *selected_port;
 
     // Determine which settings file to use(.yaml)
     const path myPath(path_to_settings);
