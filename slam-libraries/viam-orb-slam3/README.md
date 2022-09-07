@@ -5,15 +5,18 @@ ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
 ## Installation instructions
+Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup) in addition to the steps below. 
 
 ### Automatic Dependency Installation
-To install dependencies, use the target 
+To automatically install dependencies, use the target 
 ```
 ./setup_orbslam.sh
 ```
-Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
 
-
+which installs all dependencies required for ORB_SLAM3. the dependencies installed this way are
+```
+cmake libglew-dev libopencv-dev libeigen3-dev libssl-dev libboost-all-dev libpangolin-dev
+```
 ### Manual Dependency Install
 ```bash
 # Install & build Pangolin (includes eigen)
@@ -43,7 +46,12 @@ sudo apt-get install libboost-all-dev
 ```
 
 ### Build ORB_SLAM3
+ensure gRPC is setup within [slam-libraries](../.) using 
+```
+make pull-rdk
+```
 
+To build ORB_SLAM3 run the following
 ```bash
 cd viam-orb-slam3
 ./build_orbslam.sh
