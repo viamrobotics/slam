@@ -5,10 +5,19 @@ ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
 ## Installation instructions
+Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup) in addition to the steps below. 
 
-### Install Dependencies
-Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
+### Automatic Dependency Installation
+To automatically install dependencies, use the target 
+```
+./setup_orbslam.sh
+```
 
+which installs all dependencies required for ORB_SLAM3. the dependencies installed this way are
+```
+cmake libglew-dev libopencv-dev libeigen3-dev libssl-dev libboost-all-dev libpangolin-dev
+```
+### Manual Dependency Install
 ```bash
 # Install & build Pangolin (includes eigen)
 git clone --recursive https://github.com/stevenlovegrove/Pangolin.git
@@ -31,24 +40,18 @@ sudo apt install libeigen3-dev
 ```
 
 ```bash
-# [advanced] Install Python3
-# This is only needed for visualizing trajectories when using built-in ORB_SLAM3 functions.
-# It is used for post-processing with ground truth data (like vicon).
-sudo apt install libpython3.7-dev
-sudo apt install python3-pip
-pip3 install --upgrade pip
-pip3 install numpy
-pip3 install matplotlib
-```
-
-```bash
 # Other dependencies
 sudo apt install libssl-dev 
 sudo apt-get install libboost-all-dev
 ```
 
 ### Build ORB_SLAM3
+ensure gRPC is setup within [slam-libraries](../.) using 
+```
+make pull-rdk
+```
 
+To build ORB_SLAM3 run the following
 ```bash
 cd viam-orb-slam3
 ./build_orbslam.sh
@@ -64,20 +67,4 @@ In your desired data directory, move the vocabulary file from orbslam into your 
 ```bash
 sudo cp ORB_SLAM3/Vocabulary/ORBvoc.txt ~/YOUR_DATA_DIR/config/
 ```
-You only have to do this once per data directory.
-
-### NOTE
-
-The (initial) build can crash on RPIs, which seems to happen during the sophus build. In this case, it might be helpful change the `make -j` flags in [build_orbslam.sh](./build_orbslam.sh) from 
-
-```bash
-make -j`nproc`
-```
-
-to
-
-```bash
-make -j2
-```
-
-Besides that, it might happen that other changes are needed to be made in [CMakeLists.txt](./CMakeLists.txt). In one case, the OpenCV version had to be changed in order for ORB_SLAM3 to compile.
+You only have to do this once per data directory. Note ORB_SLAM3 will fail if the Vocabulary cannot be found

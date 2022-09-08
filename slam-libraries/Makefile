@@ -12,12 +12,17 @@ bufsetup:
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 	pkg-config openssl || export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
 
+clean-all: cleanorb
+	rm -rf grpc
+	rm -rf rdk-minimal
+	
 cleanorb:
 	rm -rf viam-orb-slam3/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/DBoW2/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/g2o/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/Sophus/build
+	rm -rf viam-orb-slam3/bin
 
 format:
 	find . -type f -not -path \
@@ -28,3 +33,12 @@ format:
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
+buildorb:
+	cd viam-orb-slam3 && ./build_orbslam.sh
+
+setuporb: 
+	cd viam-orb-slam3 && ./setup_orbslam.sh
+
+orbslam-all: setuporb pull-rdk buildorb
+
+include *.make

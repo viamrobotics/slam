@@ -56,7 +56,6 @@ message(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
-
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${ORBSLAM_SOURCE_DIR}
@@ -65,10 +64,7 @@ include_directories(
   ${ORBSLAM_SOURCE_DIR}/Thirdparty/Sophus
   ${EIGEN3_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS})
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-add_subdirectory(${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o)
-
+  
 # Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(viam_main_v1 main_v1.cc)
@@ -117,14 +113,14 @@ if(EXISTS ${SRCDIR})
     ${PROTOBUF_LIBRARIES})
   target_include_directories(
     orb_grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
-                       ${PROTOBUF_INCLUDE_DIRS})
+                        ${PROTOBUF_INCLUDE_DIRS})
   target_compile_options(
     orb_grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
-                       ${PROTOBUF_CFLAGS_OTHER})
+                        ${PROTOBUF_CFLAGS_OTHER})
 
 else()
   message(
     FATAL_ERROR
       "RDK C++ gRPC gen files not found. Please specify the absolute path to your RDK_SOURCE_DIR e.g. 'export RDK_SOURCE_DIR=/home/user/rdk'"
   )
-endif()
+endif()  
