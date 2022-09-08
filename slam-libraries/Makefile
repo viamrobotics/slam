@@ -41,13 +41,11 @@ setuporb:
 
 orbslam-all: setuporb pull-rdk buildorb
 
+
 appimages: buildorb
 	cd packaging/appimages && appimage-builder --recipe orb_grpc_server-`uname -m`.yml
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
-
-appimages-deploy:
-	gsutil -m -h "Cache-Control: no-cache" cp packaging/appimages/deploy/* gs://packages.viam.com/apps/camera-servers/
 
 include *.make
