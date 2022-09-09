@@ -39,7 +39,11 @@ buildorb:
 setuporb: pull-rdk
 	cd viam-orb-slam3 && ./setup_orbslam.sh
 
-orbslam-all: setuporb buildorb
+<<<<<<< HEAD
+testorb:
+	cd viam-orb-slam3 && ./test_orbslam.sh
+
+orbslam-all: setuporb buildorb testorb
 
 
 appimage: buildorb
@@ -47,5 +51,10 @@ appimage: buildorb
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
+=======
+
+
+orbslam-all: setuporb pull-rdk buildorb testorb
+>>>>>>> 98306e4 (John's comments)
 
 include *.make
