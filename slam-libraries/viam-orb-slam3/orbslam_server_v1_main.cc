@@ -1,6 +1,6 @@
-#include "orbslam_server_v1.h"
-
 #include <algorithm>
+
+#include "orbslam_server_v1.h"
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
