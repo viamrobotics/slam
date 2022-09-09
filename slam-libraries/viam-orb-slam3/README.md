@@ -51,7 +51,7 @@ ensure gRPC is setup within [slam-libraries](../.) using
 make pull-rdk
 ```
 
-To build ORB_SLAM3 run the following
+To build ORB_SLAM3 and run tests, run the following
 ```bash
 cd viam-orb-slam3
 ./build_orbslam.sh
