@@ -1,7 +1,7 @@
 # appimage-builder recipe see https://appimage-builder.readthedocs.io for details
 version: 1
 script:
- - rm -rf AppDir | true
+ - rm -rf $TARGET_APPDIR | true
  - mkdir -p $TARGET_APPDIR/usr/bin
  - mkdir -p $TARGET_APPDIR/usr/lib
  - cp ../../viam-orb-slam3/bin/orb_grpc_server $TARGET_APPDIR/usr/bin/
@@ -53,6 +53,8 @@ AppDir:
     exclude:
     - usr/share/man
     - usr/share/doc
+    - usr/share/info
+    - usr/share/lintian
   runtime:
     env:
         AIX_TARGET: usr/bin/orb_grpc_server
