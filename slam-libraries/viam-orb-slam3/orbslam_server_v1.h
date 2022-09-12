@@ -47,6 +47,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     string path_to_data;
     string path_to_map;
     string path_to_sequence;
+    string path_to_vocab;
+    string path_to_settings;
+    string slam_mode;
+    string slam_port;
     string camera_name;
     chrono::milliseconds frame_delay_msec;
     chrono::seconds map_rate_sec;
@@ -70,11 +74,16 @@ enum class FileParserMethod { Recent, Closest };
 
 // find a specific input argument from rdk and write the value to a string.
 // Returns empty if the argument is not found.
-string argParser(int argc, char **argv, const string varName);
+string argParser(const vector<string> &args, const string varName);
 
 // parse a config map for a specific variable name and return the value as a
 // string. Returns empty if the variable is not found within the map.
 string configMapParser(string map, string varName);
+
+// Parses and validates the command line arguments. Sets the log level. Throws
+// an exception if the arguments are malformed.
+void parseAndValidateArguments(const vector<string> &args,
+                               SLAMServiceImpl &slamService);
 
 // Converts UTC time string to a double value.
 double readTimeFromFilename(const string filename);
