@@ -39,7 +39,10 @@ buildorb:
 setuporb: pull-rdk
 	cd viam-orb-slam3 && ./setup_orbslam.sh
 
-orbslam-all: setuporb buildorb
+testorb:
+	cd viam-orb-slam3 && ./test_orbslam.sh
+
+orbslam-all: setuporb buildorb testorb
 
 
 appimage: buildorb

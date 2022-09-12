@@ -64,21 +64,8 @@ include_directories(
   ${ORBSLAM_SOURCE_DIR}/Thirdparty/Sophus
   ${EIGEN3_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS})
-  
-# Build examples
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_executable(viam_main_v1 main_v1.cc)
-target_link_libraries(
-  viam_main_v1
-  ${OpenCV_LIBS}
-  ${EIGEN3_LIBS}
-  ${Pangolin_LIBRARIES}
-  ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-  ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-  ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
-  -lboost_serialization
-  -lboost_filesystem
-  -lcrypto)
 
 if(EXISTS ${SRCDIR})
   find_package(PkgConfig REQUIRED)
@@ -95,9 +82,9 @@ if(EXISTS ${SRCDIR})
               ${SRCDIR}/google/api/httpbody.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
 
-  add_executable(orb_grpc_server orbslam_server_v1.cc ${SOURCES})
+  add_library(orbslam_server_v1 orbslam_server_v1.cc ${SOURCES})
   target_link_libraries(
-    orb_grpc_server
+    orbslam_server_v1
     ${OpenCV_LIBS}
     ${EIGEN3_LIBS}
     ${Pangolin_LIBRARIES}
@@ -112,12 +99,27 @@ if(EXISTS ${SRCDIR})
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
   target_include_directories(
-    orb_grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
+    orbslam_server_v1 PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
                         ${PROTOBUF_INCLUDE_DIRS})
+  target_compile_options(
+    orbslam_server_v1 PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
+                        ${PROTOBUF_CFLAGS_OTHER})
+
+  add_executable(orb_grpc_server orbslam_server_v1_main.cc)
+  target_link_libraries(
+    orb_grpc_server
+    orbslam_server_v1)
   target_compile_options(
     orb_grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
                         ${PROTOBUF_CFLAGS_OTHER})
 
+  add_executable(orb_grpc_server_test orbslam_server_v1_test.cc)
+  target_link_libraries(
+    orb_grpc_server_test
+    orbslam_server_v1)
+  target_compile_options(
+    orb_grpc_server_test PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
+                        ${PROTOBUF_CFLAGS_OTHER})
 else()
   message(
     FATAL_ERROR

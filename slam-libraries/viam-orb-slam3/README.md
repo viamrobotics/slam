@@ -68,3 +68,9 @@ In your desired data directory, move the vocabulary file from orbslam into your 
 sudo cp ORB_SLAM3/Vocabulary/ORBvoc.txt ~/YOUR_DATA_DIR/config/
 ```
 You only have to do this once per data directory. Note ORB_SLAM3 will fail if the Vocabulary cannot be found
+
+To run tests, after building, run the following
+```bash
+cd viam-orb-slam3
+./test_orbslam.sh
+```
