@@ -115,4 +115,4 @@ appimage-arm64: canon-update
 	$(DOCKER_CMD) make appimage
 
 appimage-deploy:
-	gsutil -m -h "Cache-Control: no-cache" cp etc/packaging/appimages/deploy/* gs://packages.viam.com/apps/viam-server/
+	gsutil -m -h "Cache-Control: no-cache" cp etc/packaging/appimages/deploy/* gs://packages.viam.com/apps/slam-servers/

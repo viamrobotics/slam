@@ -15,7 +15,7 @@ bufsetup:
 clean-all: cleanorb
 	rm -rf grpc
 	rm -rf rdk-minimal
-	
+
 cleanorb:
 	rm -rf viam-orb-slam3/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/build
@@ -36,9 +36,16 @@ format:
 buildorb:
 	cd viam-orb-slam3 && ./build_orbslam.sh
 
-setuporb: 
+setuporb: pull-rdk
 	cd viam-orb-slam3 && ./setup_orbslam.sh
 
 orbslam-all: setuporb pull-rdk buildorb
+
+
+appimage: buildorb
+	cd packaging/appimages && appimage-builder --recipe orb_grpc_server-`uname -m`.yml
+	mkdir -p packaging/appimages/deploy/
+	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
+	chmod 755 packaging/appimages/deploy/*.AppImage
 
 include *.make
