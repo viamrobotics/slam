@@ -31,12 +31,9 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_args) {
 }
 
 BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_data_dir) {
-    const vector<string> args{"-config_param={mode=slam_mode}",
-                              "-port=20000",
-                              "-sensors=color",
-                              "-data_rate_ms=200",
-                              "-map_rate_sec=60",
-                              "-unknown=unknown"};
+    const vector<string> args{
+        "-config_param={mode=rgbd}", "-port=20000",      "-sensors=color",
+        "-data_rate_ms=200",         "-map_rate_sec=60", "-unknown=unknown"};
     const string message = "No data directory given";
     checkParseAndValidateArgumentsException(args, message);
 }
@@ -49,36 +46,41 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_slam_mode) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
+BOOST_AUTO_TEST_CASE(parseAndValidateArguments_invalid_slam_mode) {
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=bad}",
+                              "-port=20000",        "-sensors=color",
+                              "-data_rate_ms=200",  "-map_rate_sec=60"};
+    const string message = "Invalid slam_mode=bad";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
 BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_slam_port) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=slam_mode}",
-        "-sensors=color",     "-data_rate_ms=200",
-        "-map_rate_sec=60",   "-unknown=unknown"};
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
+                              "-sensors=color",     "-data_rate_ms=200",
+                              "-map_rate_sec=60",   "-unknown=unknown"};
     const string message = "No gRPC port given";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_camera_data_rate) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=slam_mode}",
-        "-port=20000",        "-sensors=color",
-        "-map_rate_sec=60",   "-unknown=unknown"};
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
+                              "-port=20000",        "-sensors=color",
+                              "-map_rate_sec=60",   "-unknown=unknown"};
     const string message = "No camera data rate specified";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=slam_mode}",
-        "-port=20000",        "-sensors=color",
-        "-data_rate_ms=200",  "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
+                              "-port=20000",        "-sensors=color",
+                              "-data_rate_ms=200",  "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::parseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.path_to_vocab == "/path/to/config/ORBvoc.txt");
     BOOST_TEST(slamService.path_to_settings == "/path/to/config");
     BOOST_TEST(slamService.path_to_data == "/path/to/data");
     BOOST_TEST(slamService.path_to_map == "/path/to/map");
-    BOOST_TEST(slamService.slam_mode == "slam_mode");
+    BOOST_TEST(slamService.slam_mode == "rgbd");
     BOOST_TEST(slamService.slam_port == "20000");
     BOOST_TEST(slamService.frame_delay_msec.count() ==
                chrono::milliseconds(200).count());
@@ -89,20 +91,18 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config) {
 
 BOOST_AUTO_TEST_CASE(
     parseAndValidateArguments_valid_config_capitalized_slam_mode) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=SLAM_MODE}",
-        "-port=20000",        "-sensors=color",
-        "-data_rate_ms=200",  "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=RGBD}",
+                              "-port=20000",        "-sensors=color",
+                              "-data_rate_ms=200",  "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::parseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.slam_mode == "slam_mode");
+    BOOST_TEST(slamService.slam_mode == "rgbd");
 }
 
 BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config_no_map_rate_sec) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=slam_mode}",
-        "-port=20000",        "-sensors=color",
-        "-data_rate_ms=200",  "-map_rate_sec="};
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
+                              "-port=20000",        "-sensors=color",
+                              "-data_rate_ms=200",  "-map_rate_sec="};
     SLAMServiceImpl slamService;
     utils::parseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(0).count());
@@ -110,9 +110,8 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config_no_map_rate_sec) {
 
 BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config_no_camera) {
     const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=slam_mode}",
-        "-port=20000",        "-sensors=",
-        "-data_rate_ms=200",  "-map_rate_sec=60"};
+        "-data_dir=/path/to", "-config_param={mode=rgbd}", "-port=20000",
+        "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::parseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");
@@ -192,6 +191,7 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Recent_found_time) {
                          "color_data_2022-01-01T01_00_00.0002.png",
                          "color_data_2022-01-01T01_00_00.0003.png"};
     double timeInterest;
+    // Returns 2, since the last file is ignored.
     BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Recent,
                                    configTime, &timeInterest) == 2);
     BOOST_TEST(timeInterest ==

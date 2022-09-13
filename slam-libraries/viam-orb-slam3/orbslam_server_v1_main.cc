@@ -138,11 +138,6 @@ int main(int argc, char **argv) {
     } else if (slamService.slam_mode == "mono") {
         // TODO implement MONO
         // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
-
-    } else {
-        BOOST_LOG_TRIVIAL(fatal)
-            << "Invalid slam_mode=" << slamService.slam_mode;
-        return 1;
     }
 
     SLAM->Shutdown();

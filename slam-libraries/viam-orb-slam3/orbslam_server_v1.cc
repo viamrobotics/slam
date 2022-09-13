@@ -690,6 +690,9 @@ void parseAndValidateArguments(const vector<string> &args,
         throw runtime_error("No SLAM mode given");
     }
     boost::algorithm::to_lower(slamService.slam_mode);
+    if (slamService.slam_mode != "rgbd" && slamService.slam_mode != "mono") {
+        throw runtime_error("Invalid slam_mode=" + slamService.slam_mode);
+    }
 
     slamService.slam_port = argParser(args, "-port=");
     if (slamService.slam_port.empty()) {
