@@ -1,5 +1,6 @@
 #include "orbslam_server_v1.h"
 
+#include <algorithm>
 #include <cfenv>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
@@ -609,13 +610,12 @@ bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
 
 // find a specific input argument from rdk and write the value to a string.
 // Returns empty if the argument is not found.
-string argParser(int argc, char **argv, string strName) {
+string argParser(const vector<string> &args, string strName) {
     // Possibly remove these in a future task
     string strVal;
     string currArg;
     size_t loc;
-    for (int i = 0; i < argc; ++i) {
-        currArg = string(argv[i]);
+    for (auto &&currArg : args) {
         loc = currArg.find(strName);
         if (loc != string::npos) {
             strVal = currArg.substr(loc + strName.size());
@@ -643,6 +643,79 @@ string configMapParser(string map, string varName) {
     }
 
     return strVal;
+}
+
+void parseAndValidateArguments(const vector<string> &args,
+                               SLAMServiceImpl &slamService) {
+    if (args.size() < 6) {
+        throw runtime_error(
+            "No args found. Expected: \n"
+            "./bin/orb_grpc_server "
+            "-data_dir=path_to_data "
+            "-config_param={mode=slam_mode,} "
+            "-port=grpc_port "
+            "-sensors=sensor_name "
+            "-data_rate_ms=frame_delay "
+            "-map_rate_sec=map_rate_sec");
+    }
+
+    const auto config_params = argParser(args, "-config_param=");
+
+    const auto debugParam = configMapParser(config_params, "debug=");
+    bool isDebugTrue;
+    bool isDebugOne;
+    istringstream(debugParam) >> std::boolalpha >> isDebugTrue;
+    istringstream(debugParam) >> std::noboolalpha >> isDebugOne;
+    if (!isDebugTrue && !isDebugOne) {
+        boost::log::core::get()->set_filter(boost::log::trivial::severity >=
+                                            boost::log::trivial::info);
+    }
+
+    for (auto i = 0; i < args.size(); i++) {
+        BOOST_LOG_TRIVIAL(debug) << "Argument #" << i << " is " << args.at(i);
+    }
+
+    const auto data_dir = argParser(args, "-data_dir=");
+    if (data_dir.empty()) {
+        throw runtime_error("No data directory given");
+    }
+    slamService.path_to_vocab = data_dir + "/config/ORBvoc.txt";
+    slamService.path_to_settings = data_dir + "/config";
+
+    slamService.path_to_data = data_dir + "/data";
+    slamService.path_to_map = data_dir + "/map";
+
+    slamService.slam_mode = configMapParser(config_params, "mode=");
+    if (slamService.slam_mode.empty()) {
+        throw runtime_error("No SLAM mode given");
+    }
+    boost::algorithm::to_lower(slamService.slam_mode);
+    if (slamService.slam_mode != "rgbd" && slamService.slam_mode != "mono") {
+        throw runtime_error("Invalid slam_mode=" + slamService.slam_mode);
+    }
+
+    slamService.slam_port = argParser(args, "-port=");
+    if (slamService.slam_port.empty()) {
+        throw runtime_error("No gRPC port given");
+    }
+
+    const auto data_rate_msec = argParser(args, "-data_rate_ms=");
+    if (data_rate_msec.empty()) {
+        throw runtime_error("No camera data rate specified");
+    }
+    slamService.frame_delay_msec = chrono::milliseconds(stoi(data_rate_msec));
+
+    auto map_rate_sec = argParser(args, "-map_rate_sec=");
+    if (map_rate_sec.empty()) {
+        map_rate_sec = "0";
+    }
+    slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
+
+    slamService.camera_name = argParser(args, "-sensors=");
+    if (slamService.camera_name.empty()) {
+        BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
+        slamService.offlineFlag = true;
+    }
 }
 
 // Converts UTC time string to a double value.
@@ -703,7 +776,7 @@ int parseBothDataDir(std::string path_to_data,
         // for the most recent file, search the rgb directory until a
         // corresponding depth image is found
         std::string depthPath = path_to_data + strDepth + "/";
-        for (int i = filesRGB.size() - 2; i >= 0; i--) {
+        for (int i = (int)filesRGB.size() - 2; i >= 0; i--) {
             double fileTime = readTimeFromFilename(filesRGB[i].substr(
                 filesRGB[i].find("_data_") + filenamePrefixLength));
 
@@ -726,7 +799,7 @@ int parseDataDir(const std::vector<std::string> &files,
                  double *timeInterest) {
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
-        for (int i = 0; i < files.size() - 1; i++) {
+        for (int i = 0; i < (int)files.size() - 1; i++) {
             double fileTime = readTimeFromFilename(files[i].substr(
                 files[i].find("_data_") + filenamePrefixLength));
             double delTime = fileTime - configTime;
@@ -738,7 +811,7 @@ int parseDataDir(const std::vector<std::string> &files,
     }
     // Find the file generated most recently, used mostly in online mode
     else if (interest == FileParserMethod::Recent) {
-        int i = files.size() - 2;
+        int i = (int)files.size() - 2;
 
         // if we have no files return -1 as an error
         if (i < 0) return -1;
