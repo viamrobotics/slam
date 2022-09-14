@@ -141,9 +141,9 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Closest_no_files) {
 BOOST_AUTO_TEST_CASE(parseDataDir_Closest_ignore_last) {
     const string configTimeString = "2022-01-01T01_00_00.0001";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000.png",
-                         "color_data_2022-01-01T01_00_00.0001.png",
-                         "color_data_2022-01-01T01_00_00.0002.png"};
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
     BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Closest,
                                    configTime, &timeInterest) == -1);
@@ -152,10 +152,10 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Closest_ignore_last) {
 BOOST_AUTO_TEST_CASE(parseDataDir_Closest_found_time) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000.png",
-                         "color_data_2022-01-01T01_00_00.0001.png",
-                         "color_data_2022-01-01T01_00_00.0002.png",
-                         "color_data_2022-01-01T01_00_00.0003.png"};
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002",
+                         "color_data_2022-01-01T01_00_00.0003"};
     double timeInterest;
     BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Closest,
                                    configTime, &timeInterest) == 1);
@@ -175,9 +175,9 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Recent_no_files) {
 BOOST_AUTO_TEST_CASE(parseDataDir_Recent_ignore_last) {
     const string configTimeString = "2022-01-01T01_00_00.0001";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000.png",
-                         "color_data_2022-01-01T01_00_00.0001.png",
-                         "color_data_2022-01-01T01_00_00.0002.png"};
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
     BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Recent,
                                    configTime, &timeInterest) == -1);
@@ -186,10 +186,10 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Recent_ignore_last) {
 BOOST_AUTO_TEST_CASE(parseDataDir_Recent_found_time) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000.png",
-                         "color_data_2022-01-01T01_00_00.0001.png",
-                         "color_data_2022-01-01T01_00_00.0002.png",
-                         "color_data_2022-01-01T01_00_00.0003.png"};
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002",
+                         "color_data_2022-01-01T01_00_00.0003"};
     double timeInterest;
     // Returns 2, since the last file is ignored.
     BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Recent,
