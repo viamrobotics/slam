@@ -33,7 +33,7 @@ jobs:
         sudo -u testbot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
 
     - name: Check out code in slam directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
       with:
         submodules: recursive
 
