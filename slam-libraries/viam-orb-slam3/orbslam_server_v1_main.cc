@@ -108,37 +108,37 @@ int main(int argc, char **argv) {
 
     // Start SLAM
     SlamPtr SLAM = nullptr;
-
+    ORB_SLAM3::System::eSensor slam_mode;
     if (slamService.slam_mode == "rgbd") {
         BOOST_LOG_TRIVIAL(info) << "RGBD selected";
-
-        // Create SLAM system. It initializes all system threads and gets ready
-        // to process frames.
-        SLAM = std::make_unique<ORB_SLAM3::System>(
-            slamService.path_to_vocab, full_path_to_settings,
-            ORB_SLAM3::System::RGBD, false, 0);
-        if (slamService.offlineFlag) {
-            BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
-            slamService.start_save_atlas_as_osa(SLAM.get());
-            slamService.process_rgbd_offline(SLAM.get());
-            slamService.stop_save_atlas_as_osa();
-            // Continue to serve requests.
-            while (viam::b_continue_session) {
-                this_thread::sleep_for(chrono::microseconds(
-                    viam::checkForShutdownIntervalMicroseconds));
-            }
-        } else {
-            BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-            slamService.start_save_atlas_as_osa(SLAM.get());
-            slamService.process_rgbd_online(SLAM.get());
-            slamService.stop_save_atlas_as_osa();
-        }
-        // slamService.process_rgbd_for_testing(SLAM.get());
-
+        slam_mode = ORB_SLAM3::System::RGBD;
     } else if (slamService.slam_mode == "mono") {
-        // TODO implement MONO
-        // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-182
+        BOOST_LOG_TRIVIAL(info) << "Mono selected";
+        slam_mode = ORB_SLAM3::System::MONOCULAR;
     }
+    // Create SLAM system. It initializes all system threads and gets ready
+    // to process frames.
+    SLAM = std::make_unique<ORB_SLAM3::System>(
+        slamService.path_to_vocab, full_path_to_settings,
+        slam_mode, false, 0);
+
+    if (slamService.offlineFlag) {
+        BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
+        slamService.start_save_atlas_as_osa(SLAM.get());
+        slamService.process_data_offline(SLAM.get());
+        slamService.stop_save_atlas_as_osa();
+        // Continue to serve requests.
+        while (viam::b_continue_session) {
+            this_thread::sleep_for(chrono::microseconds(
+                viam::checkForShutdownIntervalMicroseconds));
+        }
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+        slamService.start_save_atlas_as_osa(SLAM.get());
+        slamService.process_data_online(SLAM.get());
+        slamService.stop_save_atlas_as_osa();
+    }
+    // slamService.process_data_for_testing(SLAM.get());
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
