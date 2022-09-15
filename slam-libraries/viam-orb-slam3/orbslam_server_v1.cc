@@ -442,7 +442,7 @@ void SLAMServiceImpl::process_rgbd_offline(ORB_SLAM3::System *SLAM) {
     // file was generated
     int locClosest = -1;
     locClosest = utils::parseBothDataDir(path_to_data, filesRGB,
-                                         utils::FileParserMethod::Recent,
+                                         utils::FileParserMethod::Closest,
                                          yamlTime, &fileTimeStart);
     if (locClosest == -1) {
         BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
@@ -564,7 +564,7 @@ void SLAMServiceImpl::save_atlas_as_osa_with_timestamp(
             }
             return;
         }
-        {
+        if (SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) {
             std::lock_guard<std::mutex> lock(slam_mutex);
             SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
         }
