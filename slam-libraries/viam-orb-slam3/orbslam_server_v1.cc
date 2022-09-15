@@ -564,19 +564,16 @@ void SLAMServiceImpl::save_atlas_as_osa_with_timestamp(
             }
             return;
         }
-        bool could_not_save_map = false;
         if (SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) {
             std::lock_guard<std::mutex> lock(slam_mutex);
             SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
-        } else {
-            could_not_save_map = true;
         }
         // Sleep for map_rate_sec duration, but check frequently for
         // shutdown
         while (b_continue_session) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
-            if (time_elapsed_msec >= map_rate_sec || could_not_save_map) {
+            if (time_elapsed_msec >= map_rate_sec) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
