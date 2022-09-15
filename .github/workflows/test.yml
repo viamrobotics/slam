@@ -1,0 +1,53 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      REPO_READ_TOKEN:
+        required: true
+      BUF_TOKEN:
+        required: true
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    strategy:
+      matrix:
+        include:
+          - arch: [x64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:amd64-cache
+            platform: linux/amd64
+    runs-on: ${{ matrix.arch }}
+    container:
+      image: ${{ matrix.image }}
+      options: --platform ${{ matrix.platform }}
+    timeout-minutes: 30
+
+    steps:
+    - name: Configure git for private repos
+      run: |
+        sudo -u testbot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
+
+    - name: Check out code in slam directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Verify no uncommitted changes from make format
+      run: |
+        git init
+        git add .
+        chown -R testbot .
+        sudo -u testbot bash -lc 'cd slam-libraries && make format-setup format'
+        GEN_DIFF=$(git status -s)
+
+        if [ -n "$GEN_DIFF" ]; then
+            echo '"make format" resulted in changes not in git' 1>&2
+            git status
+            exit 1
+        fi
+
+    - name: Test
+      run: |
+        sudo -u testbot bash -lc 'cd slam-libraries && export BUF_TOKEN=${{ secrets.BUF_TOKEN }} && make buf setuporb buildorb testorb'
