@@ -119,8 +119,7 @@ int main(int argc, char **argv) {
     // Create SLAM system. It initializes all system threads and gets ready
     // to process frames.
     SLAM = std::make_unique<ORB_SLAM3::System>(
-        slamService.path_to_vocab, full_path_to_settings,
-        slam_mode, false, 0);
+        slamService.path_to_vocab, full_path_to_settings, slam_mode, false, 0);
 
     if (slamService.offlineFlag) {
         BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
