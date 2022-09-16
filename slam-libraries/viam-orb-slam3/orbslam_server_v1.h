@@ -104,7 +104,7 @@ bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
 // Find the next frame based off the current interest given a directory of
 // data and time to search from
 int findFrameIndex(const std::vector<std::string> &filesRGB,
-                    string slam_mode, std::string path_to_data,
+                    std::string slam_mode, std::string path_to_data,
                     FileParserMethod interest, double configTime,
                     double *timeInterest);
 

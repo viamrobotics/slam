@@ -803,14 +803,14 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 // Find the next frame based off the current interest given a directory of
 // data and a time to search from
 int findFrameIndex(const std::vector<std::string> &filesRGB,
-                string slam_mode, std::string path_to_data,
+                std::string slam_mode, std::string path_to_data,
                 FileParserMethod interest, double configTime,
                 double *timeInterest) {
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         // for closest file, just parse the rgb directory. as loadRGB will
         // filter any MONOCULAR frames
-        for (int i = 0; i < filesRGB.size() - 1; i++) {
+        for (int i = 0; i < (int)filesRGB.size() - 1; i++) {
             double fileTime = readTimeFromFilename(
                 filesRGB[i].substr(filesRGB[i].find("_data_") + filenamePrefixLength));
             if (fileTime > configTime) {
@@ -819,9 +819,9 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
             }
         }
     }
-    // Find the file(s) generated most recently, used mostly in online mode
+    // Find the file generated most recently, used mostly in online mode
     else if (interest == FileParserMethod::Recent) {
-        int i = filesRGB.size() - 2;
+        int i = (int)filesRGB.size() - 2;
 
         // if we have no files return -1 as an error
         if (i < 0) return -1;
@@ -832,7 +832,7 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
             // for the most recent file, search the rgb directory until a
             // corresponding depth image is found
             std::string depthPath = path_to_data + strDepth + "/";
-            for (int i = filesRGB.size() - 2; i >= 0; i--) {
+            for (int i = (int)filesRGB.size() - 2; i >= 0; i--) {
                 double fileTime = readTimeFromFilename(filesRGB[i].substr(
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 
