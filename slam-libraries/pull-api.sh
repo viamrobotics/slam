@@ -15,5 +15,3 @@ else
 	git sparse-checkout set --cone "grpc/cpp" "proto" "buf.yaml" "buf.lock" "go.mod" "go.sum"
 	git pull origin main
 fi
-
-
