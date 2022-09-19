@@ -2,9 +2,9 @@
 # Temp fix for building grpc, grab minimal rdk and build locally
 pull-rdk: bufsetup pull-rdk.sh
 	./pull-rdk.sh
-	cd rdk-minimal && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml
-	cd rdk-minimal && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.grpc.gen.yaml
-	cd rdk-minimal && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml buf.build/googleapis/googleapis
+	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml
+	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.grpc.gen.yaml
+	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml buf.build/googleapis/googleapis
 
 bufsetup:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
@@ -14,7 +14,7 @@ bufsetup:
 
 clean-all: cleanorb
 	rm -rf grpc
-	rm -rf rdk-minimal
+	rm -rf api
 
 cleanorb:
 	rm -rf viam-orb-slam3/build
@@ -29,7 +29,7 @@ format:
 		-and ! -path '*viam-cartographer/cartographer*' \
 		-and ! -path '*viam-cartographer/build*' \
 		-and ! -path '*viam-orb-slam3/ORB_SLAM3*' \
-		-and ! -path '*rdk-minimal*' \
+		-and ! -path '*api*' \
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
