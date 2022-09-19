@@ -56,11 +56,19 @@ AppDir:
   files:
     include: []
     exclude:
-    - usr/include/*
+    - usr/include/
     - usr/share/man
     - usr/share/doc
     - usr/share/info
     - usr/share/lintian
+    - usr/lib/libpango_python.so
+    - usr/lib/libpango_plot.so
+    - usr/lib/libpango_geometry.so
+    - usr/lib/libpango_glgeometry.so
+    - usr/lib/libpango_packetstream.so
+    - usr/lib/libpango_scene.so
+    - usr/lib/libpango_tools.so
+    - usr/lib/libpango_video.so
   runtime:
     env:
         AIX_TARGET: usr/bin/orb_grpc_server
