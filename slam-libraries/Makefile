@@ -2,13 +2,13 @@
 # Temp fix for building grpc, grab minimal rdk and build locally
 pull-api: bufsetup pull-api.sh
 	./pull-api.sh
-	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml
-	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.grpc.gen.yaml
-	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml buf.build/googleapis/googleapis
+	cd api/proto/viam && PATH="${PATH}:`pwd`/../../../grpc/bin" buf generate --template ../../../buf.gen.yaml
+	cd api/proto/viam && PATH="${PATH}:`pwd`/../../../grpc/bin" buf generate --template ../../../buf.grpc.gen.yaml
+	cd api/proto/viam && PATH="${PATH}:`pwd`/../../../grpc/bin" buf generate --template ../../../buf.gen.yaml buf.build/googleapis/googleapis
 
 bufsetup:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
-	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.4.0
+	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 	pkg-config openssl || export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
 
