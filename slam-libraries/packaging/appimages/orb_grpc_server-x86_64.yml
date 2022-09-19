@@ -49,9 +49,14 @@ AppDir:
     - libopencv-imgproc4.5:amd64
     - libopencv-core4.5:amd64
     - libegl1:amd64
+    - libwayland-egl1:amd64
+    - libwayland-cursor0:amd64
+    - libwayland-client0:amd64
+    - libxcb-render0:amd64
   files:
     include: []
     exclude:
+    - usr/include/*
     - usr/share/man
     - usr/share/doc
     - usr/share/info
