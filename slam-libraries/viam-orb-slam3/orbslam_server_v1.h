@@ -5,10 +5,10 @@
 
 #include <atomic>
 
-#include "viam/common/v1/common.grpc.pb.h"
-#include "viam/common/v1/common.pb.h"
-#include "viam/service/slam/v1/slam.grpc.pb.h"
-#include "viam/service/slam/v1/slam.pb.h"
+#include "common/v1/common.grpc.pb.h"
+#include "common/v1/common.pb.h"
+#include "service/slam/v1/slam.grpc.pb.h"
+#include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
 using viam::service::slam::v1::GetMapRequest;
