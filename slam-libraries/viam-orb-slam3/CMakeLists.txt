@@ -10,16 +10,16 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -DBOOST_LOG_DYN_LINK")
 
-if(DEFINED ENV{RDK_SOURCE_DIR})
-  set(RDK_SOURCE_DIR $ENV{RDK_SOURCE_DIR})
+if(DEFINED ENV{API_SOURCE_DIR})
+  set(API_SOURCE_DIR $ENV{API_SOURCE_DIR})
 else()
-  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../rdk-minimal)
+  set(API_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../api)
 endif()
 
-set(SRCDIR ${RDK_SOURCE_DIR}/grpc/cpp/gen)
+set(SRCDIR ${API_SOURCE_DIR}/grpc/cpp/gen)
 set(ORBSLAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/ORB_SLAM3)
 message("PROJECT SOURCE DIR: " ${PROJECT_SOURCE_DIR})
-message("RDK SOURCE DIR: " ${RDK_SOURCE_DIR})
+message("RDK SOURCE DIR: " ${API_SOURCE_DIR})
 message("GRPC SOURCE DIR: " ${SRCDIR})
 
 # Check C++14 or C++0x support
@@ -74,10 +74,10 @@ if(EXISTS ${SRCDIR})
   pkg_check_modules(GRPCPP REQUIRED grpc++)
   pkg_check_modules(PROTOBUF REQUIRED protobuf)
 
-  set(SOURCES ${SRCDIR}/proto/api/service/slam/v1/slam.grpc.pb.cc
-              ${SRCDIR}/proto/api/service/slam/v1/slam.pb.cc)
-  set(SOURCES ${SOURCES} ${SRCDIR}/proto/api/common/v1/common.grpc.pb.cc
-              ${SRCDIR}/proto/api/common/v1/common.pb.cc)
+  set(SOURCES ${SRCDIR}/viam/service/slam/v1/slam.grpc.pb.cc
+              ${SRCDIR}/viam/service/slam/v1/slam.pb.cc)
+  set(SOURCES ${SOURCES} ${SRCDIR}/viam/common/v1/common.grpc.pb.cc
+              ${SRCDIR}/viam/common/v1/common.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/annotations.pb.cc
               ${SRCDIR}/google/api/httpbody.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
@@ -123,6 +123,6 @@ if(EXISTS ${SRCDIR})
 else()
   message(
     FATAL_ERROR
-      "RDK C++ gRPC gen files not found. Please specify the absolute path to your RDK_SOURCE_DIR e.g. 'export RDK_SOURCE_DIR=/home/user/rdk'"
+      "RDK C++ gRPC gen files not found. Please specify the absolute path to your API_SOURCE_DIR e.g. 'export API_SOURCE_DIR=/home/user/rdk'"
   )
 endif()  
