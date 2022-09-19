@@ -798,7 +798,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 }
 
 // Find the next frame based off the current interest given a directory of
-// data and a time to search from
+// data and a time to search from.
 int findFrameIndex(const std::vector<std::string> &filesRGB,
                    std::string slam_mode, std::string path_to_data,
                    FileParserMethod interest, double configTime,
@@ -823,13 +823,22 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
         // if we have no files return -1 as an error
         if (i < 0) return -1;
 
-        if (slam_mode == "mono") return i;
+        if (slam_mode == "mono") {
+            double fileTime = readTimeFromFilename(filesRGB[i].substr(
+                filesRGB[i].find("_data_") + filenamePrefixLength));
+
+            // if the latest file is older than our config time, return -1 as an error
+            if (fileTime < configTime) return -1;
+
+            *timeInterest = fileTime;
+            return i;
+        }
 
         if (slam_mode == "rgbd") {
             // for the most recent file, search the rgb directory until a
             // corresponding depth image is found
             std::string depthPath = path_to_data + strDepth + "/";
-            for (int i = (int)filesRGB.size() - 2; i >= 0; i--) {
+            for (i = (int)filesRGB.size() - 2; i >= 0; i--) {
                 double fileTime = readTimeFromFilename(filesRGB[i].substr(
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 

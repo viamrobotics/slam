@@ -191,7 +191,19 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono) {
                                      configTime, &timeInterest) == 1);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_rgbd) {
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono_fail) {
+    const string configTimeString = "2022-01-01T01_00_00.0002";
+    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002"};
+    double timeInterest;
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == -1);
+}
+
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_rgbd_fail) {
     const string configTimeString = "2022-01-01T01_00_00.0002";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
@@ -215,6 +227,8 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_mono) {
     BOOST_TEST(utils::findFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 3);
+    BOOST_TEST(timeInterest ==
+               utils::readTimeFromFilename("2022-01-01T01_00_00.0003"));
 }
 
 BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_time_rgbd) {
@@ -236,19 +250,20 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_time_rgbd) {
     fs::path tmpdirDepth = tmpdir / "depth";
     ok = fs::create_directory(tmpdirDepth);
     if (!ok) {
+        fs::remove_all(tmpdir);
         throw std::runtime_error("could not create directory: " +
                                  tmpdirDepth.string());
     }
 
     // Create the file in the temporary directory
-    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01_00_00.0002.png");
+    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01_00_00.0001.png");
     ofs.close();
     // Returns 2, since the last file is ignored.
     BOOST_TEST(utils::findFrameIndex(files, "rgbd", tmpdir.string(),
                                      utils::FileParserMethod::Recent,
-                                     configTime, &timeInterest) == 2);
+                                     configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::readTimeFromFilename("2022-01-01T01_00_00.0002"));
+               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
     // Close the file and remove the temporary directory and its contents.
     fs::remove_all(tmpdir);
 }
