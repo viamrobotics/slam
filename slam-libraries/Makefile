@@ -1,7 +1,7 @@
 
 # Temp fix for building grpc, grab minimal rdk and build locally
-pull-rdk: bufsetup pull-rdk.sh
-	./pull-rdk.sh
+pull-api: bufsetup pull-api.sh
+	./pull-api.sh
 	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml
 	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.grpc.gen.yaml
 	cd api && PATH="${PATH}:`pwd`/../grpc/bin" buf generate --template ../buf.gen.yaml buf.build/googleapis/googleapis
@@ -36,13 +36,13 @@ format:
 buildorb:
 	cd viam-orb-slam3 && ./build_orbslam.sh
 
-setuporb: pull-rdk
+setuporb: 
 	cd viam-orb-slam3 && ./setup_orbslam.sh
 
 testorb:
 	cd viam-orb-slam3 && ./test_orbslam.sh
 
-orbslam-all: setuporb buildorb testorb
+orbslam-all: setuporb pull-api buildorb testorb
 
 
 appimage: buildorb
