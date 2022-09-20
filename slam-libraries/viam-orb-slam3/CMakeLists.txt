@@ -9,22 +9,12 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -DBOOST_LOG_DYN_LINK")
-<<<<<<< HEAD
 if(DEFINED ENV{API_SOURCE_DIR})
   set(API_SOURCE_DIR $ENV{API_SOURCE_DIR})
 elseif(EXISTS ${PROJECT_SOURCE_DIR}/../grpc/cpp/gen)
   set(API_SOURCE_DIR ${PROJECT_SOURCE_DIR}/..)
 else()
   set(API_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../api/proto/viam)
-=======
-
-if(DEFINED ENV{RDK_SOURCE_DIR})
-  set(RDK_SOURCE_DIR $ENV{RDK_SOURCE_DIR})
-elseif(EXISTS ${PROJECT_SOURCE_DIR}/../rdk-minimal)
-  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../rdk-minimal)
-else()
-  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/..)
->>>>>>> 33fc779790cd14744578074264c4cb609b6869e7
 endif()
 
 set(SRCDIR ${API_SOURCE_DIR}/grpc/cpp/gen)
