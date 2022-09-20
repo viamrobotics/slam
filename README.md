@@ -19,7 +19,7 @@ If you happened to use `git clone` only, you won't see the libraries in the `sla
 To setup gRPC, run:
 
 ```bash
-make pull-rdk
+make buf
 ```
 
 This will grab a minimal version of rdk to build gRPC with.
