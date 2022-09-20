@@ -36,9 +36,11 @@ jobs:
       uses: actions/checkout@v3
       with:
         submodules: recursive
+        path: slam
 
     - name: Verify no uncommitted changes from make format
       run: |
+        cd slam
         git init
         git add .
         chown -R testbot .
@@ -53,4 +55,18 @@ jobs:
 
     - name: Test
       run: |
-        sudo -u testbot bash -lc 'cd slam-libraries && export BUF_TOKEN=${{ secrets.BUF_TOKEN }} && make orbslam-all'
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && export BUF_TOKEN=${{ secrets.BUF_TOKEN }} && make orbslam-all'
+
+    - name: Copy orb_grpc_server binary
+      run: |
+        sudo cp slam/slam-libraries/viam-orb-slam3/bin/orb_grpc_server /usr/local/bin/orb_grpc_server
+
+    - name: Check out code in rdk directory
+      uses: actions/checkout@v3
+      with:
+        repository: viamrobotics/rdk
+        path: rdk
+
+    - name: Run rdk slam tests
+      run: |
+        cd rdk/services/slam/builtin && go test

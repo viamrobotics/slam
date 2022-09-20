@@ -16,7 +16,7 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/slam/.github/workflows/test.yml@main
+    uses: viamrobotics/slam/.github/workflows/test.yml@DATA-364
     secrets:
       REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
       BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
