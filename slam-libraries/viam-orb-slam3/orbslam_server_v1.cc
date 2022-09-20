@@ -353,7 +353,7 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
     int locRecent = -1;
     locRecent = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent, yamlTime,
-                                      &fileTimeStart);
+                                      &fileTimeStart, true);
     while (locRecent == -1) {
         if (!b_continue_session) return;
         BOOST_LOG_TRIVIAL(debug) << "No new files found";
@@ -362,16 +362,13 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
                                                         ".png", camera_name);
         locRecent = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                           utils::FileParserMethod::Recent,
-                                          yamlTime, &fileTimeStart);
+                                          yamlTime, &fileTimeStart, true);
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
     int i = locRecent;
     int nkeyframes = 0;
 
     while (true) {
-        // TBD: Possibly split this function into RGBD and MONO processing
-        // modes
-        // https://viam.atlassian.net/browse/DATA-182
         if (!b_continue_session) return;
 
         prevTimeStamp = timeStamp;
@@ -385,7 +382,7 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
             // data directorys with this in mind
             i = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent,
-                                      prevTimeStamp + fileTimeStart, &currTime);
+                                      prevTimeStamp + fileTimeStart, &currTime, false);
             if (i == -1) {
                 this_thread::sleep_for(frame_delay_msec);
             } else {
@@ -457,7 +454,7 @@ void SLAMServiceImpl::process_data_offline(ORB_SLAM3::System *SLAM) {
     int locClosest = -1;
     locClosest = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                        utils::FileParserMethod::Closest,
-                                       yamlTime, &fileTimeStart);
+                                       yamlTime, &fileTimeStart, true);
     if (locClosest == -1) {
         BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
         return;
@@ -466,9 +463,6 @@ void SLAMServiceImpl::process_data_offline(ORB_SLAM3::System *SLAM) {
 
     // iterate over all remaining files in directory
     for (int i = locClosest; i < filesRGB.size(); i++) {
-        // TBD: Possibly split this function into RGBD and MONO processing
-        // modes
-        // https://viam.atlassian.net/browse/DATA-182
         //  record timestamp
         timeStamp = utils::readTimeFromFilename(filesRGB[i].substr(
                         filesRGB[i].find("_data_") + filenamePrefixLength)) -
@@ -802,13 +796,14 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 int findFrameIndex(const std::vector<std::string> &filesRGB,
                    std::string slam_mode, std::string path_to_data,
                    FileParserMethod interest, double configTime,
-                   double *timeInterest) {
+                   double *timeInterest, bool firstIteration) {
+    double fileTime;
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
         // for closest file, just parse the rgb directory. as loadRGBD will
         // filter any MONOCULAR frames
         for (int i = 0; i < (int)filesRGB.size() - 1; i++) {
-            double fileTime = readTimeFromFilename(filesRGB[i].substr(
+            fileTime = readTimeFromFilename(filesRGB[i].substr(
                 filesRGB[i].find("_data_") + filenamePrefixLength));
             if (fileTime > configTime) {
                 *timeInterest = fileTime;
@@ -824,11 +819,12 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
         if (i < 0) return -1;
 
         if (slam_mode == "mono") {
-            double fileTime = readTimeFromFilename(filesRGB[i].substr(
+            fileTime = readTimeFromFilename(filesRGB[i].substr(
                 filesRGB[i].find("_data_") + filenamePrefixLength));
 
             // if the latest file is older than our config time, return -1 as an error
-            if (fileTime < configTime) return -1;
+            if (firstIteration && fileTime < configTime) return -1;
+            else if (!firstIteration && fileTime <= configTime) return -1;
 
             *timeInterest = fileTime;
             return i;
@@ -839,11 +835,12 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
             // corresponding depth image is found
             std::string depthPath = path_to_data + strDepth + "/";
             for (i = (int)filesRGB.size() - 2; i >= 0; i--) {
-                double fileTime = readTimeFromFilename(filesRGB[i].substr(
+                fileTime = readTimeFromFilename(filesRGB[i].substr(
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 
                 // if we found no new files return -1 as an error
-                if (fileTime < configTime) return -1;
+                if (firstIteration && fileTime < configTime) return -1;
+                else if (!firstIteration && fileTime <= configTime) return -1;
 
                 if (boost::filesystem::exists(depthPath + filesRGB[i] +
                                               ".png")) {

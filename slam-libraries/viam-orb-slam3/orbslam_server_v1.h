@@ -106,7 +106,7 @@ bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
 int findFrameIndex(const std::vector<std::string> &filesRGB,
                    std::string slam_mode, std::string path_to_data,
                    FileParserMethod interest, double configTime,
-                   double *timeInterest);
+                   double *timeInterest, bool firstIteration);
 
 }  // namespace utils
 }  // namespace viam
