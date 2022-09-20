@@ -12,7 +12,6 @@ buf: bufsetup
 
 clean-all: cleanorb
 	rm -rf grpc
-	rm -rf api
 
 cleanorb:
 	rm -rf viam-orb-slam3/build
