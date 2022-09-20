@@ -277,7 +277,8 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_mono) {
                utils::readTimeFromFilename("2022-01-01T01_00_00.0003"));
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_first_vs_subsequent_iterations_mono) {
+BOOST_AUTO_TEST_CASE(
+    findFrameIndex_Recent_first_vs_subsequent_iterations_mono) {
     const string configTimeString = "2022-01-01T01_00_00.0003";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
@@ -341,7 +342,8 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_time_rgbd) {
     fs::remove_all(tmpdir);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_first_vs_subsequent_iterations_rgbd) {
+BOOST_AUTO_TEST_CASE(
+    findFrameIndex_Recent_first_vs_subsequent_iterations_rgbd) {
     const string configTimeString = "2022-01-01T01_00_00.0002";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",

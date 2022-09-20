@@ -382,7 +382,8 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
             // data directorys with this in mind
             i = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent,
-                                      prevTimeStamp + fileTimeStart, &currTime, false);
+                                      prevTimeStamp + fileTimeStart, &currTime,
+                                      false);
             if (i == -1) {
                 this_thread::sleep_for(frame_delay_msec);
             } else {
@@ -822,9 +823,12 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
             fileTime = readTimeFromFilename(filesRGB[i].substr(
                 filesRGB[i].find("_data_") + filenamePrefixLength));
 
-            // if the latest file is older than our config time, return -1 as an error
-            if (firstIteration && fileTime < configTime) return -1;
-            else if (!firstIteration && fileTime <= configTime) return -1;
+            // if the latest file is older than our config time, return -1 as an
+            // error
+            if (firstIteration && fileTime < configTime)
+                return -1;
+            else if (!firstIteration && fileTime <= configTime)
+                return -1;
 
             *timeInterest = fileTime;
             return i;
@@ -839,8 +843,10 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 
                 // if we found no new files return -1 as an error
-                if (firstIteration && fileTime < configTime) return -1;
-                else if (!firstIteration && fileTime <= configTime) return -1;
+                if (firstIteration && fileTime < configTime)
+                    return -1;
+                else if (!firstIteration && fileTime <= configTime)
+                    return -1;
 
                 if (boost::filesystem::exists(depthPath + filesRGB[i] +
                                               ".png")) {
