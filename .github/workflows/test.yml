@@ -85,4 +85,4 @@ jobs:
     - name: Run rdk slam tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS cd rdk/services/slam/builtin && go test
+        sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && go test'
