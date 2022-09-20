@@ -805,7 +805,7 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
                    double *timeInterest) {
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
-        // for closest file, just parse the rgb directory. as loadRGB will
+        // for closest file, just parse the rgb directory. as loadRGBD will
         // filter any MONOCULAR frames
         for (int i = 0; i < (int)filesRGB.size() - 1; i++) {
             double fileTime = readTimeFromFilename(filesRGB[i].substr(

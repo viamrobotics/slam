@@ -189,6 +189,8 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono) {
     BOOST_TEST(utils::findFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 1);
+    BOOST_TEST(timeInterest ==
+               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
 }
 
 BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono_fail) {
