@@ -8,6 +8,12 @@ on:
         required: true
       BUF_TOKEN:
         required: true
+      ARTIFACT_READ_ONLY_GCP_CREDENTIALS:
+        required: true
+
+env:
+  GOPRIVATE: "github.com/viamrobotics/*,go.viam.com/*"
+  GOOGLE_APPLICATION_CREDENTIALS_FILENAME: "google-credentials.json"
 
 jobs:
   build_and_test:
@@ -58,15 +64,25 @@ jobs:
         sudo -u testbot bash -lc 'cd slam/slam-libraries && export BUF_TOKEN=${{ secrets.BUF_TOKEN }} && make orbslam-all'
 
     - name: Copy orb_grpc_server binary
+      if: matrix.platform == 'linux/amd64'
       run: |
         sudo cp slam/slam-libraries/viam-orb-slam3/bin/orb_grpc_server /usr/local/bin/orb_grpc_server
 
     - name: Check out code in rdk directory
+      if: matrix.platform == 'linux/amd64'
       uses: actions/checkout@v3
       with:
         repository: viamrobotics/rdk
         path: rdk
 
-    - name: Run rdk slam tests
+    - name: Create GCP Credential File from secret
+      if: matrix.platform == 'linux/amd64'
       run: |
-        cd rdk/services/slam/builtin && go test
+        GOOGLE_APPLICATION_CREDENTIALS=`pwd`/${GOOGLE_APPLICATION_CREDENTIALS_FILENAME}
+        echo "${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}" >> ${GOOGLE_APPLICATION_CREDENTIALS}
+        echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> $GITHUB_ENV
+
+    - name: Run rdk slam tests
+      if: matrix.platform == 'linux/amd64'
+      run: |
+        sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS cd rdk/services/slam/builtin && go test
