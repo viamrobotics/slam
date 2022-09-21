@@ -18,4 +18,4 @@ jobs:
   test:
     uses: viamrobotics/slam/.github/workflows/test.yml@DATA-134-appimage-workflow
     secrets:
-      ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
+      REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
