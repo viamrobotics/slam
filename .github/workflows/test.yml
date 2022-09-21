@@ -6,8 +6,6 @@ on:
     secrets:
       REPO_READ_TOKEN:
         required: true
-      BUF_TOKEN:
-        required: true
 
 jobs:
   build_and_test:
