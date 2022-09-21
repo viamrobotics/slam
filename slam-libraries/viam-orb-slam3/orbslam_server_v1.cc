@@ -824,8 +824,7 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
 
             // if the latest file is older than our config time, return -1 as an
             // error
-            if (fileTime <= configTime)
-                return -1;
+            if (fileTime <= configTime) return -1;
 
             *timeInterest = fileTime;
             return i;
@@ -840,8 +839,7 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 
                 // if we found no new files return -1 as an error
-                if (fileTime <= configTime)
-                    return -1;
+                if (fileTime <= configTime) return -1;
 
                 if (boost::filesystem::exists(depthPath + filesRGB[i] +
                                               ".png")) {
