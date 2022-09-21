@@ -16,7 +16,10 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/slam/.github/workflows/test.yml@main
+    uses: viamrobotics/slam/.github/workflows/test.yml@DATA-134-appimage-workflow
+
+  appimage:
+    needs: test
+    uses: viamrobotics/slam/.github/workflows/appimage.yml@DATA-134-appimage-workflow
     secrets:
-      REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
-      BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}

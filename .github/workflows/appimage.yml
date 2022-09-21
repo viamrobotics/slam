@@ -1,0 +1,63 @@
+name: Build AppImage SLAM Server
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      GCP_CREDENTIALS:
+        required: true
+  push:
+    branches: main
+    paths-ignore:
+      - 'README.md'
+
+
+
+jobs:
+  appimage:
+    name: AppImage Build
+    strategy:
+      matrix:
+        include:
+          - arch: [x64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:amd64-cache
+            platform: linux/amd64
+          - arch: [arm64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:arm64-cache
+            platform: linux/arm64
+    runs-on: ${{ matrix.arch }}
+    container:
+      image: ${{ matrix.image }}
+      options: --platform ${{ matrix.platform }}
+    timeout-minutes: 15
+    outputs:
+      date: ${{ steps.build_test_app.outputs.date }}
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Clean
+      run: |
+        make clean-all
+    
+    - name: buf and build
+      run: make orbslam-all
+
+    - name: Build appimage
+      run: make appimage
+
+    - name: Authorize GCP Upload
+      uses: google-github-actions/auth@v0.4.3
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    
+    - name: Deploy Files
+      uses: google-github-actions/upload-cloud-storage@v0.5.0
+      with:
+        headers: "Cache-Control: no-cache"
+        path: 'etc/packaging/appimages/deploy/'
+        destination: 'packages.viam.com/apps/slam-servers/'
+        glob: '*'
+        parent: false
+        gzip: false
