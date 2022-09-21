@@ -17,11 +17,5 @@ on:
 jobs:
   test:
     uses: viamrobotics/slam/.github/workflows/test.yml@DATA-134-appimage-workflow
-
-  # This lets people add an "appimage" tag to have appimages built for the PR
-  appimage:
-    needs: test
-    if: contains(github.event.pull_request.labels.*.name, 'appimage')
-    uses: viamrobotics/slam/.github/workflows/appimage.yml@DATA-134-appimage-workflow
     secrets:
-      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+      ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
