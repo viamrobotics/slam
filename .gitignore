@@ -12,8 +12,6 @@
 
 # generate folders
 grpc/
-rdk-minimal/
-
 
 # code editor settings
 .vscode
