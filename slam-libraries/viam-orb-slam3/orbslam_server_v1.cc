@@ -430,6 +430,7 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
                     currMapPoints = currMap->GetAllMapPoints();
                 }
             }
+            BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
             nkeyframes = keyframes.size();
         }
         i = -1;
