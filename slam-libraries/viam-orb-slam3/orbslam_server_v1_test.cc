@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_no_files) {
 }
 
 BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono) {
-    const string configTimeString = "2022-01-01T01_00_00.0001";
+    const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
