@@ -12,9 +12,9 @@
 #pragma STDC FENV_ACCESS ON
 
 using namespace boost::filesystem;
-using proto::api::common::v1::PointCloudObject;
-using proto::api::common::v1::Pose;
-using proto::api::common::v1::PoseInFrame;
+using viam::common::v1::PointCloudObject;
+using viam::common::v1::Pose;
+using viam::common::v1::PoseInFrame;
 
 #define IMAGE_SIZE 300
 #define MAX_COLOR_VALUE 255

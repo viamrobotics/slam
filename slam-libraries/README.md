@@ -1,6 +1,11 @@
 # SLAM Libraries
 
-The following is an overview over the SLAM libraries that have been integrated so far.
+The following is an overview over the SLAM libraries that have been integrated so far. To use these servers the Viam API must be built.
+To setup, run:
+
+```bash
+make buf
+```
 
 ## Cartographer
 [Cartographer](https://github.com/cartographer-project/cartographer) is a system that provides real-time simultaneous localization
@@ -20,11 +25,6 @@ For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLA
 To automatically install dependencies run
 ```
 make setuporb
-```
-To setup gRPC, run:
-
-```bash
-make pull-rdk
 ```
 
 To build ORB_SLAM3 and thirdparty packages use

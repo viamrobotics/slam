@@ -5,17 +5,17 @@
 
 #include <atomic>
 
-#include "proto/api/common/v1/common.grpc.pb.h"
-#include "proto/api/common/v1/common.pb.h"
-#include "proto/api/service/slam/v1/slam.grpc.pb.h"
-#include "proto/api/service/slam/v1/slam.pb.h"
+#include "common/v1/common.grpc.pb.h"
+#include "common/v1/common.pb.h"
+#include "service/slam/v1/slam.grpc.pb.h"
+#include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
-using proto::api::service::slam::v1::GetMapRequest;
-using proto::api::service::slam::v1::GetMapResponse;
-using proto::api::service::slam::v1::GetPositionRequest;
-using proto::api::service::slam::v1::GetPositionResponse;
-using proto::api::service::slam::v1::SLAMService;
+using viam::service::slam::v1::GetMapRequest;
+using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPositionRequest;
+using viam::service::slam::v1::GetPositionResponse;
+using viam::service::slam::v1::SLAMService;
 
 namespace viam {
 
