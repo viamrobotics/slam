@@ -353,7 +353,7 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
     int locRecent = -1;
     locRecent = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent, yamlTime,
-                                      &fileTimeStart, true);
+                                      &fileTimeStart);
     while (locRecent == -1) {
         if (!b_continue_session) return;
         BOOST_LOG_TRIVIAL(debug) << "No new files found";
@@ -362,7 +362,7 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
                                                         ".png", camera_name);
         locRecent = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                           utils::FileParserMethod::Recent,
-                                          yamlTime, &fileTimeStart, true);
+                                          yamlTime, &fileTimeStart);
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
     int i = locRecent;
@@ -382,8 +382,7 @@ void SLAMServiceImpl::process_data_online(ORB_SLAM3::System *SLAM) {
             // data directorys with this in mind
             i = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent,
-                                      prevTimeStamp + fileTimeStart, &currTime,
-                                      false);
+                                      prevTimeStamp + fileTimeStart, &currTime);
             if (i == -1) {
                 this_thread::sleep_for(frame_delay_msec);
             } else {
@@ -455,7 +454,7 @@ void SLAMServiceImpl::process_data_offline(ORB_SLAM3::System *SLAM) {
     int locClosest = -1;
     locClosest = utils::findFrameIndex(filesRGB, slam_mode, path_to_data,
                                        utils::FileParserMethod::Closest,
-                                       yamlTime, &fileTimeStart, true);
+                                       yamlTime, &fileTimeStart);
     if (locClosest == -1) {
         BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
         return;
@@ -797,7 +796,7 @@ std::vector<std::string> listFilesInDirectoryForCamera(
 int findFrameIndex(const std::vector<std::string> &filesRGB,
                    std::string slam_mode, std::string path_to_data,
                    FileParserMethod interest, double configTime,
-                   double *timeInterest, bool firstIteration) {
+                   double *timeInterest) {
     double fileTime;
     // Find the file closest to the configTime, used mostly in offline mode
     if (interest == FileParserMethod::Closest) {
@@ -825,9 +824,7 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
 
             // if the latest file is older than our config time, return -1 as an
             // error
-            if (firstIteration && fileTime < configTime)
-                return -1;
-            else if (!firstIteration && fileTime <= configTime)
+            if (fileTime <= configTime)
                 return -1;
 
             *timeInterest = fileTime;
@@ -843,9 +840,7 @@ int findFrameIndex(const std::vector<std::string> &filesRGB,
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 
                 // if we found no new files return -1 as an error
-                if (firstIteration && fileTime < configTime)
-                    return -1;
-                else if (!firstIteration && fileTime <= configTime)
+                if (fileTime <= configTime)
                     return -1;
 
                 if (boost::filesystem::exists(depthPath + filesRGB[i] +
