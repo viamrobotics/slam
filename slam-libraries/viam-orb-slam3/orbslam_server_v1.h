@@ -5,17 +5,17 @@
 
 #include <atomic>
 
-#include "proto/api/common/v1/common.grpc.pb.h"
-#include "proto/api/common/v1/common.pb.h"
-#include "proto/api/service/slam/v1/slam.grpc.pb.h"
-#include "proto/api/service/slam/v1/slam.pb.h"
+#include "common/v1/common.grpc.pb.h"
+#include "common/v1/common.pb.h"
+#include "service/slam/v1/slam.grpc.pb.h"
+#include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
-using proto::api::service::slam::v1::GetMapRequest;
-using proto::api::service::slam::v1::GetMapResponse;
-using proto::api::service::slam::v1::GetPositionRequest;
-using proto::api::service::slam::v1::GetPositionResponse;
-using proto::api::service::slam::v1::SLAMService;
+using viam::service::slam::v1::GetMapRequest;
+using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPositionRequest;
+using viam::service::slam::v1::GetPositionResponse;
+using viam::service::slam::v1::SLAMService;
 
 namespace viam {
 
@@ -32,13 +32,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    void process_rgbd_online(ORB_SLAM3::System *SLAM);
+    void process_data_online(ORB_SLAM3::System *SLAM);
 
-    void process_rgbd_offline(ORB_SLAM3::System *SLAM);
+    void process_data_offline(ORB_SLAM3::System *SLAM);
 
     // Creates a simple map containing a 2x4x8 rectangular prism with the robot
     // in the center, for testing GetMap and GetPosition.
-    void process_rgbd_for_testing(ORB_SLAM3::System *SLAM);
+    void process_data_for_testing(ORB_SLAM3::System *SLAM);
 
     void start_save_atlas_as_osa(ORB_SLAM3::System *SLAM);
 
@@ -92,19 +92,21 @@ std::vector<std::string> listFilesInDirectoryForCamera(
     const std::string data_directory, const std::string extension,
     const std::string camera_name);
 
+// loadRGB loads in rgb images to be used by ORBSLAM, and
+// returns whether the image was loaded successfully
+bool loadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB);
+
+// loadRGBD loads in a rgbd pair of images to be used by ORBSLAM, and
+// returns whether the current pair is okay
 bool loadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
               cv::Mat &imDepth);
 
 // Find the next frame based off the current interest given a directory of
 // data and time to search from
-int parseDataDir(const std::vector<std::string> &files,
-                 FileParserMethod interest, double configTime,
-                 double *timeInterest);
-
-int parseBothDataDir(std::string path_to_data,
-                     const std::vector<std::string> &filesRGB,
-                     FileParserMethod interest, double configTime,
-                     double *timeInterest);
+int findFrameIndex(const std::vector<std::string> &filesRGB,
+                   std::string slam_mode, std::string path_to_data,
+                   FileParserMethod interest, double configTime,
+                   double *timeInterest);
 
 }  // namespace utils
 }  // namespace viam

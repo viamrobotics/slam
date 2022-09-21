@@ -12,7 +12,6 @@
 
 # generate folders
 grpc/
-rdk-minimal/
 
 # code editor settings
 .vscode
@@ -20,5 +19,3 @@ rdk-minimal/
 # grpc
 slam-libraries/grpc
 
-# rdk
-slam-libraries/rdk-minimal

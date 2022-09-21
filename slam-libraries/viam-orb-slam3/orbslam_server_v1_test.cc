@@ -1,7 +1,10 @@
 #define BOOST_TEST_MODULE orb_grpc_server tests
 #include "orbslam_server_v1.h"
 
+#include <boost/filesystem.hpp>
 #include <boost/test/included/unit_test.hpp>
+#include <exception>
+namespace fs = boost::filesystem;
 
 namespace viam {
 namespace {
@@ -129,27 +132,29 @@ BOOST_AUTO_TEST_CASE(readTimeFromFilename) {
     BOOST_TEST(time2 < time3);
 }
 
-BOOST_AUTO_TEST_CASE(parseDataDir_Closest_no_files) {
+BOOST_AUTO_TEST_CASE(findFrameIndex_Closest_no_files) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files;
     double timeInterest;
-    BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Closest,
-                                   configTime, &timeInterest) == -1);
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Closest,
+                                     configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(parseDataDir_Closest_ignore_last) {
+BOOST_AUTO_TEST_CASE(findFrameIndex_Closest_ignore_last) {
     const string configTimeString = "2022-01-01T01_00_00.0001";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
-    BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Closest,
-                                   configTime, &timeInterest) == -1);
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Closest,
+                                     configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(parseDataDir_Closest_found_time) {
+BOOST_AUTO_TEST_CASE(findFrameIndex_Closest_found_time) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
@@ -157,33 +162,78 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Closest_found_time) {
                          "color_data_2022-01-01T01_00_00.0002",
                          "color_data_2022-01-01T01_00_00.0003"};
     double timeInterest;
-    BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Closest,
-                                   configTime, &timeInterest) == 1);
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Closest,
+                                     configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
                utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
 }
 
-BOOST_AUTO_TEST_CASE(parseDataDir_Recent_no_files) {
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_no_files) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files;
     double timeInterest;
-    BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Recent,
-                                   configTime, &timeInterest) == -1);
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(parseDataDir_Recent_ignore_last) {
-    const string configTimeString = "2022-01-01T01_00_00.0001";
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono) {
+    const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
-    BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Recent,
-                                   configTime, &timeInterest) == -1);
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == 1);
+    BOOST_TEST(timeInterest ==
+               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
 }
 
-BOOST_AUTO_TEST_CASE(parseDataDir_Recent_found_time) {
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono_fail) {
+    const string configTimeString = "2022-01-01T01_00_00.0002";
+    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002"};
+    double timeInterest;
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == -1);
+}
+
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_rgbd_fail) {
+    const string configTimeString = "2022-01-01T01_00_00.0002";
+    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002"};
+    double timeInterest;
+    BOOST_TEST(utils::findFrameIndex(files, "rgbd", "",
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == -1);
+}
+
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_mono) {
+    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
+                         "color_data_2022-01-01T01_00_00.0001",
+                         "color_data_2022-01-01T01_00_00.0002",
+                         "color_data_2022-01-01T01_00_00.0003",
+                         "color_data_2022-01-01T01_00_00.0004"};
+    double timeInterest;
+    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == 3);
+    BOOST_TEST(timeInterest ==
+               utils::readTimeFromFilename("2022-01-01T01_00_00.0003"));
+}
+
+BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_time_rgbd) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
     const auto configTime = utils::readTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
@@ -191,11 +241,32 @@ BOOST_AUTO_TEST_CASE(parseDataDir_Recent_found_time) {
                          "color_data_2022-01-01T01_00_00.0002",
                          "color_data_2022-01-01T01_00_00.0003"};
     double timeInterest;
-    // Returns 2, since the last file is ignored.
-    BOOST_TEST(utils::parseDataDir(files, utils::FileParserMethod::Recent,
-                                   configTime, &timeInterest) == 2);
+    // Create a unique path in the temp directory
+    fs::path tmpdir = fs::temp_directory_path() / fs::unique_path();
+    bool ok = fs::create_directory(tmpdir);
+    if (!ok) {
+        throw std::runtime_error("could not create directory: " +
+                                 tmpdir.string());
+    }
+    // Create the "depth" subdirectory
+    fs::path tmpdirDepth = tmpdir / "depth";
+    ok = fs::create_directory(tmpdirDepth);
+    if (!ok) {
+        fs::remove_all(tmpdir);
+        throw std::runtime_error("could not create directory: " +
+                                 tmpdirDepth.string());
+    }
+
+    // Create the file in the temporary directory
+    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01_00_00.0001.png");
+    ofs.close();
+    BOOST_TEST(utils::findFrameIndex(files, "rgbd", tmpdir.string(),
+                                     utils::FileParserMethod::Recent,
+                                     configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::readTimeFromFilename("2022-01-01T01_00_00.0002"));
+               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
+    // Close the file and remove the temporary directory and its contents.
+    fs::remove_all(tmpdir);
 }
 
 }  // namespace
