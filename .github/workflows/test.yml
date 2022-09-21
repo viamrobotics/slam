@@ -53,4 +53,4 @@ jobs:
 
     - name: Test
       run: |
-        sudo -u testbot bash -lc 'cd slam-libraries && export BUF_TOKEN=${{ secrets.BUF_TOKEN }} && make buf setuporb buildorb testorb'
+        sudo -u testbot bash -lc 'cd slam-libraries && make buf setuporb buildorb testorb'
