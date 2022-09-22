@@ -19,6 +19,7 @@ If you happened to use `git clone` only, you won't see the libraries in the `sla
 To setup gRPC, run:
 
 ```bash
+cd slam-libraries
 make buf
 ```
 

@@ -46,10 +46,7 @@ sudo apt-get install libboost-all-dev
 ```
 
 ### Build ORB_SLAM3
-ensure gRPC is setup within [slam-libraries](../.) using 
-```
-make pull-rdk
-```
+Ensure gRPC is setup by following the instructions described in this [README](../README.md). 
 
 To build ORB_SLAM3 run the following
 ```bash
