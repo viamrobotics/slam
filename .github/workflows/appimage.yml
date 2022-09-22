@@ -31,7 +31,7 @@ jobs:
     container:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
-    timeout-minutes: 15
+    timeout-minutes: 180
     outputs:
       date: ${{ steps.build_test_app.outputs.date }}
 
@@ -43,7 +43,7 @@ jobs:
       run: |
         make clean-all
     
-    - name: buf and build
+    - name: buf, build, and test
       run: make orbslam-all
 
     - name: Build appimage
