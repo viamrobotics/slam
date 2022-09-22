@@ -15,17 +15,6 @@ If you happened to use `git clone` only, you won't see the libraries in the `sla
 
 * [slam-libraries](./slam-libraries) contains all slam implementations we currently support.
 
-### Install dependencies
-To setup gRPC, run:
-
-```bash
-cd slam-libraries
-make buf
-```
-
-This will grab a minimal version of rdk to build gRPC with.
-
-
 ## Linting
 
 ```bash
