@@ -12,14 +12,14 @@ namespace {
 void checkParseAndValidateArgumentsException(const vector<string>& args,
                                              const string& message) {
     SLAMServiceImpl slamService;
-    BOOST_CHECK_EXCEPTION(utils::parseAndValidateArguments(args, slamService),
+    BOOST_CHECK_EXCEPTION(utils::ParseAndValidateArguments(args, slamService),
                           runtime_error, [&message](const runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
                               return true;
                           });
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_args) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_args) {
     const vector<string> args;
     const string message =
         "No args found. Expected: \n"
@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_args) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_data_dir) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_data_dir) {
     const vector<string> args{
         "-config_param={mode=rgbd}", "-port=20000",      "-sensors=color",
         "-data_rate_ms=200",         "-map_rate_sec=60", "-unknown=unknown"};
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_data_dir) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_slam_mode) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_mode) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={}",
                               "-port=20000",        "-sensors=color",
                               "-data_rate_ms=200",  "-map_rate_sec=60"};
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_slam_mode) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_invalid_slam_mode) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_invalid_slam_mode) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=bad}",
                               "-port=20000",        "-sensors=color",
                               "-data_rate_ms=200",  "-map_rate_sec=60"};
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_invalid_slam_mode) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_slam_port) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_port) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-sensors=color",     "-data_rate_ms=200",
                               "-map_rate_sec=60",   "-unknown=unknown"};
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_slam_port) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_camera_data_rate) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_camera_data_rate) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
                               "-map_rate_sec=60",   "-unknown=unknown"};
@@ -73,12 +73,12 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_no_camera_data_rate) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
                               "-data_rate_ms=200",  "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
-    utils::parseAndValidateArguments(args, slamService);
+    utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.path_to_vocab == "/path/to/config/ORBvoc.txt");
     BOOST_TEST(slamService.path_to_settings == "/path/to/config");
     BOOST_TEST(slamService.path_to_data == "/path/to/data");
@@ -93,149 +93,149 @@ BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config) {
 }
 
 BOOST_AUTO_TEST_CASE(
-    parseAndValidateArguments_valid_config_capitalized_slam_mode) {
+    ParseAndValidateArguments_valid_config_capitalized_slam_mode) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=RGBD}",
                               "-port=20000",        "-sensors=color",
                               "-data_rate_ms=200",  "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
-    utils::parseAndValidateArguments(args, slamService);
+    utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config_no_map_rate_sec) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
                               "-data_rate_ms=200",  "-map_rate_sec="};
     SLAMServiceImpl slamService;
-    utils::parseAndValidateArguments(args, slamService);
+    utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(0).count());
 }
 
-BOOST_AUTO_TEST_CASE(parseAndValidateArguments_valid_config_no_camera) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
     const vector<string> args{
         "-data_dir=/path/to", "-config_param={mode=rgbd}", "-port=20000",
         "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
-    utils::parseAndValidateArguments(args, slamService);
+    utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");
     BOOST_TEST(slamService.offlineFlag == true);
 }
 
-BOOST_AUTO_TEST_CASE(readTimeFromFilename) {
+BOOST_AUTO_TEST_CASE(ReadTimeFromFilename) {
     const string filename1 = "2022-01-01T01_00_00.0000";
     const string filename2 = "2022-01-01T01_00_00.0001";
     const string filename3 = "2022-01-01T01_00_01.0000";
-    const auto time1 = utils::readTimeFromFilename(filename1);
-    const auto time2 = utils::readTimeFromFilename(filename2);
-    const auto time3 = utils::readTimeFromFilename(filename3);
+    const auto time1 = utils::ReadTimeFromFilename(filename1);
+    const auto time2 = utils::ReadTimeFromFilename(filename2);
+    const auto time3 = utils::ReadTimeFromFilename(filename3);
     BOOST_TEST(time1 < time2);
     BOOST_TEST(time2 < time3);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Closest_no_files) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_no_files) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files;
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Closest,
                                      configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Closest_ignore_last) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_ignore_last) {
     const string configTimeString = "2022-01-01T01_00_00.0001";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Closest,
                                      configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Closest_found_time) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_found_time) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002",
                          "color_data_2022-01-01T01_00_00.0003"};
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Closest,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
+               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0001"));
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_no_files) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_no_files) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files;
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_mono) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
+               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0001"));
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_mono_fail) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_mono_fail) {
     const string configTimeString = "2022-01-01T01_00_00.0002";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_ignore_last_rgbd_fail) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_rgbd_fail) {
     const string configTimeString = "2022-01-01T01_00_00.0002";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002"};
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "rgbd", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "rgbd", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == -1);
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_mono) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_mono) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002",
                          "color_data_2022-01-01T01_00_00.0003",
                          "color_data_2022-01-01T01_00_00.0004"};
     double timeInterest;
-    BOOST_TEST(utils::findFrameIndex(files, "mono", "",
+    BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 3);
     BOOST_TEST(timeInterest ==
-               utils::readTimeFromFilename("2022-01-01T01_00_00.0003"));
+               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0003"));
 }
 
-BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_time_rgbd) {
+BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_time_rgbd) {
     const string configTimeString = "2022-01-01T01_00_00.0000";
-    const auto configTime = utils::readTimeFromFilename(configTimeString);
+    const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files{"color_data_2022-01-01T01_00_00.0000",
                          "color_data_2022-01-01T01_00_00.0001",
                          "color_data_2022-01-01T01_00_00.0002",
@@ -260,11 +260,11 @@ BOOST_AUTO_TEST_CASE(findFrameIndex_Recent_found_time_rgbd) {
     // Create the file in the temporary directory
     fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01_00_00.0001.png");
     ofs.close();
-    BOOST_TEST(utils::findFrameIndex(files, "rgbd", tmpdir.string(),
+    BOOST_TEST(utils::FindFrameIndex(files, "rgbd", tmpdir.string(),
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::readTimeFromFilename("2022-01-01T01_00_00.0001"));
+               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0001"));
     // Close the file and remove the temporary directory and its contents.
     fs::remove_all(tmpdir);
 }
