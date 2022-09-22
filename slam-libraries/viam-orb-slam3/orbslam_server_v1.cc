@@ -567,8 +567,7 @@ void SLAMServiceImpl::StopSaveAtlasAsOsa() {
     thread_save_atlas_as_osa_with_timestamp->join();
 }
 
-void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(
-    ORB_SLAM3::System *SLAM) {
+void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
     auto check_for_shutdown_interval_usec =
         chrono::microseconds(checkForShutdownIntervalMicroseconds);
     while (b_continue_session) {
