@@ -13,7 +13,9 @@ on:
     paths-ignore:
       - 'README.md'
 
-
+env:
+  GOPRIVATE: "github.com/viamrobotics/*,go.viam.com/*"
+  GOOGLE_APPLICATION_CREDENTIALS_FILENAME: "google-credentials.json"
 
 jobs:
   appimage:
@@ -39,6 +41,10 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v2
 
+    - name: Configure git for private repos
+      run: |
+        sudo -u viambot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
+    
     - name: Clean
       run: |
         cd slam-libraries && make clean-all
