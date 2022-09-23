@@ -47,6 +47,7 @@ jobs:
     
     - name: Clean
       run: |
+        chown -R testbot .
         sudo -u testbot bash -lc 'cd slam-libraries && make clean-all'
     
     - name: buf, build, and test
