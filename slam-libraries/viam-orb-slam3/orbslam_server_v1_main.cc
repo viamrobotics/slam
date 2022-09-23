@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 
     try {
         const vector<string> args(argv + 1, argv + argc);
-        viam::utils::parseAndValidateArguments(args, slamService);
+        viam::utils::ParseAndValidateArguments(args, slamService);
     } catch (const runtime_error &error) {
         BOOST_LOG_TRIVIAL(fatal) << error.what();
         return 1;
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     }
 
     // Grab timestamp from yaml
-    slamService.yamlTime = viam::utils::readTimeFromFilename(
+    slamService.yamlTime = viam::utils::ReadTimeFromFilename(
         myYAML.substr(myYAML.find("_data_") + viam::filenamePrefixLength));
     BOOST_LOG_TRIVIAL(debug)
         << "The time from our config is: " << slamService.yamlTime
@@ -123,9 +123,9 @@ int main(int argc, char **argv) {
 
     if (slamService.offlineFlag) {
         BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
-        slamService.start_save_atlas_as_osa(SLAM.get());
-        slamService.process_data_offline(SLAM.get());
-        slamService.stop_save_atlas_as_osa();
+        slamService.StartSaveAtlasAsOsa(SLAM.get());
+        slamService.ProcessDataOffline(SLAM.get());
+        slamService.StopSaveAtlasAsOsa();
         // Continue to serve requests.
         while (viam::b_continue_session) {
             this_thread::sleep_for(chrono::microseconds(
@@ -133,11 +133,11 @@ int main(int argc, char **argv) {
         }
     } else {
         BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-        slamService.start_save_atlas_as_osa(SLAM.get());
-        slamService.process_data_online(SLAM.get());
-        slamService.stop_save_atlas_as_osa();
+        slamService.StartSaveAtlasAsOsa(SLAM.get());
+        slamService.ProcessDataOnline(SLAM.get());
+        slamService.StopSaveAtlasAsOsa();
     }
-    // slamService.process_data_for_testing(SLAM.get());
+    // slamService.ProcessDataForTesting(SLAM.get());
 
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
