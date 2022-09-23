@@ -52,13 +52,13 @@ jobs:
       run: |
         cd slam
         chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam-libraries && make clean-all'
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make clean-all'
     
     - name: buf, build, and test
-      run: sudo -u testbot bash -lc 'cd slam-libraries && make orbslam-all'
+      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make orbslam-all'
 
     - name: Build appimage
-      run: sudo -u testbot bash -lc 'cd slam-libraries && make appimage'
+      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make appimage'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v0.4.3
