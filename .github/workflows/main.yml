@@ -22,7 +22,6 @@ jobs:
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
 
   appimage:
-    needs: test
     uses: viamrobotics/slam/.github/workflows/appimage.yml@DATA-134-appimage-workflow
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
