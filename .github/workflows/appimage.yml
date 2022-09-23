@@ -43,17 +43,17 @@ jobs:
 
     - name: Configure git for private repos
       run: |
-        sudo -u viambot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
+        sudo -u testbot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
     
     - name: Clean
       run: |
-        cd slam-libraries && make clean-all
+        sudo -u testbot bash -lc 'cd slam-libraries && make clean-all'
     
     - name: buf, build, and test
-      run: cd slam-libraries && make orbslam-all
+      run: sudo -u testbot bash -lc 'cd slam-libraries && make orbslam-all'
 
     - name: Build appimage
-      run: cd slam-libraries && make appimage
+      run: sudo -u testbot bash -lc 'cd slam-libraries && make appimage'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v0.4.3
