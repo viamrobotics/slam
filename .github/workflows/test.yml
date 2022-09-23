@@ -58,6 +58,7 @@ jobs:
         fi
 
     - name: tmp-buf
+      timeout-minutes: 5
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
 
