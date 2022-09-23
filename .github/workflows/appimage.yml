@@ -50,6 +50,7 @@ jobs:
    
     - name: Clean
       run: |
+        cd slam
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam-libraries && make clean-all'
     
