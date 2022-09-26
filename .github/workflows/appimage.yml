@@ -1,21 +1,25 @@
-name: Test
+name: Build AppImage SLAM Server
 
 on:
   workflow_dispatch:
   workflow_call:
     secrets:
+      GCP_CREDENTIALS:
+        required: true
       REPO_READ_TOKEN:
         required: true
-      ARTIFACT_READ_ONLY_GCP_CREDENTIALS:
-        required: true
+  push:
+    branches: main
+    paths-ignore:
+      - 'README.md'
 
 env:
   GOPRIVATE: "github.com/viamrobotics/*,go.viam.com/*"
   GOOGLE_APPLICATION_CREDENTIALS_FILENAME: "google-credentials.json"
 
 jobs:
-  build_and_test:
-    name: Build and Test
+  appimage:
+    name: AppImage Build
     strategy:
       matrix:
         include:
@@ -30,6 +34,8 @@ jobs:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
+    outputs:
+      date: ${{ steps.build_test_app.outputs.date }}
 
     steps:
     - name: Configure git for private repos
@@ -41,22 +47,12 @@ jobs:
       with:
         submodules: recursive
         path: slam
-
-    - name: Verify no uncommitted changes from make format
+   
+    - name: Clean
       run: |
-        cd slam
-        git init
-        git add .
         chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam-libraries && make format-setup format'
-        GEN_DIFF=$(git status -s)
-
-        if [ -n "$GEN_DIFF" ]; then
-            echo '"make format" resulted in changes not in git' 1>&2
-            git status
-            exit 1
-        fi
-
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make clean-all'
+    
     - name: make buf
       timeout-minutes: 5
       run: |
@@ -74,26 +70,20 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make testorb'
 
-    - name: Copy orb_grpc_server binary
-      if: matrix.platform == 'linux/amd64'
-      run: |
-        sudo cp slam/slam-libraries/viam-orb-slam3/bin/orb_grpc_server /usr/local/bin/orb_grpc_server
+    - name: Build appimage
+      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make appimage'
 
-    - name: Check out code in rdk directory
-      if: matrix.platform == 'linux/amd64'
-      uses: actions/checkout@v3
+    - name: Authorize GCP Upload
+      uses: google-github-actions/auth@v0.4.3
       with:
-        repository: viamrobotics/rdk
-        path: rdk
-
-    - name: Create GCP Credential File from secret
-      if: matrix.platform == 'linux/amd64'
-      run: |
-        GOOGLE_APPLICATION_CREDENTIALS=`pwd`/${GOOGLE_APPLICATION_CREDENTIALS_FILENAME}
-        echo "${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}" >> ${GOOGLE_APPLICATION_CREDENTIALS}
-        echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> $GITHUB_ENV
-
-    - name: Run rdk slam integration tests
-      if: matrix.platform == 'linux/amd64'
-      run: |
-        sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestOrbslamIntegration'
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    
+    - name: Deploy Files
+      uses: google-github-actions/upload-cloud-storage@v0.5.0
+      with:
+        headers: "Cache-Control: no-cache"
+        path: 'slam/slam-libraries/packaging/appimages/deploy/'
+        destination: 'packages.viam.com/apps/slam-servers/'
+        glob: '*'
+        parent: false
+        gzip: false
