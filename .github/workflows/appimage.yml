@@ -53,8 +53,22 @@ jobs:
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make clean-all'
     
-    - name: buf, build, and test
-      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make orbslam-all'
+    - name: make buf
+      timeout-minutes: 5
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
+
+    - name: make setuporb
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
+
+    - name: make buildorb
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildorb'
+
+    - name: make testorb
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make testorb'
 
     - name: Build appimage
       run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make appimage'

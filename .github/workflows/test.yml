@@ -57,20 +57,20 @@ jobs:
             exit 1
         fi
 
-    - name: tmp-buf
+    - name: make buf
       timeout-minutes: 5
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
 
-    - name: tmp-setup
+    - name: make setuporb
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
 
-    - name: tmp-build
+    - name: make buildorb
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildorb'
 
-    - name: tmp-test
+    - name: make testorb
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make testorb'
 
