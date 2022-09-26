@@ -577,13 +577,14 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
                       std::gmtime(&t));
         // Save the current atlas map in *.osa style
-        string path_save_file_name =
-            path_to_map + "/" + camera_name + "_data_" + timestamp + ".osa";
+        string path_save_file_name = path_to_map + "/" + camera_name +
+                                     "_data_" + timestamp + ".0000.osa";
         if (offlineFlag && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
+            BOOST_LOG_TRIVIAL(debug) << "Finished saving final map";
             return;
         }
         if (SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) {
