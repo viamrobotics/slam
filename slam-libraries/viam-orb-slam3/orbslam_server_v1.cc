@@ -584,6 +584,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
+            BOOST_LOG_TRIVIAL(debug) << "Finished saving final map";
             return;
         }
         if (SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) {
