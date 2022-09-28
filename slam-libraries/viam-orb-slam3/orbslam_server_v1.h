@@ -56,6 +56,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     chrono::seconds map_rate_sec;
     double yamlTime;
     std::atomic<bool> offlineFlag{false};
+    std::atomic<bool> local_viewer_flag{false};
 
    private:
     void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM);

@@ -755,6 +755,14 @@ void ParseAndValidateArguments(const vector<string> &args,
         BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
         slamService.offlineFlag = true;
     }
+    string local_viewer = ArgParser(args, "--localView=");
+    boost::algorithm::to_lower(local_viewer);
+    if((local_viewer == "true")&&(slamService.offlineFlag)){
+        BOOST_LOG_TRIVIAL(info) << "Running with local viewer";
+        slamService.local_viewer_flag = true;
+    }else{
+        slamService.local_viewer_flag = false;
+    }
 }
 
 // Converts UTC time string to a double value.
