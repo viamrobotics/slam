@@ -757,10 +757,10 @@ void ParseAndValidateArguments(const vector<string> &args,
     }
     string local_viewer = ArgParser(args, "--localView=");
     boost::algorithm::to_lower(local_viewer);
-    if((local_viewer == "true")&&(slamService.offlineFlag)){
+    if ((local_viewer == "true") && (slamService.offlineFlag)) {
         BOOST_LOG_TRIVIAL(info) << "Running with local viewer";
         slamService.local_viewer_flag = true;
-    }else{
+    } else {
         slamService.local_viewer_flag = false;
     }
 }
