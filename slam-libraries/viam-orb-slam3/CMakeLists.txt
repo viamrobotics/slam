@@ -93,6 +93,7 @@ if(EXISTS ${SRCDIR})
     -lboost_serialization
     -lboost_filesystem
     -lboost_log
+    -ldl
     -lcrypto
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
