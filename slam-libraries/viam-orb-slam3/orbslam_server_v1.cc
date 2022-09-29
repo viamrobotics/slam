@@ -147,11 +147,11 @@ namespace viam {
         // Add robot marker and ensure it exists in the image, varying
         // max/min values as needed
         if (request->include_robot_marker()) {
-            const auto actualPose = currPose.params();
-            minX = std::min(minX, actualPose[4]);
-            maxX = std::max(maxX, actualPose[4]);
-            minZ = std::min(minZ, actualPose[6]);
-            maxZ = std::max(maxZ, actualPose[6]);
+            const auto actualPose = currPose.translation();
+            minX = std::min(minX, actualPose[0]);
+            maxX = std::max(maxX, actualPose[0]);
+            minZ = std::min(minZ, actualPose[2]);
+            maxZ = std::max(maxZ, actualPose[2]);
         }
 
         std::feclearexcept(FE_ALL_EXCEPT);
@@ -484,7 +484,8 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
             // Pass the image to the SLAM system
-            BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
+            BOOST_LOG_TRIVIAL(debug)
+                << "Passing image to SLAM: " << filesRGB[i];
 
             Sophus::SE3f tmpPose;
             if (slam_mode == "rgbd") {
@@ -570,6 +571,8 @@ void SLAMServiceImpl::StopSaveAtlasAsOsa() {
 void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
     auto check_for_shutdown_interval_usec =
         chrono::microseconds(checkForShutdownIntervalMicroseconds);
+    auto camera_name_nocolons = camera_name;
+    boost::erase_all(camera_name_nocolons, ":");
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
         std::time_t t = std::time(nullptr);
