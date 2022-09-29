@@ -423,11 +423,12 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 currMap->GetAllKeyFrames();
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
-                poseGrpc = tmpPose;
                 if (SLAM->GetTrackingState() ==
-                        ORB_SLAM3::Tracking::eTrackingState::OK &&
-                    nkeyframes != keyframes.size()) {
-                    currMapPoints = currMap->GetAllMapPoints();
+                    ORB_SLAM3::Tracking::eTrackingState::OK) {
+                    poseGrpc = tmpPose;
+                    if (nkeyframes != keyframes.size()) {
+                        currMapPoints = currMap->GetAllMapPoints();
+                    }
                 }
             }
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
@@ -502,11 +503,12 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 currMap->GetAllKeyFrames();
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
-                poseGrpc = tmpPose;
                 if (SLAM->GetTrackingState() ==
-                        ORB_SLAM3::Tracking::eTrackingState::OK &&
-                    nkeyframes != keyframes.size()) {
-                    currMapPoints = currMap->GetAllMapPoints();
+                    ORB_SLAM3::Tracking::eTrackingState::OK) {
+                    poseGrpc = tmpPose;
+                    if (nkeyframes != keyframes.size()) {
+                        currMapPoints = currMap->GetAllMapPoints();
+                    }
                 }
             }
             nkeyframes = keyframes.size();
