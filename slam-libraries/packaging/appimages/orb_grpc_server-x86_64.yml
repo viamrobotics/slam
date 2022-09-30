@@ -77,4 +77,4 @@ AppDir:
         AIX_TARGET: usr/bin/orb_grpc_server
 AppImage:
   arch: x86_64
-  update-information: zsync|http://packages.viam.com/apps/slam-servers/orb_grpc_server-latest-x86_64.AppImage.zsync
+  update-information: zsync|http://packages.viam.com/apps/slam-servers/test-orb_grpc_server-latest-x86_64.AppImage.zsync
