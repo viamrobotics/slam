@@ -21,7 +21,7 @@ AppDir:
     id: com.viam.orb_grpc_server
     name: orb_grpc_server
     icon: viam-server
-    version: latest
+    version: testing
     exec: usr/bin/aix
     exec_args: $@
   apt:
@@ -36,7 +36,7 @@ AppDir:
     include:
     - libboost-serialization1.74.0:arm64
     - libboost-filesystem1.74.0:arm64
-    - libboost-log1.74:arm64
+    - libboost-log1.74.0:arm64
     - libssl1.1:arm64
     - libpangolin0:arm64
     - libglew2.1:arm64
@@ -56,7 +56,7 @@ AppDir:
     - libxcb-render0:arm64
     - libglx0:arm64
     - libgl1:arm64
-    - libdl.2:arm64
+    - libdlt2:arm64
   files:
     include: []
     exclude:
@@ -85,4 +85,4 @@ AppDir:
         AIX_TARGET: usr/bin/orb_grpc_server
 AppImage:
   arch: aarch64
-  update-information: zsync|http://packages.viam.com/apps/slam-servers/test-orb_grpc_server-latest-aarch64.AppImage.zsync
+  update-information: zsync|http://packages.viam.com/apps/slam-servers/orb_grpc_server-latest-aarch64.AppImage.zsync
