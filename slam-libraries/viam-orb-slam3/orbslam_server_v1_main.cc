@@ -6,6 +6,7 @@
 #include <grpcpp/server_builder.h>
 #include <signal.h>
 
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
@@ -105,6 +106,26 @@ int main(int argc, char **argv) {
     BOOST_LOG_TRIVIAL(debug)
         << "The time from our config is: " << slamService.yamlTime
         << " seconds";
+
+    // Find the vocabulary file.
+    path pathToVocabFromConfig(slamService.path_to_vocab);
+    if (exists(pathToVocabFromConfig)) {
+        BOOST_LOG_TRIVIAL(debug) << "Using vocabulary file in config folder";
+    } else {
+        auto programLocation = boost::dll::program_location();
+        auto relativePathToVocab = programLocation.parent_path().parent_path();
+        relativePathToVocab.append("share/orbslam/Vocabulary/ORBvoc.txt");
+        if (exists(relativePathToVocab)) {
+            BOOST_LOG_TRIVIAL(debug)
+                << "Using vocabulary file from relative path";
+            slamService.path_to_vocab = relativePathToVocab.string();
+        } else {
+            BOOST_LOG_TRIVIAL(fatal)
+                << "No vocabulary file found, looked in "
+                << pathToVocabFromConfig << " and " << relativePathToVocab;
+            return 1;
+        }
+    }
 
     // Start SLAM
     SlamPtr SLAM = nullptr;
