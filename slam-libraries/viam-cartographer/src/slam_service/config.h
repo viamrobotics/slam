@@ -1,0 +1,36 @@
+#ifndef CONFIG_H_
+#define CONFIG_H_
+
+#include <atomic>
+
+// ======= NOTE ====== NOTE ====== NOTE ====== NOTE ====== NOTE ====== NOTE
+// [by Kat] This file is a WIP - A
+// place where I'm experimenting with extracting & rearranging functions Be
+// gentle & forgiving on this file, plz :) Will ask for a thorough review of the
+// entire file once it is ready - and once approved - will remove this note.
+// ========================================================================
+// END OF NOTE
+
+namespace viam {
+
+static const int checkForShutdownIntervalMicroseconds = 1e5;
+static std::atomic<bool> b_continue_session{true};
+
+namespace slam_service {
+namespace config {
+
+// Parses and validates the command line arguments. Sets the log level. Throws
+// an exception if the arguments are malformed.
+int ParseAndValidateConfigParams(
+    int argc,
+    char** argv);
+
+// Parse a config parameter map for a specific variable name and return the value as a
+// string. Returns empty if the variable is not found within the map.
+std::string ConfigParamParser(std::string map, std::string varName);
+
+}  // namespace config
+}  // namespace slam_service
+}  // namespace viam
+
+#endif  // CONFIG_H_
