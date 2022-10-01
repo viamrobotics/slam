@@ -48,7 +48,7 @@ mkdir pics_localization_map_visualization
 rm -rf pics_update_map_visualization
 mkdir pics_update_map_visualization
 
-../build/main  \
+../build/main_old  \
     -configuration_directory=${CONFIGURATION_DIRECTORY}  \
     -configuration_mapping_basename=${CONFIGURATION_MAPPING_BASENAME}  \
     -configuration_localization_basename=${CONFIGURATION_LOCALIZATION_BASENAME}  \
