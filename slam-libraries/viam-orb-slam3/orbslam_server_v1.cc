@@ -23,6 +23,8 @@ const std::string strDepth = "/depth";
 
 namespace viam {
 
+std::atomic<bool> b_continue_session{true};
+
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
