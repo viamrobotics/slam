@@ -23,6 +23,8 @@ const std::string strDepth = "/depth";
 
 namespace viam {
 
+std::atomic<bool> b_continue_session{true};
+
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
@@ -514,6 +516,7 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             nkeyframes = keyframes.size();
         }
         if (!b_continue_session) break;
+        cout << b_continue_session << endl;
     }
     finished_processing_offline = true;
     BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";

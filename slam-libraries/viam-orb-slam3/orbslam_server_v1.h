@@ -21,7 +21,7 @@ namespace viam {
 
 static const int filenamePrefixLength = 6;
 static const int checkForShutdownIntervalMicroseconds = 1e5;
-static std::atomic<bool> b_continue_session{true};
+extern std::atomic<bool> b_continue_session;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
