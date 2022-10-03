@@ -516,7 +516,6 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             nkeyframes = keyframes.size();
         }
         if (!b_continue_session) break;
-        cout << b_continue_session << endl;
     }
     finished_processing_offline = true;
     BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
