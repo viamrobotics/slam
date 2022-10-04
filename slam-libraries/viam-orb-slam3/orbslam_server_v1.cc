@@ -23,6 +23,8 @@ const std::string strDepth = "/depth";
 
 namespace viam {
 
+std::atomic<bool> b_continue_session{true};
+
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
@@ -423,11 +425,12 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 currMap->GetAllKeyFrames();
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
-                poseGrpc = tmpPose;
                 if (SLAM->GetTrackingState() ==
-                        ORB_SLAM3::Tracking::eTrackingState::OK &&
-                    nkeyframes != keyframes.size()) {
-                    currMapPoints = currMap->GetAllMapPoints();
+                    ORB_SLAM3::Tracking::eTrackingState::OK) {
+                    poseGrpc = tmpPose.inverse();
+                    if (nkeyframes != keyframes.size()) {
+                        currMapPoints = currMap->GetAllMapPoints();
+                    }
                 }
             }
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
@@ -502,11 +505,12 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 currMap->GetAllKeyFrames();
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
-                poseGrpc = tmpPose;
                 if (SLAM->GetTrackingState() ==
-                        ORB_SLAM3::Tracking::eTrackingState::OK &&
-                    nkeyframes != keyframes.size()) {
-                    currMapPoints = currMap->GetAllMapPoints();
+                    ORB_SLAM3::Tracking::eTrackingState::OK) {
+                    poseGrpc = tmpPose.inverse();
+                    if (nkeyframes != keyframes.size()) {
+                        currMapPoints = currMap->GetAllMapPoints();
+                    }
                 }
             }
             nkeyframes = keyframes.size();
@@ -754,6 +758,14 @@ void ParseAndValidateArguments(const vector<string> &args,
     if (slamService.camera_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
         slamService.offlineFlag = true;
+    }
+    string local_viewer = ArgParser(args, "--localView=");
+    boost::algorithm::to_lower(local_viewer);
+    if ((local_viewer == "true") && (slamService.offlineFlag)) {
+        BOOST_LOG_TRIVIAL(info) << "Running with local viewer";
+        slamService.local_viewer_flag = true;
+    } else {
+        slamService.local_viewer_flag = false;
     }
 }
 

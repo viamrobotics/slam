@@ -4,10 +4,12 @@ script:
  - rm -rf $TARGET_APPDIR | true
  - mkdir -p $TARGET_APPDIR/usr/bin
  - mkdir -p $TARGET_APPDIR/usr/lib
+ - mkdir -p $TARGET_APPDIR/usr/share/orbslam/Vocabulary
  - cp ../../viam-orb-slam3/bin/orb_grpc_server $TARGET_APPDIR/usr/bin/
  - cp ../../viam-orb-slam3/ORB_SLAM3/lib/libORB_SLAM3.so $TARGET_APPDIR/usr/lib/
  - cp ../../viam-orb-slam3/ORB_SLAM3/Thirdparty/DBoW2/lib/libDBoW2.so $TARGET_APPDIR/usr/lib/
  - cp ../../viam-orb-slam3/ORB_SLAM3/Thirdparty/g2o/lib/libg2o.so $TARGET_APPDIR/usr/lib/
+ - tar -xf ../../viam-orb-slam3/ORB_SLAM3/Vocabulary/ORBvoc.txt.tar.gz -C $TARGET_APPDIR/usr/share/orbslam/Vocabulary/
  - mkdir -p $TARGET_APPDIR/usr/share/icons/viam/256x256/apps/
  - cp ./viam-server.png $TARGET_APPDIR/usr/share/icons/viam/256x256/apps/viam-server.png
  - go install github.com/Otterverse/aix@latest
@@ -34,7 +36,7 @@ AppDir:
     include:
     - libboost-serialization1.74.0:arm64
     - libboost-filesystem1.74.0:arm64
-    - libboost-log1.74:arm64
+    - libboost-log1.74.0:arm64
     - libssl1.1:arm64
     - libpangolin0:arm64
     - libglew2.1:arm64
@@ -54,6 +56,7 @@ AppDir:
     - libxcb-render0:arm64
     - libglx0:arm64
     - libgl1:arm64
+    - libdlt2:arm64
   files:
     include: []
     exclude:

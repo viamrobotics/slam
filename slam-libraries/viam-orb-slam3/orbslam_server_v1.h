@@ -21,7 +21,7 @@ namespace viam {
 
 static const int filenamePrefixLength = 6;
 static const int checkForShutdownIntervalMicroseconds = 1e5;
-static std::atomic<bool> b_continue_session{true};
+extern std::atomic<bool> b_continue_session;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -56,6 +56,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     chrono::seconds map_rate_sec;
     double yamlTime;
     std::atomic<bool> offlineFlag{false};
+    bool local_viewer_flag = false;
 
    private:
     void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM);
