@@ -425,7 +425,7 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 if (SLAM->GetTrackingState() ==
                     ORB_SLAM3::Tracking::eTrackingState::OK) {
-                    poseGrpc = tmpPose;
+                    poseGrpc = tmpPose.inverse();
                     if (nkeyframes != keyframes.size()) {
                         currMapPoints = currMap->GetAllMapPoints();
                     }
@@ -505,7 +505,7 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 if (SLAM->GetTrackingState() ==
                     ORB_SLAM3::Tracking::eTrackingState::OK) {
-                    poseGrpc = tmpPose;
+                    poseGrpc = tmpPose.inverse();
                     if (nkeyframes != keyframes.size()) {
                         currMapPoints = currMap->GetAllMapPoints();
                     }
