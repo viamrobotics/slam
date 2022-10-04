@@ -12,8 +12,15 @@
 
 # generate folders
 grpc/
+<<<<<<< HEAD
 rdk-minimal/
 viam-orb-slam3/ORB_SLAM3/
+=======
+>>>>>>> ce2192b8086b0fd57647cb9f79e374694f281159
 
 # code editor settings
 .vscode
+
+# grpc
+slam-libraries/grpc
+
