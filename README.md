@@ -66,6 +66,6 @@ git submodule update --init --recursive
 ```
 
 ## License
-Copyright 2021-2022 Viam Inc.
+Copyright 2022 Viam Inc.
 
 Apache 2.0 - See [LICENSE](https://github.com/viamrobotics/slam/blob/main/LICENSE) file
