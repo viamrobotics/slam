@@ -21,7 +21,7 @@ AppDir:
     id: com.viam.orb_grpc_server
     name: orb_grpc_server
     icon: viam-server
-    version: testing
+    version: latest
     exec: usr/bin/aix
     exec_args: $@
   apt:
