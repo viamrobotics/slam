@@ -64,3 +64,8 @@ When pulling down those changes, run the following:
 git pull
 git submodule update --init --recursive
 ```
+
+## License
+Copyright 2022 Viam Inc.
+
+Apache 2.0 - See [LICENSE](https://github.com/viamrobotics/slam/blob/main/LICENSE) file
