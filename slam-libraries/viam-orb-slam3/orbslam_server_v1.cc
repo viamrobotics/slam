@@ -15,6 +15,7 @@ using namespace boost::filesystem;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
+using google::protobuf::Struct;
 
 #define IMAGE_SIZE 300
 #define MAX_COLOR_VALUE 255
@@ -68,6 +69,31 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_x(actualPose[4]);
     myPose->set_y(actualPose[5]);
     myPose->set_z(actualPose[6]);
+
+	// TODO DATA-531: Remove extraction and conversion of quaternion from the extra field in the response once the Rust SDK 
+	// is available and the desired math can be implemented on the orbSLAM side
+    myPose->set_o_x(0.0);
+    myPose->set_o_y(0.0);
+    myPose->set_o_z(0.0);
+    myPose->set_theta(0.0);
+
+    // ::google::protobuf::Value ox, oy, oz, otheta, qqq;
+    // ox.set_number_value(actualPose[4]);
+    // oy.set_number_value(actualPose[5]);
+    // oz.set_number_value(actualPose[6]);
+    // otheta.set_number_value(actualPose[3]);
+
+    BOOST_LOG_TRIVIAL(debug) << "o_x: " << actualPose[4] << 
+                                " o_y: " << actualPose[5] << 
+                                " o_z: " << actualPose[6] << 
+                                " o_theta: " << actualPose[3];
+
+    google::protobuf::Struct* s = response->mutable_extra();
+    s->mutable_fields()->operator[]("otheta").set_number_value(actualPose[3]);
+    s->mutable_fields()->operator[]("ox").set_number_value(actualPose[4]);
+    s->mutable_fields()->operator[]("oy").set_number_value(actualPose[5]);
+    s->mutable_fields()->operator[]("oz").set_number_value(actualPose[6]);
+    
     return grpc::Status::OK;
 }
 
