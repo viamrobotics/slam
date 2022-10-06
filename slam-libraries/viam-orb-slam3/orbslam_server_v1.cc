@@ -624,7 +624,7 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // check if the rgb image exists, if it does then load in the
     // image
     if (boost::filesystem::exists(colorName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         if (imRGB.empty()) return false;
         return true;
     }
@@ -643,7 +643,7 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
     // images
     if (boost::filesystem::exists(colorName) &&
         boost::filesystem::exists(depthName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
         if (imRGB.empty() || imDepth.empty()) return false;
         return true;
