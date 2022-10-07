@@ -88,11 +88,17 @@ std::atomic<bool> b_continue_session{true};
                                 " o_z: " << actualPose[6] << 
                                 " o_theta: " << actualPose[3];
 
+
+    ::google::protobuf::Struct q
     google::protobuf::Struct* s = response->mutable_extra();
-    s->mutable_fields()->operator[]("otheta").set_number_value(actualPose[3]);
-    s->mutable_fields()->operator[]("ox").set_number_value(actualPose[4]);
-    s->mutable_fields()->operator[]("oy").set_number_value(actualPose[5]);
-    s->mutable_fields()->operator[]("oz").set_number_value(actualPose[6]);
+    s->mutable_fields()->operator[]("quat").set_struct_value(q);
+    
+
+    //google::protobuf::Struct* s = response->mutable_extra();
+    q->mutable_fields()->operator[]("otheta").set_number_value(actualPose[3]);
+    q->mutable_fields()->operator[]("ox").set_number_value(actualPose[4]);
+    q->mutable_fields()->operator[]("oy").set_number_value(actualPose[5]);
+    q->mutable_fields()->operator[]("oz").set_number_value(actualPose[6]);
     
     return grpc::Status::OK;
 }
