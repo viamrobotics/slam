@@ -9,17 +9,16 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -DBOOST_LOG_DYN_LINK")
-
-if(DEFINED ENV{RDK_SOURCE_DIR})
-  set(RDK_SOURCE_DIR $ENV{RDK_SOURCE_DIR})
+if(DEFINED ENV{API_SOURCE_DIR})
+  set(API_SOURCE_DIR $ENV{API_SOURCE_DIR})
 else()
-  set(RDK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../rdk-minimal)
+  set(API_SOURCE_DIR ${PROJECT_SOURCE_DIR}/..)
 endif()
 
-set(SRCDIR ${RDK_SOURCE_DIR}/grpc/cpp/gen)
+set(SRCDIR ${API_SOURCE_DIR}/grpc/cpp/gen)
 set(ORBSLAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/ORB_SLAM3)
 message("PROJECT SOURCE DIR: " ${PROJECT_SOURCE_DIR})
-message("RDK SOURCE DIR: " ${RDK_SOURCE_DIR})
+message("API SOURCE DIR: " ${API_SOURCE_DIR})
 message("GRPC SOURCE DIR: " ${SRCDIR})
 
 # Check C++14 or C++0x support
@@ -56,7 +55,6 @@ message(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
-
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${ORBSLAM_SOURCE_DIR}
@@ -66,23 +64,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS})
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-add_subdirectory(${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o)
-
-# Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_executable(viam_main_v1 main_v1.cc)
-target_link_libraries(
-  viam_main_v1
-  ${OpenCV_LIBS}
-  ${EIGEN3_LIBS}
-  ${Pangolin_LIBRARIES}
-  ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-  ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-  ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
-  -lboost_serialization
-  -lboost_filesystem
-  -lcrypto)
 
 if(EXISTS ${SRCDIR})
   find_package(PkgConfig REQUIRED)
@@ -91,17 +73,17 @@ if(EXISTS ${SRCDIR})
   pkg_check_modules(GRPCPP REQUIRED grpc++)
   pkg_check_modules(PROTOBUF REQUIRED protobuf)
 
-  set(SOURCES ${SRCDIR}/proto/api/service/slam/v1/slam.grpc.pb.cc
-              ${SRCDIR}/proto/api/service/slam/v1/slam.pb.cc)
-  set(SOURCES ${SOURCES} ${SRCDIR}/proto/api/common/v1/common.grpc.pb.cc
-              ${SRCDIR}/proto/api/common/v1/common.pb.cc)
+  set(SOURCES ${SRCDIR}/service/slam/v1/slam.grpc.pb.cc
+              ${SRCDIR}/service/slam/v1/slam.pb.cc)
+  set(SOURCES ${SOURCES} ${SRCDIR}/common/v1/common.grpc.pb.cc
+              ${SRCDIR}/common/v1/common.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/annotations.pb.cc
               ${SRCDIR}/google/api/httpbody.pb.cc)
   set(SOURCES ${SOURCES} ${SRCDIR}/google/api/http.pb.cc)
 
-  add_executable(orb_grpc_server orbslam_server_v1.cc ${SOURCES})
+  add_library(orbslam_server_v1 orbslam_server_v1.cc ${SOURCES})
   target_link_libraries(
-    orb_grpc_server
+    orbslam_server_v1
     ${OpenCV_LIBS}
     ${EIGEN3_LIBS}
     ${Pangolin_LIBRARIES}
@@ -111,20 +93,36 @@ if(EXISTS ${SRCDIR})
     -lboost_serialization
     -lboost_filesystem
     -lboost_log
+    -ldl
     -lcrypto
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
   target_include_directories(
-    orb_grpc_server PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
-                       ${PROTOBUF_INCLUDE_DIRS})
+    orbslam_server_v1 PUBLIC ${SRCDIR} ${GRPC_INCLUDE_DIRS} ${GRPCPP_INCLUDE_DIRS}
+                        ${PROTOBUF_INCLUDE_DIRS})
+  target_compile_options(
+    orbslam_server_v1 PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
+                        ${PROTOBUF_CFLAGS_OTHER})
+
+  add_executable(orb_grpc_server orbslam_server_v1_main.cc)
+  target_link_libraries(
+    orb_grpc_server
+    orbslam_server_v1)
   target_compile_options(
     orb_grpc_server PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
-                       ${PROTOBUF_CFLAGS_OTHER})
+                        ${PROTOBUF_CFLAGS_OTHER})
 
+  add_executable(orb_grpc_server_test orbslam_server_v1_test.cc)
+  target_link_libraries(
+    orb_grpc_server_test
+    orbslam_server_v1)
+  target_compile_options(
+    orb_grpc_server_test PUBLIC ${GRPC_CFLAGS_OTHER} ${GRPCPP_CFLAGS_OTHER}
+                        ${PROTOBUF_CFLAGS_OTHER})
 else()
   message(
     FATAL_ERROR
-      "RDK C++ gRPC gen files not found. Please specify the absolute path to your RDK_SOURCE_DIR e.g. 'export RDK_SOURCE_DIR=/home/user/rdk'"
+      "RDK C++ gRPC gen files not found. Please specify the absolute path to your API_SOURCE_DIR e.g. 'export API_SOURCE_DIR=/home/user/api'"
   )
-endif()
+endif()  

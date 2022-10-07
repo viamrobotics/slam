@@ -1,8 +1,18 @@
 # SLAM
 
-SLAM Service V1: Wrapped slam algorithms with grpc interface to allow easy integration within the viam rdk.
+## (In)stability Notice
+> **Warning**
+> This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
 
-**Download & install:** `git clone --recurse-submodules git@github.com:viamrobotics/slam.git`
+## Overview
+This repo contains various slam algorithms that are wrapped with the [SLAM service grpc interface](https://github.com/viamrobotics/rdk/tree/main/proto/api/service/slam/v1) to allow easy integration within the viam rdk.
+
+## Setup
+
+### Download & install
+```bash
+git clone --recurse-submodules git@github.com:viamrobotics/slam.git
+```
 
 If you happened to use `git clone` only, you won't see the libraries in the `slam-libraries` folder and will need to fetch them like this:
 
@@ -17,7 +27,7 @@ brew install clang-format
 make format
 ```
 
-## Contributing
+## Working with submodules
 When working with submodules, it is important to follow this order:
 
 ### Clone & pull
@@ -59,3 +69,8 @@ When pulling down those changes, run the following:
 git pull
 git submodule update --init --recursive
 ```
+
+## License
+Copyright 2022 Viam Inc.
+
+Apache 2.0 - See [LICENSE](https://github.com/viamrobotics/slam/blob/main/LICENSE) file
