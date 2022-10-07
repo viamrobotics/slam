@@ -44,7 +44,7 @@ std::atomic<bool> b_continue_session{true};
     // pull out pose into a vector [qx qy qz qw x y z] and transform into
     // angle axis + x y z. NOTE the origin of the pose is wrt the camera(z
     // axis comes out of the lense) so may require an additional
-    // transformation
+    // transformatio
     double o_x, o_y, o_z;
     auto actualPose = currPose.params();
     float angle_rad = 2 * acos(actualPose[3]);
