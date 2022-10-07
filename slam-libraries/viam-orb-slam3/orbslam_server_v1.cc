@@ -44,7 +44,7 @@ std::atomic<bool> b_continue_session{true};
     // pull out pose into a vector [qx qy qz qw x y z] and transform into
     // angle axis + x y z. NOTE the origin of the pose is wrt the camera(z
     // axis comes out of the lense) so may require an additional
-    // transformatio
+    // transformation
     double o_x, o_y, o_z;
     auto actualPose = currPose.params();
     float angle_rad = 2 * acos(actualPose[3]);
@@ -648,7 +648,7 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // check if the rgb image exists, if it does then load in the
     // image
     if (boost::filesystem::exists(colorName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         if (imRGB.empty()) return false;
         return true;
     }
@@ -667,7 +667,7 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
     // images
     if (boost::filesystem::exists(colorName) &&
         boost::filesystem::exists(depthName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
         if (imRGB.empty() || imDepth.empty()) return false;
         return true;
