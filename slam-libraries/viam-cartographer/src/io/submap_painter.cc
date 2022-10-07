@@ -1,4 +1,5 @@
-// This is an Experimental variation of cartographer. It has not yet been integrated into RDK.
+// This is an Experimental variation of cartographer. It has not yet been
+// integrated into RDK.
 #include "../src/io/submap_painter.h"
 
 #include "cartographer/mapping/2d/submap_2d.h"
