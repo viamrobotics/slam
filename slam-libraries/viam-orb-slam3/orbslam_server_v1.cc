@@ -70,36 +70,33 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_y(actualPose[5]);
     myPose->set_z(actualPose[6]);
 
-	// TODO DATA-531: Remove extraction and conversion of quaternion from the extra field in the response once the Rust SDK 
-	// is available and the desired math can be implemented on the orbSLAM side
+    // TODO DATA-531: Remove extraction and conversion of quaternion from the extra field in the response once the Rust SDK
+    // is available and the desired math can be implemented on the orbSLAM side
     myPose->set_o_x(0.0);
     myPose->set_o_y(0.0);
     myPose->set_o_z(0.0);
     myPose->set_theta(0.0);
 
-    // ::google::protobuf::Value ox, oy, oz, otheta, qqq;
-    // ox.set_number_value(actualPose[4]);
-    // oy.set_number_value(actualPose[5]);
-    // oz.set_number_value(actualPose[6]);
-    // otheta.set_number_value(actualPose[3]);
-
-    BOOST_LOG_TRIVIAL(debug) << "o_x: " << actualPose[4] << 
-                                " o_y: " << actualPose[5] << 
-                                " o_z: " << actualPose[6] << 
-                                " o_theta: " << actualPose[3];
+    ::google::protobuf::Value ox, oy, oz, otheta, qqq;
+    ox.set_number_value(actualPose[4]);
 
 
-    ::google::protobuf::Struct q
-    google::protobuf::Struct* s = response->mutable_extra();
-    s->mutable_fields()->operator[]("quat").set_struct_value(q);
-    
+    BOOST_LOG_TRIVIAL(debug) << "x: " << actualPose[4] <<
+                                " y: " << actualPose[5] <<
+                                " z: " << actualPose[6] <<
+                                " o_theta: " << actualPose[3] <<
+                                " o_x: " << actualPose[0] << 
+                                " o_y: " << actualPose[1] << 
+                                " o_z: " << actualPose[2];
 
-    //google::protobuf::Struct* s = response->mutable_extra();
+    google::protobuf::Struct* q;
+    google::protobuf::Struct* extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
     q->mutable_fields()->operator[]("otheta").set_number_value(actualPose[3]);
-    q->mutable_fields()->operator[]("ox").set_number_value(actualPose[4]);
-    q->mutable_fields()->operator[]("oy").set_number_value(actualPose[5]);
-    q->mutable_fields()->operator[]("oz").set_number_value(actualPose[6]);
-    
+    q->mutable_fields()->operator[]("ox").set_number_value(actualPose[0]);
+    q->mutable_fields()->operator[]("oy").set_number_value(actualPose[1]);
+    q->mutable_fields()->operator[]("oz").set_number_value(actualPose[2]);
+
     return grpc::Status::OK;
 }
 
