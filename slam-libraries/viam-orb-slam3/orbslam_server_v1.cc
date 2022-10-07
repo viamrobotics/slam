@@ -12,7 +12,7 @@
 
 #pragma STDC FENV_ACCESS ON
 
-using namespace boost::filesystem;
+using namespace boost::filesystem;gi
 using google::protobuf::Struct;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
