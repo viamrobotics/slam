@@ -77,10 +77,6 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_o_z(0.0);
     myPose->set_theta(0.0);
 
-    ::google::protobuf::Value ox, oy, oz, otheta, qqq;
-    ox.set_number_value(actualPose[4]);
-
-
     BOOST_LOG_TRIVIAL(debug) << "x: " << actualPose[4] <<
                                 " y: " << actualPose[5] <<
                                 " z: " << actualPose[6] <<
