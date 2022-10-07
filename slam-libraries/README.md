@@ -1,5 +1,10 @@
 # SLAM Libraries
 
+## (In)stability Notice
+> **Warning**
+> This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
+
+## Overview
 The following is an overview over the SLAM libraries that have been integrated so far. To use these servers the Viam API must be built.
 To setup, run:
 

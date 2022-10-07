@@ -4,6 +4,10 @@ ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and 
 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
+## (In)stability Notice
+> **Warning**
+> This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
+
 ## Installation instructions
 Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup) in addition to the steps below. 
 

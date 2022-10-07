@@ -7,6 +7,12 @@ configurations.
 
 Learn more at [the official Docs site](https://google-cartographer.readthedocs.io).
 
+## (In)stability Notice
+> **Warning**
+> This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
+
+> **Disclaimer**
+> Cartographer has not yet been integrated into RDK.
 
 ## Installation instructions
 Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).

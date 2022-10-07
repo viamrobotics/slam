@@ -1,3 +1,4 @@
+// This is an Experimental variation of cartographer. It has not yet been integrated into RDK.
 #ifndef SERVER_FUNCTIONS_H_
 #define SERVER_FUNCTIONS_H_
 
