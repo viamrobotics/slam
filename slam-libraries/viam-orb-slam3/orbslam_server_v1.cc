@@ -68,7 +68,6 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_x(actualPose[4]);
     myPose->set_y(actualPose[5]);
     myPose->set_z(actualPose[6]);
-
     return grpc::Status::OK;
 }
 
