@@ -45,6 +45,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void StopSaveAtlasAsOsa();
 
+    void UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
+
+    void UpdateMap(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
+
     string path_to_data;
     string path_to_map;
     string path_to_sequence;
@@ -58,6 +62,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double yamlTime;
     std::atomic<bool> offlineFlag{false};
     bool local_viewer_flag = false;
+    bool pure_localization_mode = false;
+    int n_key_frames = 0;
 
    private:
     void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM);

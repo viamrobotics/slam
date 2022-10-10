@@ -392,7 +392,6 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
     int i = locRecent;
-    int nkeyframes = 0;
 
     while (true) {
         if (!b_continue_session) return;
@@ -442,23 +441,13 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             } else {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
-            // Update the copy of the current map whenever a change in
-            // keyframes occurs
-            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                currMap->GetAllKeyFrames();
-            {
-                std::lock_guard<std::mutex> lock(slam_mutex);
-                if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK) {
-                    poseGrpc = tmpPose.inverse();
-                    if (nkeyframes != keyframes.size()) {
-                        currMapPoints = currMap->GetAllMapPoints();
-                    }
-                }
+            
+            // Update pose and map
+            if (pure_localization_mode) {
+                UpdatePureLocalization(SLAM, tmpPose);
+            } else {
+                UpdateMap(SLAM, tmpPose);
             }
-            BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
-            nkeyframes = keyframes.size();
         }
         i = -1;
     }
@@ -487,7 +476,6 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
         BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
         return;
     }
-    int nkeyframes = 0;
 
     // iterate over all remaining files in directory
     for (int i = locClosest; i < filesRGB.size(); i++) {
@@ -522,27 +510,50 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
 
-            // Update the copy of the current map whenever a change in
-            // keyframes occurs
-            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                currMap->GetAllKeyFrames();
-            {
-                std::lock_guard<std::mutex> lock(slam_mutex);
-                if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK) {
-                    poseGrpc = tmpPose.inverse();
-                    if (nkeyframes != keyframes.size()) {
-                        currMapPoints = currMap->GetAllMapPoints();
-                    }
-                }
+            // Update pose and map
+            if (pure_localization_mode) {
+                UpdatePureLocalization(SLAM, tmpPose);
+            } else {
+                UpdateMap(SLAM, tmpPose);
             }
-            nkeyframes = keyframes.size();
         }
         if (!b_continue_session) break;
     }
     finished_processing_offline = true;
     BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
+    return;
+}
+
+void SLAMServiceImpl::UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose) {
+    // Get new pose without updating map
+    BOOST_LOG_TRIVIAL(debug) << "Running localization...";
+    {
+        std::lock_guard<std::mutex> lock(slam_mutex);
+        if (SLAM->GetTrackingState() ==
+            ORB_SLAM3::Tracking::eTrackingState::OK) {
+            poseGrpc = tmpPose.inverse();
+        }
+    }
+    return;  
+}
+
+void SLAMServiceImpl::UpdateMap(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose) {
+    // Update pose every loop during tracking as well as map when n_key_frames changes
+    BOOST_LOG_TRIVIAL(debug) << "Updating map...";
+    ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
+    std::vector<ORB_SLAM3::KeyFrame *> keyframes =
+        currMap->GetAllKeyFrames();
+    {
+        std::lock_guard<std::mutex> lock(slam_mutex);
+        if (SLAM->GetTrackingState() ==
+            ORB_SLAM3::Tracking::eTrackingState::OK) {
+            poseGrpc = tmpPose.inverse();
+            if (n_key_frames != keyframes.size()) {
+                currMapPoints = currMap->GetAllMapPoints();
+            }
+        }
+    }
+    n_key_frames = keyframes.size();
     return;
 }
 
@@ -578,7 +589,7 @@ void SLAMServiceImpl::ProcessDataForTesting(ORB_SLAM3::System *SLAM) {
 }
 
 void SLAMServiceImpl::StartSaveAtlasAsOsa(ORB_SLAM3::System *SLAM) {
-    if (map_rate_sec == chrono::seconds(0)) {
+    if (map_rate_sec == chrono::seconds(0) || map_rate_sec == chrono::seconds(-1)) {
         return;
     }
     thread_save_atlas_as_osa_with_timestamp = new thread(
@@ -589,7 +600,7 @@ void SLAMServiceImpl::StartSaveAtlasAsOsa(ORB_SLAM3::System *SLAM) {
 }
 
 void SLAMServiceImpl::StopSaveAtlasAsOsa() {
-    if (map_rate_sec == chrono::seconds(0)) {
+    if (map_rate_sec == chrono::seconds(0) || map_rate_sec == chrono::seconds(-1)) {
         return;
     }
     thread_save_atlas_as_osa_with_timestamp->join();
@@ -619,6 +630,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
             std::lock_guard<std::mutex> lock(slam_mutex);
             SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
         }
+        
         // Sleep for map_rate_sec duration, but check frequently for
         // shutdown
         while (b_continue_session) {
@@ -774,9 +786,14 @@ void ParseAndValidateArguments(const vector<string> &args,
 
     auto map_rate_sec = ArgParser(args, "-map_rate_sec=");
     if (map_rate_sec.empty()) {
-        map_rate_sec = "0";
+        BOOST_LOG_TRIVIAL(info) << "map_rate_sec set to default (60)";
+        map_rate_sec = "60";
     }
     slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
+    if (slamService.map_rate_sec == chrono::seconds(0)) {
+        slamService.pure_localization_mode = true;
+        BOOST_LOG_TRIVIAL(info) << "map_rate_sec set to 0, setting SLAM to pure localization mode";
+    }
 
     slamService.camera_name = ArgParser(args, "-sensors=");
     if (slamService.camera_name.empty()) {
