@@ -144,6 +144,10 @@ int main(int argc, char **argv) {
         slamService.path_to_vocab, full_path_to_settings, slam_mode,
         slamService.local_viewer_flag, 0);
 
+    if (slamService.pure_localization_mode) {
+        SLAM->ActivateLocalizationMode();
+    }
+
     if (slamService.offlineFlag) {
         BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
         slamService.StartSaveAtlasAsOsa(SLAM.get());
