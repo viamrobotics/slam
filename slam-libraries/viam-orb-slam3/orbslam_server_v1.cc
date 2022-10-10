@@ -12,7 +12,6 @@
 #pragma STDC FENV_ACCESS ON
 
 using namespace boost::filesystem;
-using google::protobuf::Struct;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
@@ -69,28 +68,6 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_x(actualPose[4]);
     myPose->set_y(actualPose[5]);
     myPose->set_z(actualPose[6]);
-
-    // TODO DATA-531: Remove extraction and conversion of quaternion from the
-    // extra field in the response once the Rust SDK is available and the
-    // desired math can be implemented on the orbSLAM side
-    myPose->set_o_x(0.0);
-    myPose->set_o_y(0.0);
-    myPose->set_o_z(0.0);
-    myPose->set_theta(0.0);
-
-    BOOST_LOG_TRIVIAL(debug)
-        << "x: " << actualPose[4] << " y: " << actualPose[5]
-        << " z: " << actualPose[6] << " o_theta: " << actualPose[3]
-        << " o_x: " << actualPose[0] << " o_y: " << actualPose[1]
-        << " o_z: " << actualPose[2];
-
-    google::protobuf::Struct *q;
-    google::protobuf::Struct *extra = response->mutable_extra();
-    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("otheta").set_number_value(actualPose[3]);
-    q->mutable_fields()->operator[]("ox").set_number_value(actualPose[0]);
-    q->mutable_fields()->operator[]("oy").set_number_value(actualPose[1]);
-    q->mutable_fields()->operator[]("oz").set_number_value(actualPose[2]);
 
     return grpc::Status::OK;
 }
@@ -589,7 +566,7 @@ void SLAMServiceImpl::ProcessDataForTesting(ORB_SLAM3::System *SLAM) {
 }
 
 void SLAMServiceImpl::StartSaveAtlasAsOsa(ORB_SLAM3::System *SLAM) {
-    if (map_rate_sec == chrono::seconds(0) || map_rate_sec == chrono::seconds(-1)) {
+    if (map_rate_sec == chrono::seconds(0)) {
         return;
     }
     thread_save_atlas_as_osa_with_timestamp = new thread(
@@ -600,7 +577,7 @@ void SLAMServiceImpl::StartSaveAtlasAsOsa(ORB_SLAM3::System *SLAM) {
 }
 
 void SLAMServiceImpl::StopSaveAtlasAsOsa() {
-    if (map_rate_sec == chrono::seconds(0) || map_rate_sec == chrono::seconds(-1)) {
+    if (map_rate_sec == chrono::seconds(0)) {
         return;
     }
     thread_save_atlas_as_osa_with_timestamp->join();
