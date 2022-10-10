@@ -504,7 +504,6 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
 
 void SLAMServiceImpl::UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose) {
     // Get new pose without updating map
-    BOOST_LOG_TRIVIAL(debug) << "Running localization...";
     {
         std::lock_guard<std::mutex> lock(slam_mutex);
         if (SLAM->GetTrackingState() ==
@@ -517,7 +516,6 @@ void SLAMServiceImpl::UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE
 
 void SLAMServiceImpl::UpdateMap(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose) {
     // Update pose every loop during tracking as well as map when n_key_frames changes
-    BOOST_LOG_TRIVIAL(debug) << "Updating map...";
     ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
     std::vector<ORB_SLAM3::KeyFrame *> keyframes =
         currMap->GetAllKeyFrames();

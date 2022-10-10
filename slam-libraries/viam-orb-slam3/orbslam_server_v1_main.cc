@@ -145,6 +145,7 @@ int main(int argc, char **argv) {
         slamService.local_viewer_flag, 0);
 
     if (slamService.pure_localization_mode) {
+        BOOST_LOG_TRIVIAL(info) << "Setting SLAM to localization mode";
         SLAM->ActivateLocalizationMode();
     }
 
