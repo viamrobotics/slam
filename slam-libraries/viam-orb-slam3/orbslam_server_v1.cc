@@ -486,6 +486,7 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             BOOST_LOG_TRIVIAL(error)
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
+            std::lock_guard<std::mutex> lockSave(map_save_mutex);
             // Pass the image to the SLAM system
             BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
 
@@ -576,25 +577,20 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         chrono::microseconds(checkForShutdownIntervalMicroseconds);
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
-        std::time_t t = std::time(nullptr);
-        char timestamp[100];
-        std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
-                      std::gmtime(&t));
-        // Save the current atlas map in *.osa style
-        string path_save_file_name = path_to_map + "/" + camera_name +
-                                     "_data_" + timestamp + ".0000.osa";
+        string path_save_file_name = viam::utils::MakeFilenameWithTimestamp( path_to_map, camera_name);
         if (offlineFlag && finished_processing_offline) {
+            BOOST_LOG_TRIVIAL(debug) << "Ending Map Saving";
+            break;
+        }
+        if ((SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) && (SLAM->GetTrackingState() ==
+                    ORB_SLAM3::Tracking::eTrackingState::OK)) {
+            std::lock_guard<std::mutex> lockSave(map_save_mutex);
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
-            BOOST_LOG_TRIVIAL(debug) << "Finished saving final map";
-            return;
         }
-        if (SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) {
-            std::lock_guard<std::mutex> lock(slam_mutex);
-            SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
-        }
+        
         // Sleep for map_rate_sec duration, but check frequently for
         // shutdown
         while (b_continue_session) {
@@ -607,11 +603,15 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
                 check_for_shutdown_interval_usec) {
                 this_thread::sleep_for(check_for_shutdown_interval_usec);
             } else {
+                // this causes offline mode to wait extra time before moving to the final map
                 this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
                 break;
             }
         }
     }
+    BOOST_LOG_TRIVIAL(debug) << "Updating Final Map with Current Timestamp";
+    SLAM->RenameShutdownSaveAtlas(viam::utils::MakeFilenameWithTimestamp( path_to_map, camera_name));
+    BOOST_LOG_TRIVIAL(debug) << "Finished Map Saving";
 }
 
 namespace utils {
@@ -624,7 +624,7 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // check if the rgb image exists, if it does then load in the
     // image
     if (boost::filesystem::exists(colorName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         if (imRGB.empty()) return false;
         return true;
     }
@@ -643,7 +643,7 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
     // images
     if (boost::filesystem::exists(colorName) &&
         boost::filesystem::exists(depthName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
         if (imRGB.empty() || imDepth.empty()) return false;
         return true;
@@ -864,6 +864,20 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
     }
     // if we do not find a file return -1 as an error
     return -1;
+}
+
+// Make a filename to a specific location for a sensor with a timestamp
+// currently does not support millisecond resolution
+// TODO change time format to .Format(time.RFC3339Nano) https://viam.atlassian.net/browse/DATA-277
+string MakeFilenameWithTimestamp(string path_to_dir,string camera_name){
+    std::time_t t = std::time(nullptr);
+    char timestamp[100];
+    std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
+                    std::gmtime(&t));
+    // Save the current atlas map in *.osa style
+    string path_save_file_name = path_to_dir + "/" + camera_name +
+                                    "_data_" + timestamp + ".0000";
+    return path_save_file_name;
 }
 
 }  // namespace utils

@@ -65,6 +65,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::thread *thread_save_atlas_as_osa_with_timestamp;
 
     std::mutex slam_mutex;
+    std::mutex map_save_mutex;
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 };
@@ -108,6 +109,10 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
                    std::string slam_mode, std::string path_to_data,
                    FileParserMethod interest, double configTime,
                    double *timeInterest);
+
+// Make a filename to a specific location for a sensor with a timestamp
+// currently does not support millisecond resolution
+string MakeFilenameWithTimestamp(string path_to_dir,string camera_name);
 
 }  // namespace utils
 }  // namespace viam
