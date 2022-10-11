@@ -66,7 +66,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::thread *thread_save_atlas_as_osa_with_timestamp;
 
     std::mutex slam_mutex;
-    std::mutex map_save_mutex;
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;
 };

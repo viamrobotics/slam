@@ -605,14 +605,11 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
                 check_for_shutdown_interval_usec) {
                 this_thread::sleep_for(check_for_shutdown_interval_usec);
             } else {
-                // this causes offline mode to wait extra time before moving to the final map
                 this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
                 break;
             }
         }
     }
-
-    // John wants to save a map here
 }
 
 namespace utils {
