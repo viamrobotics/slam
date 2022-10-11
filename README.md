@@ -1,5 +1,10 @@
 # SLAM
 
+## (In)stability Notice
+> **Warning**
+> This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
+
+## Overview
 This repo contains various slam algorithms that are wrapped with the [SLAM service grpc interface](https://github.com/viamrobotics/rdk/tree/main/proto/api/service/slam/v1) to allow easy integration within the viam rdk.
 
 ## Setup
