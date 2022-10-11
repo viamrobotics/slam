@@ -1,3 +1,4 @@
+BUILD_CHANNEL?=local
 
 bufsetup:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
@@ -46,7 +47,8 @@ orbslam-all: buf setuporb buildorb testorb
 
 
 appimage: buildorb
-	cd packaging/appimages && appimage-builder --recipe orb_grpc_server-`uname -m`.yml
+	cd packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe orb_grpc_server-`uname -m`.yml
+	cd packaging/appimages && ./package_release.sh
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
