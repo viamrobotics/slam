@@ -13,6 +13,7 @@
 #pragma STDC FENV_ACCESS ON
 
 using namespace boost::filesystem;
+using google::protobuf::Struct;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
@@ -41,34 +42,29 @@ std::atomic<bool> b_continue_session{true};
     PoseInFrame *inFrame = response->mutable_pose();
     Pose *myPose = inFrame->mutable_pose();
 
-    // pull out pose into a vector [qx qy qz qw x y z] and transform into
-    // angle axis + x y z. NOTE the origin of the pose is wrt the camera(z
-    // axis comes out of the lense) so may require an additional
-    // transformation
-    double o_x, o_y, o_z;
-    auto actualPose = currPose.params();
-    float angle_rad = 2 * acos(actualPose[3]);
-    double angle_deg = angle_rad * 180.0 / M_PI;
-    myPose->set_theta(angle_deg);
-
-    if (fmod(angle_rad, M_PI) != 0) {
-        o_x = actualPose[0] / sin(angle_rad / 2.0);
-        o_y = actualPose[1] / sin(angle_rad / 2.0);
-        o_z = actualPose[2] / sin(angle_rad / 2.0);
-
-    } else {
-        o_x = actualPose[0];
-        o_y = actualPose[1];
-        o_z = actualPose[2];
-    }
-
     // set pose for our response
-    myPose->set_o_x(o_x);
-    myPose->set_o_y(o_y);
-    myPose->set_o_z(o_z);
     myPose->set_x(actualPose[4]);
     myPose->set_y(actualPose[5]);
     myPose->set_z(actualPose[6]);
+
+    // TODO DATA-531: Remove extraction and conversion of quaternion from the
+    // extra field in the response once the Rust spatial math library is 
+    // available and the desired math can be implemented on the orbSLAM side
+
+    BOOST_LOG_TRIVIAL(debug)
+        << "Passing robot position: x= " << actualPose[4]
+        << " y= " << actualPose[5] << " z= " << actualPose[6] 
+        << " Real= " << actualPose[3] << " I_mag= " << actualPose[0]
+        << " J_mag= " << actualPose[1] << " K_mag= " << actualPose[2];
+
+    google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(actualPose[3]);
+    q->mutable_fields()->operator[]("imag").set_number_value(actualPose[0]);
+    q->mutable_fields()->operator[]("jmag").set_number_value(actualPose[1]);
+    q->mutable_fields()->operator[]("kmag").set_number_value(actualPose[2]);
+
     return grpc::Status::OK;
 }
 
