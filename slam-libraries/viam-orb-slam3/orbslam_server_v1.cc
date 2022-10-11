@@ -50,7 +50,6 @@ std::atomic<bool> b_continue_session{true};
     auto actualPose = currPose.params();
     float angle_rad = 2 * acos(actualPose[3]);
     double angle_deg = angle_rad * 180.0 / M_PI;
-    myPose->set_theta(angle_deg);
 
     if (fmod(angle_rad, M_PI) != 0) {
         o_x = actualPose[0] / sin(angle_rad / 2.0);
@@ -64,34 +63,29 @@ std::atomic<bool> b_continue_session{true};
     }
 
     // set pose for our response
-    myPose->set_o_x(o_x);
-    myPose->set_o_y(o_y);
-    myPose->set_o_z(o_z);
     myPose->set_x(actualPose[4]);
     myPose->set_y(actualPose[5]);
     myPose->set_z(actualPose[6]);
 
-    // TODO DATA-531: Remove extraction and conversion of quaternion from the
-    // extra field in the response once the Rust SDK is available and the
-    // desired math can be implemented on the orbSLAM side
-    myPose->set_o_x(0.0);
-    myPose->set_o_y(0.0);
-    myPose->set_o_z(0.0);
-    myPose->set_theta(0.0);
+    // TODO DATA-531: https://viam.atlassian.net/jira/software/c/projects/
+    // DATA/boards/30?modal=detail&selectedIssue=DATA-531
+    // Remove extraction and conversion of quaternion from the
+    // extra field in the response once the Rust spatial math library is 
+    // available and the desired math can be implemented on the orbSLAM side
 
     BOOST_LOG_TRIVIAL(debug)
-        << "x: " << actualPose[4] << " y: " << actualPose[5]
-        << " z: " << actualPose[6] << " o_theta: " << actualPose[3]
-        << " o_x: " << actualPose[0] << " o_y: " << actualPose[1]
-        << " o_z: " << actualPose[2];
+        << "Passing robot position: x= " << actualPose[4]
+        << " y= " << actualPose[5] << " z= " << actualPose[6] 
+        << " Real= " << actualPose[3] << " I_mag= " << actualPose[0]
+        << " J_mag= " << actualPose[1] << " K_mag= " << actualPose[2];
 
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("otheta").set_number_value(actualPose[3]);
-    q->mutable_fields()->operator[]("ox").set_number_value(actualPose[0]);
-    q->mutable_fields()->operator[]("oy").set_number_value(actualPose[1]);
-    q->mutable_fields()->operator[]("oz").set_number_value(actualPose[2]);
+    q->mutable_fields()->operator[]("real").set_number_value(actualPose[3]);
+    q->mutable_fields()->operator[]("imag").set_number_value(actualPose[0]);
+    q->mutable_fields()->operator[]("jmag").set_number_value(actualPose[1]);
+    q->mutable_fields()->operator[]("kmag").set_number_value(actualPose[2]);
 
     return grpc::Status::OK;
 }
