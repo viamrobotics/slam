@@ -55,7 +55,9 @@ AppDir:
     - libwayland-cursor0:amd64
     - libwayland-client0:amd64
     - libxcb-render0:amd64
+    - libxcb-shm0:amd64
     - libdlt2:amd64
+    - libglvnd0:amd64
   files:
     include: []
     exclude:
