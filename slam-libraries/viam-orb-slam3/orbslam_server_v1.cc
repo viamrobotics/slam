@@ -487,7 +487,7 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             BOOST_LOG_TRIVIAL(error)
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
-            std::lock_guard<std::mutex> lockSave(map_save_mutex);
+
             // Pass the image to the SLAM system
             BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
 
@@ -580,16 +580,17 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         auto start = std::chrono::high_resolution_clock::now();
         string path_save_file_name = viam::utils::MakeFilenameWithTimestamp( path_to_map, camera_name);
         if (offlineFlag && finished_processing_offline) {
-            BOOST_LOG_TRIVIAL(debug) << "Ending Map Saving";
-            break;
-        }
-        if ((SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) && (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK)) {
-            std::lock_guard<std::mutex> lockSave(map_save_mutex);
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
+            BOOST_LOG_TRIVIAL(debug) << "Finished saving final map";
+            return;
+        }
+        if ((SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) && (SLAM->GetTrackingState() ==
+                    ORB_SLAM3::Tracking::eTrackingState::OK)) {
+            std::lock_guard<std::mutex> lock(slam_mutex);
+            SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);           
         }
         
         // Sleep for map_rate_sec duration, but check frequently for
@@ -597,7 +598,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         while (b_continue_session) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
-            if (time_elapsed_msec >= map_rate_sec) {
+            if ((time_elapsed_msec >= map_rate_sec) || (finished_processing_offline)) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
@@ -610,9 +611,8 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
             }
         }
     }
-    BOOST_LOG_TRIVIAL(debug) << "Updating Final Map with Current Timestamp";
-    SLAM->RenameShutdownSaveAtlas(viam::utils::MakeFilenameWithTimestamp( path_to_map, camera_name));
-    BOOST_LOG_TRIVIAL(debug) << "Finished Map Saving";
+
+    // John wants to save a map here
 }
 
 namespace utils {
@@ -877,7 +877,7 @@ string MakeFilenameWithTimestamp(string path_to_dir,string camera_name){
                     std::gmtime(&t));
     // Save the current atlas map in *.osa style
     string path_save_file_name = path_to_dir + "/" + camera_name +
-                                    "_data_" + timestamp + ".0000";
+                                    "_data_" + timestamp + ".0000.osa";
     return path_save_file_name;
 }
 
