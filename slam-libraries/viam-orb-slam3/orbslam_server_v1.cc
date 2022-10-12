@@ -578,7 +578,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         chrono::microseconds(checkForShutdownIntervalMicroseconds);
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
-        string path_save_file_name = viam::utils::MakeFilenameWithTimestamp( path_to_map, camera_name);
+        string path_save_file_name = utils::MakeFilenameWithTimestamp( path_to_map, camera_name);
         if (offlineFlag && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
