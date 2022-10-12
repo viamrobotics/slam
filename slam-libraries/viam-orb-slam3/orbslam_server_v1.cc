@@ -574,13 +574,8 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         chrono::microseconds(checkForShutdownIntervalMicroseconds);
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
-        std::time_t t = std::time(nullptr);
-        char timestamp[100];
-        std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S",
-                      std::gmtime(&t));
-        // Save the current atlas map in *.osa style
-        string path_save_file_name = path_to_map + "/" + camera_name +
-                                     "_data_" + timestamp + ".0000.osa";
+        string path_save_file_name =
+            utils::MakeFilenameWithTimestamp(path_to_map, camera_name);
         if (offlineFlag && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
@@ -589,16 +584,21 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
             BOOST_LOG_TRIVIAL(debug) << "Finished saving final map";
             return;
         }
-        if (SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() != 0) {
+        if ((SLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames().size() !=
+             0) &&
+            (SLAM->GetTrackingState() ==
+             ORB_SLAM3::Tracking::eTrackingState::OK)) {
             std::lock_guard<std::mutex> lock(slam_mutex);
             SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
         }
+
         // Sleep for map_rate_sec duration, but check frequently for
         // shutdown
         while (b_continue_session) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
-            if (time_elapsed_msec >= map_rate_sec) {
+            if ((time_elapsed_msec >= map_rate_sec) ||
+                (finished_processing_offline)) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
@@ -862,6 +862,20 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
     }
     // if we do not find a file return -1 as an error
     return -1;
+}
+
+// Make a filename to a specific location for a sensor with a timestamp
+// currently does not support millisecond resolution
+// TODO change time format to .Format(time.RFC3339Nano)
+// https://viam.atlassian.net/browse/DATA-277
+string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
+    std::time_t t = std::time(nullptr);
+    char timestamp[100];
+    std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S", std::gmtime(&t));
+    // Save the current atlas map in *.osa style
+    string path_save_file_name =
+        path_to_dir + "/" + camera_name + "_data_" + timestamp + ".0000.osa";
+    return path_save_file_name;
 }
 
 }  // namespace utils
