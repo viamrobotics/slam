@@ -9,6 +9,8 @@ on:
     branches: [ 'main' ]
     paths-ignore:
       - 'README.md'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/slam
 # and tag your working branch instead of @main in any viamrobotics/slam "uses" below.
@@ -16,7 +18,7 @@ on:
 
 jobs:
   appimage:
-    uses: viamrobotics/slam/.github/workflows/appimage.yml@main
+    uses: viamrobotics/slam/.github/workflows/appimage.yml@fix-stable-release
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
       REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
