@@ -41,6 +41,7 @@ std::atomic<bool> b_continue_session{true};
     // inFrame->set_reference_frame yet
     PoseInFrame *inFrame = response->mutable_pose();
     Pose *myPose = inFrame->mutable_pose();
+    const auto actualPose = currPose.params();
 
     // set pose for our response
     myPose->set_x(actualPose[4]);
@@ -48,12 +49,12 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_z(actualPose[6]);
 
     // TODO DATA-531: Remove extraction and conversion of quaternion from the
-    // extra field in the response once the Rust spatial math library is 
+    // extra field in the response once the Rust spatial math library is
     // available and the desired math can be implemented on the orbSLAM side
 
     BOOST_LOG_TRIVIAL(debug)
         << "Passing robot position: x= " << actualPose[4]
-        << " y= " << actualPose[5] << " z= " << actualPose[6] 
+        << " y= " << actualPose[5] << " z= " << actualPose[6]
         << " Real= " << actualPose[3] << " I_mag= " << actualPose[0]
         << " J_mag= " << actualPose[1] << " K_mag= " << actualPose[2];
 
