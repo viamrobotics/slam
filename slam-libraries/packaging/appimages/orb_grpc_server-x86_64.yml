@@ -22,7 +22,7 @@ AppDir:
     id: com.viam.orb_grpc_server
     name: orb_grpc_server
     icon: viam-server
-    version: latest
+    version: ${BUILD_CHANNEL}
     exec: usr/bin/aix
     exec_args: $@
   apt:
@@ -79,4 +79,4 @@ AppDir:
         AIX_TARGET: usr/bin/orb_grpc_server
 AppImage:
   arch: x86_64
-  update-information: zsync|http://packages.viam.com/apps/slam-servers/orb_grpc_server-latest-x86_64.AppImage.zsync
+  update-information: zsync|http://packages.viam.com/apps/slam-servers/orb_grpc_server-${BUILD_CHANNEL}-x86_64.AppImage.zsync

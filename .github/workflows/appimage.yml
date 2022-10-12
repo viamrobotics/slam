@@ -71,7 +71,7 @@ jobs:
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make testorb'
 
     - name: Build appimage
-      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make appimage'
+      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimage'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v0.4.3
