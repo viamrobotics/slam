@@ -112,7 +112,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 
 // Make a filename to a specific location for a sensor with a timestamp
 // currently does not support millisecond resolution
-string MakeFilenameWithTimestamp(string path_to_dir,string camera_name);
+string MakeFilenameWithTimestamp(string path_to_dir, string camera_name);
 
 }  // namespace utils
 }  // namespace viam
