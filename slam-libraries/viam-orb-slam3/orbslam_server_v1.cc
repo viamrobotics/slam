@@ -421,11 +421,12 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             }
             
             // Update pose and map
-            if (pure_localization_mode) {
-                UpdatePureLocalization(SLAM, tmpPose);
-            } else {
-                UpdateMap(SLAM, tmpPose);
-            }
+            //if (pure_localization_mode) {
+            //    UpdatePureLocalization(SLAM, tmpPose);
+            //} else {
+            UpdateMap(SLAM, tmpPose);
+            // }
+            BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
         }
         i = -1;
     }
@@ -489,11 +490,11 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             }
 
             // Update pose and map
-            if (pure_localization_mode) {
-                UpdatePureLocalization(SLAM, tmpPose);
-            } else {
-                UpdateMap(SLAM, tmpPose);
-            }
+            //if (pure_localization_mode) {
+            //    UpdatePureLocalization(SLAM, tmpPose);
+            //} else {
+            UpdateMap(SLAM, tmpPose);
+            // }
         }
         if (!b_continue_session) break;
     }
@@ -636,7 +637,7 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // check if the rgb image exists, if it does then load in the
     // image
     if (boost::filesystem::exists(colorName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         if (imRGB.empty()) return false;
         return true;
     }
@@ -655,7 +656,7 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
     // images
     if (boost::filesystem::exists(colorName) &&
         boost::filesystem::exists(depthName)) {
-        imRGB = cv::imread(colorName, cv::IMREAD_UNCHANGED);
+        imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
         if (imRGB.empty() || imDepth.empty()) return false;
         return true;
