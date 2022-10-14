@@ -366,7 +366,6 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
     int i = locRecent;
-    int nkeyframes = 0;
 
     while (true) {
         if (!b_continue_session) return;
@@ -407,7 +406,8 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
             // Pass the image to the SLAM system
-            BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
+            BOOST_LOG_TRIVIAL(debug)
+                << "Passing image to SLAM: " << filesRGB[i];
             Sophus::SE3f tmpPose;
             if (slam_mode == "rgbd") {
                 tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
@@ -416,23 +416,9 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             } else {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
-            // Update the copy of the current map whenever a change in
-            // keyframes occurs
-            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                currMap->GetAllKeyFrames();
-            {
-                std::lock_guard<std::mutex> lock(slam_mutex);
-                if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK) {
-                    poseGrpc = tmpPose.inverse();
-                    if (nkeyframes != keyframes.size()) {
-                        currMapPoints = currMap->GetAllMapPoints();
-                    }
-                }
-            }
+
+            UpdateMapAndPosition(SLAM, tmpPose);
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
-            nkeyframes = keyframes.size();
         }
         i = -1;
     }
@@ -461,7 +447,6 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
         BOOST_LOG_TRIVIAL(error) << "No new images to process in directory";
         return;
     }
-    int nkeyframes = 0;
 
     // iterate over all remaining files in directory
     for (int i = locClosest; i < filesRGB.size(); i++) {
@@ -485,7 +470,8 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
             // Pass the image to the SLAM system
-            BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
+            BOOST_LOG_TRIVIAL(debug)
+                << "Passing image to SLAM: " << filesRGB[i];
 
             Sophus::SE3f tmpPose;
             if (slam_mode == "rgbd") {
@@ -496,27 +482,34 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
 
-            // Update the copy of the current map whenever a change in
-            // keyframes occurs
-            ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-            std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-                currMap->GetAllKeyFrames();
-            {
-                std::lock_guard<std::mutex> lock(slam_mutex);
-                if (SLAM->GetTrackingState() ==
-                    ORB_SLAM3::Tracking::eTrackingState::OK) {
-                    poseGrpc = tmpPose.inverse();
-                    if (nkeyframes != keyframes.size()) {
-                        currMapPoints = currMap->GetAllMapPoints();
-                    }
-                }
-            }
-            nkeyframes = keyframes.size();
+            UpdateMapAndPosition(SLAM, tmpPose);
+            BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
         }
         if (!b_continue_session) break;
     }
     finished_processing_offline = true;
     BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
+    return;
+}
+
+// Update map nd position when new image is successfully passed to the system
+void SLAMServiceImpl::UpdateMapAndPosition(ORB_SLAM3::System *SLAM,
+                                           Sophus::SE3f tmpPose) {
+    // Update pose every loop during tracking as well as map when n_key_frames
+    // changes
+    ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
+    std::vector<ORB_SLAM3::KeyFrame *> keyframes = currMap->GetAllKeyFrames();
+    {
+        std::lock_guard<std::mutex> lock(slam_mutex);
+        if (SLAM->GetTrackingState() ==
+            ORB_SLAM3::Tracking::eTrackingState::OK) {
+            poseGrpc = tmpPose.inverse();
+            if (n_key_frames != keyframes.size()) {
+                currMapPoints = currMap->GetAllMapPoints();
+            }
+        }
+    }
+    n_key_frames = keyframes.size();
     return;
 }
 
