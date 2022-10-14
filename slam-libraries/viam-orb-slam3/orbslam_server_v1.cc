@@ -407,7 +407,8 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
             // Pass the image to the SLAM system
-            BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
+            BOOST_LOG_TRIVIAL(debug)
+                << "Passing image to SLAM: " << filesRGB[i];
             Sophus::SE3f tmpPose;
             if (slam_mode == "rgbd") {
                 tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
@@ -416,13 +417,8 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             } else {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
-            
-            // Update pose and map
-            //if (pure_localization_mode) {
-            //    UpdatePureLocalization(SLAM, tmpPose);
-            //} else {
-            UpdateMap(SLAM, tmpPose);
-            // }
+
+            UpdateMapAndPosition(SLAM, tmpPose);
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
         }
         i = -1;
@@ -475,8 +471,8 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
             // Pass the image to the SLAM system
-            BOOST_LOG_TRIVIAL(debug) << "Passing image to SLAM";
-
+            BOOST_LOG_TRIVIAL(debug)
+                << "Passing image to SLAM: " << filesRGB[i];
             Sophus::SE3f tmpPose;
             if (slam_mode == "rgbd") {
                 tmpPose = SLAM->TrackRGBD(imRGB, imDepth, timeStamp);
@@ -486,12 +482,8 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
 
-            // Update pose and map
-            //if (pure_localization_mode) {
-            //    UpdatePureLocalization(SLAM, tmpPose);
-            //} else {
-            UpdateMap(SLAM, tmpPose);
-            // }
+            UpdateMapAndPosition(SLAM, tmpPose);
+            BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
         }
         if (!b_continue_session) break;
     }
@@ -500,23 +492,13 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
     return;
 }
 
-void SLAMServiceImpl::UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose) {
-    // Get new pose without updating map
-    {
-        std::lock_guard<std::mutex> lock(slam_mutex);
-        if (SLAM->GetTrackingState() ==
-            ORB_SLAM3::Tracking::eTrackingState::OK) {
-            poseGrpc = tmpPose.inverse();
-        }
-    }
-    return;  
-}
-
-void SLAMServiceImpl::UpdateMap(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose) {
-    // Update pose every loop during tracking as well as map when n_key_frames changes
+// Update map nd position when new image is successfully passed to the system
+void SLAMServiceImpl::UpdateMapAndPosition(ORB_SLAM3::System *SLAM,
+                                           Sophus::SE3f tmpPose) {
+    // Update pose every loop during tracking as well as map when n_key_frames
+    // changes
     ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
-    std::vector<ORB_SLAM3::KeyFrame *> keyframes =
-        currMap->GetAllKeyFrames();
+    std::vector<ORB_SLAM3::KeyFrame *> keyframes = currMap->GetAllKeyFrames();
     {
         std::lock_guard<std::mutex> lock(slam_mutex);
         if (SLAM->GetTrackingState() ==
@@ -764,7 +746,8 @@ void ParseAndValidateArguments(const vector<string> &args,
     slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
     if (slamService.map_rate_sec == chrono::seconds(0)) {
         slamService.pure_localization_mode = true;
-        BOOST_LOG_TRIVIAL(info) << "map_rate_sec set to 0, setting SLAM to pure localization mode";
+        BOOST_LOG_TRIVIAL(info)
+            << "map_rate_sec set to 0, setting SLAM to pure localization mode";
     }
 
     slamService.camera_name = ArgParser(args, "-sensors=");

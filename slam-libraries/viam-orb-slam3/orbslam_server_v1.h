@@ -45,9 +45,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void StopSaveAtlasAsOsa();
 
-    void UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
+    // void UpdatePureLocalization(ORB_SLAM3::System *SLAM, Sophus::SE3f
+    // tmpPose);
 
-    void UpdateMap(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
+    void UpdateMapAndPosition(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
 
     string path_to_data;
     string path_to_map;
