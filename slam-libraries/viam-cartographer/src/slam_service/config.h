@@ -5,14 +5,6 @@
 
 #include <atomic>
 
-// ======= NOTE ====== NOTE ====== NOTE ====== NOTE ====== NOTE ====== NOTE
-// [by Kat] This file is a WIP - A
-// place where I'm experimenting with extracting & rearranging functions Be
-// gentle & forgiving on this file, plz :) Will ask for a thorough review of the
-// entire file once it is ready - and once approved - will remove this note.
-// ========================================================================
-// END OF NOTE
-
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
