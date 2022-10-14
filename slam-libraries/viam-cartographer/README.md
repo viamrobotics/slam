@@ -51,8 +51,8 @@ brew install sphinx-doc
 Run: `./scripts/build_cartographer.sh`
 
 Installation & building tested on:
-- [ ] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
-- [ ] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
+- [X] Raspberry Pi OS Lite (64-bit)
+- [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
 - [ ] M1
 
 This needs to be built only once.
@@ -62,8 +62,8 @@ This needs to be built only once.
 Run: `./scripts/build_viam_cartographer.sh`
 
 Installation & building tested on:
-- [ ] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
-- [ ] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
+- [X] Raspberry Pi OS Lite (64-bit)
+- [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
 - [ ] M1
 
 This is run frequently, as this is where we're building our code.
