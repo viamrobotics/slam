@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
         }
         SLAM->GetAtlas()->ChangeMap(largestMap);
     }
-    
+
     if (slamService.offlineFlag) {
         BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
         slamService.StartSaveAtlasAsOsa(SLAM.get());
