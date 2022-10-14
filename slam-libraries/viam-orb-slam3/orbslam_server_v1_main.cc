@@ -144,6 +144,23 @@ int main(int argc, char **argv) {
         slamService.path_to_vocab, full_path_to_settings, slam_mode,
         slamService.local_viewer_flag, 0);
 
+    if (slamService.pure_localization_mode) {
+        BOOST_LOG_TRIVIAL(info) << "Setting SLAM to localization mode";
+        SLAM->ActivateLocalizationMode();
+
+        // Set current map for localization to the saved map with largest
+        // number of points
+        auto allMaps = SLAM->GetAtlas()->GetAllMaps();
+        ORB_SLAM3::Map *largestMap;
+        auto nPoints = 0;
+        for (size_t i = 0; i < allMaps.size(); i++) {
+            if (allMaps[i]->GetAllMapPoints().size() > nPoints) {
+                largestMap = allMaps[i];
+            }
+        }
+        SLAM->GetAtlas()->ChangeMap(largestMap);
+    }
+    
     if (slamService.offlineFlag) {
         BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
         slamService.StartSaveAtlasAsOsa(SLAM.get());

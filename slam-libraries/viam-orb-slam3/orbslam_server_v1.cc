@@ -748,9 +748,15 @@ void ParseAndValidateArguments(const vector<string> &args,
 
     auto map_rate_sec = ArgParser(args, "-map_rate_sec=");
     if (map_rate_sec.empty()) {
-        map_rate_sec = "0";
+        BOOST_LOG_TRIVIAL(info) << "map_rate_sec set to default (60)";
+        map_rate_sec = "60";
     }
     slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
+    if (slamService.map_rate_sec == chrono::seconds(0)) {
+        slamService.pure_localization_mode = true;
+        BOOST_LOG_TRIVIAL(info)
+            << "map_rate_sec set to 0, setting SLAM to pure localization mode";
+    }
 
     slamService.camera_name = ArgParser(args, "-sensors=");
     if (slamService.camera_name.empty()) {
