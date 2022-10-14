@@ -9,14 +9,6 @@
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 
-// ======= NOTE ====== NOTE ====== NOTE ====== NOTE ====== NOTE ====== NOTE
-// [by Kat] This file is a WIP - A
-// place where I'm experimenting with extracting & rearranging functions Be
-// gentle & forgiving on this file, plz :) Will ask for a thorough review of the
-// entire file once it is ready - and once approved - will remove this note.
-// =========================================================================
-// END OF NOTE
-
 // Functions that need to be implemented:
 // GetPosition(Pose)
 // GetMap (either image or pointcloud, depending on MIME type) --> create two
@@ -40,7 +32,7 @@ std::vector<cartographer::transform::Rigid3d> GetLocalPoses(
     return mapBuilder.GetLocalSlamResultPoses();
 }
 
-// TODO[kat]: There might still be a lot of room to improve accuracy & speed.
+// TODO: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d GetGlobalPose(
     viam::mapping::MapBuilder& mapBuilder, int trajectory_id,

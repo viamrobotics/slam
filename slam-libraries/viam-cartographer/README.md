@@ -19,7 +19,7 @@ Learn more at [the official Docs site](https://google-cartographer.readthedocs.i
 ## Installation instructions
 Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
 
-### OSx
+### Setup: OSx
 
 **Install Xcode**
 1. Install/Update Xcode from App Store
@@ -45,35 +45,9 @@ brew install glog
 brew install suite-sparse
 brew install sphinx-doc
 ```
- 
-**Build cartographer**
 
-Run: `./scripts/build_cartographer.sh`
 
-Installation & building tested on:
-- [ ] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
-- [ ] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
-- [ ] M1
-
-This needs to be built only once.
-
-**Build viam-cartographer**
-
-Run: `./scripts/build_viam_cartographer.sh`
-
-Installation & building tested on:
-- [ ] 2.4 GHz Quad-Core Intel Core i7; macOS Catalina
-- [ ] 2.4 GHz 8-Core Intel Core i9; macOS Big Sur
-- [ ] M1
-
-This is run frequently, as this is where we're building our code.
-
-A second build script is therefore provided for local development: `./scripts/rebuild_viam_cartographer.sh`.
-
-### [TODO: needs update] Raspberry Pi Viam Image (Or other Debian 11+, including canon-shell)
-TODO[kat]: Make sure this is correct & works - haven't tested in a long time.
-NOTE[05/31/22]: This has not been tested with the refactored code, where the main
-cartographer repo was split from the viam-cartographer wrapper code.
+### Setup: Raspberry Pi OS Lite (64-bit)
 
 ```bash
 sudo apt install cmake \
@@ -89,6 +63,31 @@ libprotobuf-dev \
 protobuf-compiler \
 libpcl-dev
 ```
+ 
+ ### Building cartographer
+**Build cartographer**
+
+Run: `./scripts/build_cartographer.sh`
+
+Installation & building tested on:
+- [X] Raspberry Pi OS Lite (64-bit)
+- [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
+- [ ] M1
+
+This needs to be built only once.
+
+**Build viam-cartographer**
+
+Run: `./scripts/build_viam_cartographer.sh`
+
+Installation & building tested on:
+- [X] Raspberry Pi OS Lite (64-bit)
+- [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
+- [ ] M1
+
+This is run frequently, as this is where we're building our code.
+
+A second build script is therefore provided for local development: `./scripts/rebuild_viam_cartographer.sh`.
 
 ## Running cartographer
 Configure how to run cartographer in this file: [scripts/run_cartographer.sh](./scripts/run_cartographer.sh).
