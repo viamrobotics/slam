@@ -1,10 +1,12 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
-#include <iostream>
 #include <signal.h>
+
+#include <iostream>
+#include <thread>
+
 #include "glog/logging.h"
 #include "slam_service/config.h"
-#include <thread>
 
 void exit_loop_handler(int s) {
     LOG(INFO) << "Finishing session.\n";
@@ -20,14 +22,15 @@ int main(int argc, char** argv) {
 
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-    int err = viam::slam_service::config::ParseAndValidateConfigParams(argc, argv);
+    int err =
+        viam::slam_service::config::ParseAndValidateConfigParams(argc, argv);
     if (err != 0) {
         return err;
     }
 
     while (viam::b_continue_session) {
         LOG(INFO) << "Cartographer is running\n";
-        std::this_thread::sleep_for(
-            std::chrono::microseconds(viam::checkForShutdownIntervalMicroseconds));
+        std::this_thread::sleep_for(std::chrono::microseconds(
+            viam::checkForShutdownIntervalMicroseconds));
     }
 }
