@@ -1,3 +1,5 @@
+// This is an Experimental variation of cartographer. It has not yet been
+// integrated into RDK.
 #include <iostream>
 #include "config.h"
 #include "glog/logging.h"

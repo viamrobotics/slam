@@ -1,3 +1,5 @@
+// This is an Experimental variation of cartographer. It has not yet been
+// integrated into RDK.
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
