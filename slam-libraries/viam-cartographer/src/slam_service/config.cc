@@ -6,21 +6,6 @@
 
 #include "glog/logging.h"
 
-// Functions that need to be implemented:
-// GetPosition(Pose)
-// GetMap (either image or pointcloud, depending on MIME type) --> create two
-// functions, and have if/else in the actual server function?
-
-// GetPosition(Pose)
-/*
-GetPosition (Pose)
-    Purpose: This would return the relative position of the robot with respect
-to the "origin" of the map, which is the starting point from where the map was
-initially created (at least in the case of cartographer) Variables: name = name
-of service Return: Pose of the robot from reference frame of map Note: the
-latency of getPose should be no greater than n (probably 30ms)
-*/
-
 namespace viam {
 namespace slam_service {
 namespace config {
