@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
-      REPO_READ_TOKEN:
-        required: true
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS:
         required: true
 
@@ -14,8 +12,81 @@ env:
   GOOGLE_APPLICATION_CREDENTIALS_FILENAME: "google-credentials.json"
 
 jobs:
-  build_and_test:
-    name: Build and Test
+  format:
+    name: Format
+    runs-on: [x64, qemu-host]
+    container:
+      image: ghcr.io/viamrobotics/canon:amd64-cache
+      options: --platform linux/amd64
+    timeout-minutes: 30
+    steps:
+    - name: Check out code in slam directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Verify no uncommitted changes from make format
+      run: |
+        git init
+        git add .
+        chown -R testbot .
+        sudo -u testbot bash -lc 'cd slam-libraries && make format-setup format'
+        GEN_DIFF=$(git status -s)
+
+        if [ -n "$GEN_DIFF" ]; then
+            echo '"make format" resulted in changes not in git' 1>&2
+            git status
+            exit 1
+        fi
+
+  check_modified_files:
+    name: Check modified files
+    outputs:
+      run_carto: ${{ steps.check_files.outputs.run_carto }}
+      run_orb: ${{ steps.check_files.outputs.run_orb }}
+    runs-on: [x64, qemu-host]
+    container:
+      image: ghcr.io/viamrobotics/canon:amd64-cache
+      options: --platform linux/amd64
+    timeout-minutes: 30
+    steps:
+    - name: Check out code in slam directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Check modified files
+      id: check_files
+      run: |
+        git fetch origin main
+        echo "Listing modified files..."
+        git diff --name-only $(git merge-base --fork-point origin/main)
+        echo "Check paths of modified files..."
+        git diff --name-only $(git merge-base --fork-point origin/main) > files.txt
+        echo "run_carto=false" >> $GITHUB_OUTPUT
+        echo "run_orb=false" >> $GITHUB_OUTPUT
+        while IFS= read -r file
+        do
+          echo $file
+          case $file in 
+            slam-libraries/viam-cartographer/*)
+              echo "run_carto=true" >> $GITHUB_OUTPUT
+              ;;
+            slam-libraries/viam-orb-slam3/*)
+              echo "run_orb=true" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "run_orb=true" >> $GITHUB_OUTPUT
+              echo "run_carto=true" >> $GITHUB_OUTPUT
+              ;;
+          esac
+        done < files.txt
+
+  build_and_test_orb:
+    name: Build and Test Orbslam
+    needs: check_modified_files
+    if: needs.check_modified_files.outputs.run_orb == 'true'
     strategy:
       matrix:
         include:
@@ -32,34 +103,16 @@ jobs:
     timeout-minutes: 180
 
     steps:
-    - name: Configure git for private repos
-      run: |
-        sudo -u testbot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
-
     - name: Check out code in slam directory
       uses: actions/checkout@v3
       with:
         submodules: recursive
         path: slam
 
-    - name: Verify no uncommitted changes from make format
-      run: |
-        cd slam
-        git init
-        git add .
-        chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam-libraries && make format-setup format'
-        GEN_DIFF=$(git status -s)
-
-        if [ -n "$GEN_DIFF" ]; then
-            echo '"make format" resulted in changes not in git' 1>&2
-            git status
-            exit 1
-        fi
-
     - name: make buf
       timeout-minutes: 5
       run: |
+        chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
 
     - name: make setuporb
@@ -97,3 +150,38 @@ jobs:
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestOrbslamIntegration'
+
+  build_and_test_cartographer:
+    name: Build and Test Cartographer
+    needs: check_modified_files
+    if: needs.check_modified_files.outputs.run_carto == 'true'
+    strategy:
+      matrix:
+        include:
+          - arch: [x64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:amd64-cache
+            platform: linux/amd64
+          - arch: [arm64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:arm64-cache
+            platform: linux/arm64
+    runs-on: ${{ matrix.arch }}
+    container:
+      image: ${{ matrix.image }}
+      options: --platform ${{ matrix.platform }}
+    timeout-minutes: 180
+
+    steps:
+    - name: Check out code in slam directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        path: slam
+
+    - name: make setupcarto
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make setupcarto'
+
+    - name: make buildcarto
+      run: |
+        chown -R testbot .
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'

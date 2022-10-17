@@ -97,6 +97,11 @@ google_binary(main
     src/main.cc
 )
 
+google_binary(main_old
+  SRCS
+    src/main_old.cc
+)
+
 # WARNING: PR Review comment:
 # Absolute paths are generally not a good idea. If at all possible,
 # just use the library name itself (cartographer) for linking.
