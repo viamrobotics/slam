@@ -60,6 +60,7 @@ jobs:
       run: |
         git fetch origin main
         echo "Listing modified files..."
+        git merge-base --fork-point main
         git diff $(git merge-base --fork-point main)
         echo "Check paths of modified files..."
         git diff $(git merge-base --fork-point main) > files.txt
