@@ -39,7 +39,7 @@ jobs:
             exit 1
         fi
 
-check_modified_files:
+  check_modified_files:
     name: Check modified files
     outputs:
       run_carto: ${{ steps.check_files.outputs.run_carto }}
