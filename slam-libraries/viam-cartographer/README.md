@@ -49,20 +49,7 @@ brew install sphinx-doc
 
 ### Setup: Raspberry Pi OS Lite (64-bit)
 
-```bash
-sudo apt install cmake \
-ninja-build \
-libgmock-dev \
-libboost-iostreams-dev \
-liblua5.3-dev \
-libcairo2-dev \
-python3-sphinx \
-libabsl-dev \
-libceres-dev \
-libprotobuf-dev \
-protobuf-compiler \
-libpcl-dev
-```
+Run: `./scripts/setup_cartographer.sh`
  
  ### Building cartographer
 **Build cartographer**
@@ -72,6 +59,7 @@ Run: `./scripts/build_cartographer.sh`
 Installation & building tested on:
 - [X] Raspberry Pi OS Lite (64-bit)
 - [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
+- [X] linux/amd64
 - [ ] M1
 
 This needs to be built only once.
@@ -83,6 +71,7 @@ Run: `./scripts/build_viam_cartographer.sh`
 Installation & building tested on:
 - [X] Raspberry Pi OS Lite (64-bit)
 - [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
+- [X] linux/amd64
 - [ ] M1
 
 This is run frequently, as this is where we're building our code.
