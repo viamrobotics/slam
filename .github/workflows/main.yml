@@ -21,5 +21,4 @@ jobs:
     uses: viamrobotics/slam/.github/workflows/appimage.yml@DATA-580
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-      REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
