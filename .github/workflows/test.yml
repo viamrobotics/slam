@@ -73,11 +73,14 @@ jobs:
           case $file in 
             slam-libraries/viam-cartographer/*)
               echo "run_carto=true" >> $GITHUB_OUTPUT
+              ;;
             slam-libraries/viam-orb-slam4/*)
               echo "run_orb=true" >> $GITHUB_OUTPUT
+              ;;
             *)
               echo "run_orb=true" >> $GITHUB_OUTPUT
               echo "run_carto=true" >> $GITHUB_OUTPUT
+              ;;
           esac
         done < files.txt
 
