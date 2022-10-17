@@ -62,9 +62,9 @@ jobs:
         git fetch origin main
         echo "Listing modified files..."
         echo $(git merge-base --fork-point origin/main)
-        git diff $(git merge-base --fork-point origin/main)
+        git diff --name-only $(git merge-base --fork-point origin/main)
         echo "Check paths of modified files..."
-        git diff $(git merge-base --fork-point origin/main) > files.txt
+        git diff --name-only $(git merge-base --fork-point origin/main) > files.txt
         echo "run_carto=false" >> $GITHUB_OUTPUT
         echo "run_orb=false" >> $GITHUB_OUTPUT
         while IFS= read -r file
