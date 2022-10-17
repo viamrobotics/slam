@@ -7,6 +7,8 @@
 
 #include "glog/logging.h"
 #include "slam_service/config.h"
+#include "slam_service/server_functions.h"
+#include "slam_service/slam_service.h"
 
 void exit_loop_handler(int s) {
     LOG(INFO) << "Finishing session.\n";
@@ -22,11 +24,16 @@ int main(int argc, char** argv) {
 
     sigaction(SIGINT, &sigIntHandler, NULL);
 
+    viam::SLAMServiceImpl slamService;
     int err =
-        viam::slam_service::config::ParseAndValidateConfigParams(argc, argv);
+        viam::config::ParseAndValidateConfigParams(argc, argv, slamService);
     if (err != 0) {
         return err;
     }
+
+    LOG(INFO) << "Start mapping: offline mode\n";
+    slamService.CreateMap();
+    LOG(INFO) << "Done mapping: offline mode\n";
 
     while (viam::b_continue_session) {
         LOG(INFO) << "Cartographer is running\n";
