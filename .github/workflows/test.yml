@@ -59,6 +59,7 @@ jobs:
     - name: Check modified files
       id: check_files
       run: |
+        #!/bin/bash
         git fetch origin main
         echo "Listing modified files..."
         echo $(git merge-base --fork-point origin/main)
