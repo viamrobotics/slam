@@ -38,6 +38,12 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
 
     // KAT NOTE: The file name format for the pcd files is assumed to be, e.g.:
     // rplidar_data_2022-02-05T01_00_20.9874.pcd
+
+    // LEAVING COMMENTED UNTIL READY TO TEST
+    // double time_delta = ReadTimeFromFilename(
+    //     myYAML.substr(initial_filename.find("_data_") + viam::filenamePrefixLength, 
+    //     initial_filename.find(".pcd")));
+
     int start_pos = initial_filename.find("T") + 1;
     int len_pos =
         initial_filename.find(".pcd") - initial_filename.find("T") - 1;
@@ -103,6 +109,29 @@ int ReadFile::removeFile(std::string file_path) {
         return 0;
     }
     return 1;
+}
+
+// Converts UTC time string to a double value.
+double ReadFile::ReadTimeFromFilename(string filename) {
+    std::string::size_type sz;
+    // Create a stream which we will use to parse the string
+    std::istringstream ss(filename);
+
+    // Create a tm object to store the parsed date and time.
+    std::tm dt = {0};
+
+    // Now we read from buffer using get_time manipulator
+    // and formatting the input appropriately.
+    ss >> std::get_time(&dt, time_format.c_str());
+    time_t thisTime = std::mktime(&dt);
+    auto sub_sec_index = filename.find(".");
+    if ((sub_sec_index != string::npos)) {
+        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        double myTime = (double)thisTime + sub_sec;
+        return myTime;
+    } else {
+        return (double)thisTime;
+    }
 }
 
 }  // namespace io

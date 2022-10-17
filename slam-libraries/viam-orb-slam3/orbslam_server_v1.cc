@@ -878,8 +878,6 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 
 // Make a filename to a specific location for a sensor with a timestamp
 // currently does not support millisecond resolution
-// TODO change time format to .Format(time.RFC3339Nano)
-// https://viam.atlassian.net/browse/DATA-277
 string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
     std::time_t t = std::time(nullptr);
     char timestamp[100];

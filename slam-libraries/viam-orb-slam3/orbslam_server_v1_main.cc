@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     // report the current yaml file check if it matches our format
     const string myYAML = latest.stem().string();
     BOOST_LOG_TRIVIAL(debug) << "Our yaml file: " << myYAML;
-
+    
     string full_path_to_settings =
         slamService.path_to_settings + "/" + latest.filename().string();
     if (slamService.offlineFlag) {
@@ -158,10 +158,10 @@ int main(int argc, char **argv) {
                 viam::checkForShutdownIntervalMicroseconds));
         }
     } else {
-        // BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-        // slamService.StartSaveAtlasAsOsa(SLAM.get());
-        // slamService.ProcessDataOnline(SLAM.get());
-        // slamService.StopSaveAtlasAsOsa();
+        BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+        slamService.StartSaveAtlasAsOsa(SLAM.get());
+        slamService.ProcessDataOnline(SLAM.get());
+        slamService.StopSaveAtlasAsOsa();
         while (viam::b_continue_session) {
             this_thread::sleep_for(chrono::microseconds(
                 viam::checkForShutdownIntervalMicroseconds));
