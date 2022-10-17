@@ -779,7 +779,7 @@ double ReadTimeFromFilename(string filename) {
 
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
-    ss >> std::get_time(&dt,time_format.c_str());
+    ss >> std::get_time(&dt, time_format.c_str());
     time_t thisTime = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
     if ((sub_sec_index != string::npos)) {
@@ -795,10 +795,8 @@ double ReadTimeFromFilename(string filename) {
 void FindTimeFormat(string filename) {
     // Check if we are using the old time format
     auto find_underscores = filename.find("_");
-    if(find_underscores != string::npos)
-        time_format = "%Y-%m-%dT%H_%M_%SZ";
+    if (find_underscores != string::npos) time_format = "%Y-%m-%dT%H_%M_%SZ";
     return;
-    
 }
 
 std::vector<std::string> ListFilesInDirectoryForCamera(
@@ -885,7 +883,8 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
     std::time_t t = std::time(nullptr);
     char timestamp[100];
-    std::strftime(timestamp, sizeof(timestamp), time_format.c_str(), std::gmtime(&t));
+    std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
+                  std::gmtime(&t));
     // Save the current atlas map in *.osa style
     string path_save_file_name =
         path_to_dir + "/" + camera_name + "_data_" + timestamp + ".0000Z.osa";
