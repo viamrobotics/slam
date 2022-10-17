@@ -59,7 +59,6 @@ jobs:
     - name: Check modified files
       id: check_files
       run: |
-        #!/bin/bash
         git fetch origin main
         echo "Listing modified files..."
         echo $(git merge-base --fork-point origin/main)
@@ -71,14 +70,15 @@ jobs:
         while IFS= read -r file
         do
           echo $file
-          if [ $file != slam-libraries/viam-orb-slam3/* ]; then
-            echo "This modified file is not under 'viam-orb-slam3'"
-            echo "run_carto=true" >> $GITHUB_OUTPUT
-          fi
-          if [ $file != slam-libraries/viam-cartographer/* ]; then
-            echo "This modified file is not under 'viam-cartographer'"
-            echo "run_orb=true" >> $GITHUB_OUTPUT
-          fi
+          case $file in 
+            slam-libraries/viam-cartographer/*)
+              echo "run_carto=true" >> $GITHUB_OUTPUT
+            slam-libraries/viam-orb-slam4/*)
+              echo "run_orb=true" >> $GITHUB_OUTPUT
+            *)
+              echo "run_orb=true" >> $GITHUB_OUTPUT
+              echo "run_carto=true" >> $GITHUB_OUTPUT
+          esac
         done < files.txt
 
   build_and_test_orb:
