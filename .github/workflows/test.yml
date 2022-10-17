@@ -58,11 +58,10 @@ jobs:
     - name: Check modified files
       id: check_files
       run: |
-        git fetch origin main
         echo "Listing modified files..."
-        git diff --name-only origin/main...
+        git diff $(git merge-base --fork-point main)
         echo "Check paths of modified files..."
-        git diff --name-only origin/main... > files.txt
+        git diff $(git merge-base --fork-point main) > files.txt
         echo "::set-output name=run_carto::false"
         echo "::set-output name=run_orb::false"
         while IFS= read -r file
@@ -76,6 +75,7 @@ jobs:
             echo "This modified file is not under 'viam-cartographer'"
             echo "::set-output name=run_orb::true"
           fi
+        done < files.txt
 
   build_and_test_orb:
     name: Build and Test Orbslam
