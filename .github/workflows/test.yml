@@ -61,7 +61,6 @@ jobs:
       run: |
         git fetch origin main
         echo "Listing modified files..."
-        echo $(git merge-base --fork-point origin/main)
         git diff --name-only $(git merge-base --fork-point origin/main)
         echo "Check paths of modified files..."
         git diff --name-only $(git merge-base --fork-point origin/main) > files.txt
@@ -73,14 +72,11 @@ jobs:
           case $file in 
             slam-libraries/viam-cartographer/*)
               echo "run_carto=true" >> $GITHUB_OUTPUT
-              echo "yes carto"
               ;;
-            slam-libraries/viam-orb-slam4/*)
+            slam-libraries/viam-orb-slam3/*)
               echo "run_orb=true" >> $GITHUB_OUTPUT
-              echo "yes orb"
               ;;
             *)
-              echo "yes both"
               echo "run_orb=true" >> $GITHUB_OUTPUT
               echo "run_carto=true" >> $GITHUB_OUTPUT
               ;;
