@@ -4,6 +4,7 @@
 #define CONFIG_H_
 
 #include <atomic>
+#include <string>
 
 namespace viam {
 
