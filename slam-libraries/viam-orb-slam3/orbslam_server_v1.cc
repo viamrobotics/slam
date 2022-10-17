@@ -781,17 +781,13 @@ double ReadTimeFromFilename(string filename) {
     ss >> std::get_time(&dt, "%Y-%m-%dT%H:%M:%SZ");
     time_t thisTime = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
-    if((sub_sec_index != string::npos)){
+    if ((sub_sec_index != string::npos)) {
         double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
         double myTime = (double)thisTime + sub_sec;
-    return myTime;
-    }else{
+        return myTime;
+    } else {
         return (double)thisTime;
     }
-    
-    
-
-    
 }
 
 std::vector<std::string> ListFilesInDirectoryForCamera(
