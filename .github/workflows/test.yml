@@ -116,6 +116,7 @@ jobs:
     - name: make buf
       timeout-minutes: 5
       run: |
+        chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
 
     - name: make setuporb
@@ -186,4 +187,5 @@ jobs:
 
     - name: make buildcarto
       run: |
+        chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'
