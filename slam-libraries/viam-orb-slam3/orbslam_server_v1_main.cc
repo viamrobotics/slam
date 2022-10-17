@@ -155,10 +155,14 @@ int main(int argc, char **argv) {
                 viam::checkForShutdownIntervalMicroseconds));
         }
     } else {
-        BOOST_LOG_TRIVIAL(info) << "Running in online mode";
-        slamService.StartSaveAtlasAsOsa(SLAM.get());
-        slamService.ProcessDataOnline(SLAM.get());
-        slamService.StopSaveAtlasAsOsa();
+        // BOOST_LOG_TRIVIAL(info) << "Running in online mode";
+        // slamService.StartSaveAtlasAsOsa(SLAM.get());
+        // slamService.ProcessDataOnline(SLAM.get());
+        // slamService.StopSaveAtlasAsOsa();
+        while (viam::b_continue_session) {
+            this_thread::sleep_for(chrono::microseconds(
+                viam::checkForShutdownIntervalMicroseconds));
+        }
     }
     // slamService.ProcessDataForTesting(SLAM.get());
 

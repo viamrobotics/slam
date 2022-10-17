@@ -122,9 +122,9 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
 }
 
 BOOST_AUTO_TEST_CASE(ReadTimeFromFilename) {
-    const string filename1 = "2022-01-01T01_00_00.0000";
-    const string filename2 = "2022-01-01T01_00_00.0001";
-    const string filename3 = "2022-01-01T01_00_01.0000";
+    const string filename1 = "2022-01-01T01:00:00.0000Z";
+    const string filename2 = "2022-01-01T01:00:00.0001Z";
+    const string filename3 = "2022-01-01T01:00:01.0000Z";
     const auto time1 = utils::ReadTimeFromFilename(filename1);
     const auto time2 = utils::ReadTimeFromFilename(filename2);
     const auto time3 = utils::ReadTimeFromFilename(filename3);
