@@ -58,22 +58,23 @@ jobs:
     - name: Check modified files
       id: check_files
       run: |
+        git fetch origin main
         echo "Listing modified files..."
         git diff $(git merge-base --fork-point main)
         echo "Check paths of modified files..."
         git diff $(git merge-base --fork-point main) > files.txt
-        echo "::set-output name=run_carto::false"
-        echo "::set-output name=run_orb::false"
+        echo "run_carto=false" >> $GITHUB_OUTPUT
+        echo "run_orb=false" >> $GITHUB_OUTPUT
         while IFS= read -r file
         do
           echo $file
           if [[ $file != slam-libraries/viam-orb-slam3/* ]]; then
             echo "This modified file is not under 'viam-orb-slam3'"
-            echo "::set-output name=run_carto::true"
+            echo "run_carto=true" >> $GITHUB_OUTPUT
           fi
           if [[ $file != slam-libraries/viam-cartographer/* ]]; then
             echo "This modified file is not under 'viam-cartographer'"
-            echo "::set-output name=run_orb::true"
+            echo "run_orb=true" >> $GITHUB_OUTPUT
           fi
         done < files.txt
 
