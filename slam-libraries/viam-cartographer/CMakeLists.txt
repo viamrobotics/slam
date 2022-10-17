@@ -69,7 +69,7 @@ if(EXISTS ${SRCDIR})
 
   pkg_check_modules(GRPC REQUIRED grpc)
   pkg_check_modules(GRPCPP REQUIRED grpc++)
-  pkg_check_modules(PROTOBUF REQUIRED protobuf)
+  # pkg_check_modules(PROTOBUF REQUIRED protobuf)
 
   set(SOURCES ${SRCDIR}/service/slam/v1/slam.grpc.pb.cc
               ${SRCDIR}/service/slam/v1/slam.pb.cc)
@@ -91,7 +91,7 @@ if(EXISTS ${SRCDIR})
   list(APPEND ALL_LIBRARY_SRCS ${ALL_VIAM_SRCS})
 
   add_library(${PROJECT_NAME} STATIC ${ALL_LIBRARY_HDRS} ${ALL_LIBRARY_SRCS} ${SOURCES})
-  target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC "/usr/local/include" ${SRCDIR})
+  target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${SRCDIR})
 
   configure_file(
     ${PROJECT_SOURCE_DIR}/cartographer/cartographer/common/config.h.cmake
