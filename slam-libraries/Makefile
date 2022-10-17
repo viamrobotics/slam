@@ -54,10 +54,10 @@ appimage: buildorb
 	chmod 755 packaging/appimages/deploy/*.AppImage
 
 setupcarto:
-    cd viam-cartographer/scripts && ./setup_cartographer.sh
+	cd viam-cartographer/scripts && ./setup_cartographer.sh
 
 buildcarto:
-    cd viam-cartographer/scripts && ./build_cartographer.sh && ./build_viam_cartographer.sh
+	cd viam-cartographer/scripts && ./build_cartographer.sh && ./build_viam_cartographer.sh
 
 carto-all: setupcarto buildcarto
 
