@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
+      REPO_READ_TOKEN:
+        required: true
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS:
         required: true
 
@@ -107,6 +109,10 @@ jobs:
     timeout-minutes: 180
 
     steps:
+    - name: Configure git for private repos
+      run: |
+        sudo -u testbot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
+
     - name: Check out code in slam directory
       uses: actions/checkout@v3
       with:
@@ -179,6 +185,10 @@ jobs:
       with:
         submodules: recursive
         path: slam
+
+    - name: Configure git for private repos
+      run: |
+        sudo -u testbot bash -lc 'echo "machine github.com login viambot password ${{ secrets.REPO_READ_TOKEN }}" > ~/.netrc'
 
     - name: make setupcarto
       run: |
