@@ -66,7 +66,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
    private:
     int starting_scan_number = 0;
-    int picture_print_interval = 1;
+    int picture_print_interval = 100;
     std::string configuration_directory = "../lua_files";
     std::string configuration_mapping_basename = "mapping_new_map.lua";
     std::string configuration_localization_basename = "locating_in_map.lua";
