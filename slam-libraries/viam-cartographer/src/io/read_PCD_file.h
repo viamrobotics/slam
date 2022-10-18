@@ -25,7 +25,7 @@ class ReadFile {
     int removeFile(std::string);
 
     // Converts UTC time string to a double value.
-    double ReadFile::ReadTimeFromFilename(std::string filename);
+    double ReadTimeFromFilename(std::string filename);
 };
 
 }  // namespace io
