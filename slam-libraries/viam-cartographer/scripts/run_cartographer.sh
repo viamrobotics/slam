@@ -35,7 +35,7 @@ mkdir ${OUTPUT_DIRECTORY}
 ../build/main  \
     -data_dir=${DATA_DIR}  \
     -config_param="{mode=2D,}"  \
-    -port=8080  \
+    -port=localhost:8083  \
     -sensors=[]  \
     -data_rate_ms=200 \
     -map_rate_sec=60 
