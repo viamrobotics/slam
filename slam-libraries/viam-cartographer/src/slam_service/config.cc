@@ -27,7 +27,7 @@ DEFINE_string(aix_auto_update, "", "Automatically updates the app image");
 // an exception if the arguments are malformed.
 int ParseAndValidateConfigParams(int argc, char** argv) {
     // glog only supports logging to files and stderr, not stdout.
-    FLAGS_alsologtostderr= 1;
+    FLAGS_alsologtostderr = 1;
     google::InitGoogleLogging(argv[0]);
     google::ParseCommandLineFlags(&argc, &argv, true);
 
