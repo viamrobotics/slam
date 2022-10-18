@@ -885,8 +885,8 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
                   std::gmtime(&t));
     // Save the current atlas map in *.osa style
     cout << time_format << endl;
-    auto find_underscores = time_format.find("_")
-    if (find_underscores != string::npos) {
+    auto find_underscores =
+        time_format.find("_") if (find_underscores != string::npos) {
         cout << "yo" << endl;
         return path_to_dir + "/" + camera_name + "_data_" + timestamp +
                ".0000.osa";
