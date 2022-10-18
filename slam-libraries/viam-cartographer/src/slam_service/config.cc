@@ -21,7 +21,7 @@ DEFINE_int64(
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
-DEFINE_string(aix_auto_update, "", "Automatically updates the app image");
+DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 // Parses and validates the command line arguments. Sets the log level. Throws
 // an exception if the arguments are malformed.
