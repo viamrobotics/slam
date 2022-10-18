@@ -92,7 +92,7 @@ configure_file(
 
 message("PROJECT_SOURCE_DIR and PROJECT_BINARY_DIR: ${PROJECT_SOURCE_DIR}, ${PROJECT_BINARY_DIR}")
 
-google_binary(main
+google_binary(carto_grpc_server
   SRCS
     src/main.cc
 )
@@ -114,8 +114,8 @@ google_binary(main_old
 # This task is postponed until I start working on these two tickets (the last two tickets to be tackled):
 # https://viam.atlassian.net/browse/DATA-123
 # https://viam.atlassian.net/browse/DATA-124
-target_link_libraries(main PUBLIC "/usr/local/lib/libcartographer.a")
-target_include_directories(main SYSTEM PUBLIC "/usr/local/include/cartographer")
+target_link_libraries(carto_grpc_server PUBLIC "/usr/local/lib/libcartographer.a")
+target_include_directories(carto_grpc_server SYSTEM PUBLIC "/usr/local/include/cartographer")
 
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   "${CERES_INCLUDE_DIRS}")
