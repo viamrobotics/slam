@@ -41,7 +41,7 @@ int ParseAndValidateConfigParams(int argc, char** argv,
         return EXIT_FAILURE;
     } else if (FLAGS_sensors.empty()) {
         LOG(ERROR) << "-sensors is missing.\n";
-        // return EXIT_FAILURE;
+        return EXIT_FAILURE;
     }
     LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
     LOG(INFO) << "config_param: " << FLAGS_config_param << "\n";
