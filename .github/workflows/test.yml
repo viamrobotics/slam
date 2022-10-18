@@ -86,7 +86,6 @@ jobs:
   build_and_test_orb:
     name: Build and Test Orbslam
     needs: check_modified_files
-    if: needs.check_modified_files.outputs.run_orb == 'true'
     strategy:
       matrix:
         include:
@@ -104,35 +103,42 @@ jobs:
 
     steps:
     - name: Check out code in slam directory
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       uses: actions/checkout@v3
       with:
         submodules: recursive
         path: slam
 
     - name: make buf
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       timeout-minutes: 5
       run: |
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
 
     - name: make setuporb
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
 
     - name: make buildorb
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildorb'
 
     - name: make testorb
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make testorb'
 
     - name: Copy orb_grpc_server binary
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo cp slam/slam-libraries/viam-orb-slam3/bin/orb_grpc_server /usr/local/bin/orb_grpc_server
 
     - name: Check out code in rdk directory
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       if: matrix.platform == 'linux/amd64'
       uses: actions/checkout@v3
       with:
@@ -140,6 +146,7 @@ jobs:
         path: rdk
 
     - name: Create GCP Credential File from secret
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       if: matrix.platform == 'linux/amd64'
       run: |
         GOOGLE_APPLICATION_CREDENTIALS=`pwd`/${GOOGLE_APPLICATION_CREDENTIALS_FILENAME}
@@ -147,6 +154,7 @@ jobs:
         echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> $GITHUB_ENV
 
     - name: Run rdk slam integration tests
+      if: needs.check_modified_files.outputs.run_orb == 'true'
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestOrbslamIntegration'
@@ -154,7 +162,6 @@ jobs:
   build_and_test_cartographer:
     name: Build and Test Cartographer
     needs: check_modified_files
-    if: needs.check_modified_files.outputs.run_carto == 'true'
     strategy:
       matrix:
         include:
@@ -172,16 +179,19 @@ jobs:
 
     steps:
     - name: Check out code in slam directory
+      if: needs.check_modified_files.outputs.run_carto == 'true'
       uses: actions/checkout@v3
       with:
         submodules: recursive
         path: slam
 
     - name: make setupcarto
+      if: needs.check_modified_files.outputs.run_carto == 'true'
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make setupcarto'
 
     - name: make buildcarto
+      if: needs.check_modified_files.outputs.run_carto == 'true'
       run: |
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'

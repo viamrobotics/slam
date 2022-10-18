@@ -16,6 +16,6 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/slam/.github/workflows/test.yml@main
+    uses: viamrobotics/slam/.github/workflows/test.yml@fix_required_status_checks
     secrets:
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
