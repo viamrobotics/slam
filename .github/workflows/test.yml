@@ -189,5 +189,4 @@ jobs:
 
     - name: make buildcarto
       run: |
-        chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'
