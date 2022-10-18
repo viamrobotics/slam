@@ -18,8 +18,6 @@ void exit_loop_handler(int s) {
 }
 
 int main(int argc, char** argv) {
-    google::InitGoogleLogging("viam-cartographer");
-    google::SetCommandLineOption("GLOG_minloglevel", "2");
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;
