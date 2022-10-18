@@ -889,7 +889,7 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
                ".0000.osa";
     }
     return path_to_dir + "/" + camera_name + "_data_" + timestamp +
-           ".0000Z.osa";
+           "Z.osa";
 }
 
 }  // namespace utils
