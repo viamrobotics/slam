@@ -884,7 +884,9 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
     // Save the current atlas map in *.osa style
+    cout << time_format << endl;
     if (time_format.c_str() == "%Y-%m-%dT%H_%M_%SZ") {
+        cout << "yo" << endl;
         return path_to_dir + "/" + camera_name + "_data_" + timestamp +
                ".0000.osa";
     }
