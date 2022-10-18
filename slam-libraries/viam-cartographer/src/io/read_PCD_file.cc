@@ -41,8 +41,8 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
 
     // LEAVING COMMENTED UNTIL READY TO TEST
     // double time_delta = ReadTimeFromFilename(
-    //     myYAML.substr(initial_filename.find("_data_") + viam::filenamePrefixLength, 
-    //     initial_filename.find(".pcd")));
+    //     myYAML.substr(initial_filename.find("_data_") +
+    //     viam::filenamePrefixLength, initial_filename.find(".pcd")));
 
     int start_pos = initial_filename.find("T") + 1;
     int len_pos =
