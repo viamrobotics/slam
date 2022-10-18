@@ -18,14 +18,14 @@ namespace io {
 
 class ReadFile {
    public:
-    string time_format = "%Y-%m-%dT%H:%M:%SZ";
+    std::string time_format = "%Y-%m-%dT%H:%M:%SZ";
     std::vector<std::string> listFilesInDirectory(std::string data_directory);
     cartographer::sensor::TimedPointCloudData timedPointCloudDataFromPCDBuilder(
         std::string file_path, std::string initial_filename);
     int removeFile(std::string);
 
     // Converts UTC time string to a double value.
-    double ReadFile::ReadTimeFromFilename(string filename);
+    double ReadFile::ReadTimeFromFilename(std::string filename);
 };
 
 }  // namespace io

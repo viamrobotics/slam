@@ -112,7 +112,7 @@ int ReadFile::removeFile(std::string file_path) {
 }
 
 // Converts UTC time string to a double value.
-double ReadFile::ReadTimeFromFilename(string filename) {
+double ReadFile::ReadTimeFromFilename(std::string filename) {
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
@@ -125,7 +125,7 @@ double ReadFile::ReadTimeFromFilename(string filename) {
     ss >> std::get_time(&dt, time_format.c_str());
     time_t thisTime = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
-    if ((sub_sec_index != string::npos)) {
+    if ((sub_sec_index != std::string::npos)) {
         double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
         double myTime = (double)thisTime + sub_sec;
         return myTime;
