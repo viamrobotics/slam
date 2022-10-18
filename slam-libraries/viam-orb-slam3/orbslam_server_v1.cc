@@ -884,10 +884,12 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
     // Save the current atlas map in *.osa style
-    if(time_format == "%Y-%m-%dT%H_%M_%SZ"){
-        return path_to_dir + "/" + camera_name + "_data_" + timestamp + ".0000.osa";
-    }        
-    return path_to_dir + "/" + camera_name + "_data_" + timestamp + ".0000Z.osa";
+    if (time_format == "%Y-%m-%dT%H_%M_%SZ") {
+        return path_to_dir + "/" + camera_name + "_data_" + timestamp +
+               ".0000.osa";
+    }
+    return path_to_dir + "/" + camera_name + "_data_" + timestamp +
+           ".0000Z.osa";
 }
 
 }  // namespace utils
