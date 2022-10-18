@@ -16,14 +16,14 @@ std::atomic<bool> b_continue_session{true};
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
     LOG(ERROR) << "GetPosition is not yet implemented.\n";
-    return grpc::Status::OK;
+    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED, "GetPosition is not yet implemented.");
 }
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
     LOG(ERROR) << "GetMap is not yet implemented.\n";
-    return grpc::Status::OK;
+    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED, "GetMap is not yet implemented.");
 }
 
 void SLAMServiceImpl::CreateMap() {
