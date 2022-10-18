@@ -69,7 +69,6 @@ if(EXISTS ${SRCDIR})
 
   pkg_check_modules(GRPC REQUIRED grpc)
   pkg_check_modules(GRPCPP REQUIRED grpc++)
-  # pkg_check_modules(PROTOBUF REQUIRED protobuf)
 
   set(SOURCES ${SRCDIR}/service/slam/v1/slam.grpc.pb.cc
               ${SRCDIR}/service/slam/v1/slam.pb.cc)

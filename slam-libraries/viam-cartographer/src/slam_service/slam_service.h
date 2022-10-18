@@ -27,7 +27,7 @@ using viam::service::slam::v1::SLAMService;
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
-static std::atomic<bool> b_continue_session{true};
+extern std::atomic<bool> b_continue_session;
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
@@ -47,14 +47,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
+    // Placeholder function with full "offline mode" functionality that will
+    // be picked apart with future tickets into separate functions (GetMap,
+    // GetPosition, ProcessDataOnline, ProcessDataOffline). Gives an overview
+    // over how mapping + png map image creation + pbstream map saving is
+    // started & executed.
     void CreateMap();
-
-    // TODO
-    // void ProcessDataOnline(ORB_SLAM3::System *SLAM);
-    // void ProcessDataOffline(ORB_SLAM3::System *SLAM);
-    // Creates a simple map containing a 2x4x8 rectangular prism with the robot
-    // in the center, for testing GetMap and GetPosition.
-    // void ProcessDataForTesting(ORB_SLAM3::System *SLAM);
 
     std::string data_dir;
     std::string config_params;
@@ -66,13 +64,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
    private:
     int starting_scan_number = 0;
-    int picture_print_interval = 100;
+    int picture_print_interval = 50;
     std::string configuration_directory = "../lua_files";
     std::string configuration_mapping_basename = "mapping_new_map.lua";
     std::string configuration_localization_basename = "locating_in_map.lua";
     std::string configuration_update_basename = "updating_a_map.lua";
-
-    std::mutex slam_mutex;
 };
 
 }  // namespace viam

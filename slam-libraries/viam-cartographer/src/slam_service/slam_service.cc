@@ -9,22 +9,20 @@
 #include "server_functions.h"
 
 namespace viam {
-// GetPosition returns the relative position of the robot w.r.t the "origin" of
-// the map, which is the starting point from where the map was initially
-// created.
+
+std::atomic<bool> b_continue_session{true};
+
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-    std::cout << "GetPosition" << std::endl;
+    LOG(ERROR) << "GetPosition is not yet implemented.\n";
     return grpc::Status::OK;
 }
 
-// GetMap returns either an image or a pointcloud, depending on the MIME type
-// requested
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
-    std::cout << "GetMap" << std::endl;
+    LOG(ERROR) << "GetMap is not yet implemented.\n";
     return grpc::Status::OK;
 }
 
@@ -68,6 +66,8 @@ void SLAMServiceImpl::CreateMap() {
 
     int end_scan_number = int(file_list.size());
     for (int i = this->starting_scan_number; i < end_scan_number; i++) {
+        if (!b_continue_session) return;
+
         auto measurement = mapBuilder.GetDataFromFile(this->data_dir + "/data",
                                                       initial_file, i);
         if (measurement.ranges.size() > 0) {

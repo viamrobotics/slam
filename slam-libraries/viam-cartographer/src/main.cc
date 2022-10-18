@@ -1,5 +1,7 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server_builder.h>
 #include <signal.h>
 
 #include <iostream>
@@ -16,6 +18,8 @@ void exit_loop_handler(int s) {
 }
 
 int main(int argc, char** argv) {
+    google::InitGoogleLogging("viam-cartographer");
+    google::SetCommandLineOption("GLOG_minloglevel", "2");
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;
@@ -31,6 +35,22 @@ int main(int argc, char** argv) {
         return err;
     }
 
+    // Setup the SLAM gRPC server
+    grpc::ServerBuilder builder;
+
+    std::unique_ptr<int> selected_port = std::make_unique<int>(0);
+    builder.AddListeningPort(slamService.port,
+                             grpc::InsecureServerCredentials(),
+                             selected_port.get());
+    builder.RegisterService(&slamService);
+
+    // Start the SLAM gRPC server
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    LOG(INFO) << "Server listening on " << *selected_port << "\n";
+
+    // Start SLAM: Placeholder function with full "offline mode" functionality
+    // that will be picked apart with future tickets into separate functions
+    // (GetMap, GetPosition, ProcessDataOnline, ProcessDataOffline).
     LOG(INFO) << "Start mapping: offline mode\n";
     slamService.CreateMap();
     LOG(INFO) << "Done mapping: offline mode\n";
