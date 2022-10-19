@@ -1,13 +1,15 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
+
 #include "config.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <iostream>
+#include <string>
 
 #include "glog/logging.h"
 
 namespace viam {
-namespace slam_service {
 namespace config {
 
 DEFINE_string(data_dir, "",
@@ -25,7 +27,8 @@ DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 // Parses and validates the command line arguments. Sets the log level. Throws
 // an exception if the arguments are malformed.
-int ParseAndValidateConfigParams(int argc, char** argv) {
+int ParseAndValidateConfigParams(int argc, char** argv,
+                                 SLAMServiceImpl& slamService) {
     google::ParseCommandLineFlags(&argc, &argv, true);
 
     if (FLAGS_data_dir.empty()) {
@@ -44,6 +47,26 @@ int ParseAndValidateConfigParams(int argc, char** argv) {
     LOG(INFO) << "sensors: " << FLAGS_sensors << "\n";
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms << "\n";
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec << "\n";
+
+    slamService.data_dir = FLAGS_data_dir;
+    slamService.config_params = FLAGS_config_param;
+    slamService.port = FLAGS_port;
+    slamService.sensors = FLAGS_sensors;
+    slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
+    slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
+
+    slamService.slam_mode =
+        ConfigParamParser(slamService.config_params, "mode=");
+    if (slamService.slam_mode.empty()) {
+        LOG(ERROR) << "slam mode is missing\n";
+        return EXIT_FAILURE;
+    }
+
+    boost::algorithm::to_lower(slamService.slam_mode);
+    if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
+        LOG(ERROR) << "Invalid mode: " << slamService.slam_mode << "\n";
+        return EXIT_FAILURE;
+    }
 
     return 0;
 }
@@ -69,5 +92,4 @@ std::string ConfigParamParser(std::string map, std::string varName) {
 }
 
 }  // namespace config
-}  // namespace slam_service
 }  // namespace viam
