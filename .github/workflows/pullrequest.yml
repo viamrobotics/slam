@@ -16,6 +16,6 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/slam/.github/workflows/test.yml@kk/DATA-120-add-grpc-server-backbone
+    uses: viamrobotics/slam/.github/workflows/test.yml@main
     secrets:
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
