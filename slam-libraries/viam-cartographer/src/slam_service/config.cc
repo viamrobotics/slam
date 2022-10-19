@@ -20,7 +20,8 @@ DEFINE_string(data_dir, "",
 DEFINE_string(config_param, "", "Config parameters for cartographer.");
 DEFINE_string(port, "", "GRPC port");
 DEFINE_string(sensors, "", "Array of sensors.");
-DEFINE_int64(data_rate_ms, defaultDataRateMS, "Frequency at which we grab/save data.");
+DEFINE_int64(data_rate_ms, defaultDataRateMS,
+             "Frequency at which we grab/save data.");
 DEFINE_int64(
     map_rate_sec, defaultMapRateSec,
     "Frequency at which we want to print map pictures while cartographer "
@@ -35,7 +36,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (FLAGS_config_param.empty()) {
         throw std::runtime_error("-config_param is missing");
     }
-    const auto minloglevel = ConfigParamParser(FLAGS_config_param, "minloglevel=");
+    const auto minloglevel =
+        ConfigParamParser(FLAGS_config_param, "minloglevel=");
     if (!minloglevel.empty()) {
         FLAGS_minloglevel = std::stoi(minloglevel);
     }

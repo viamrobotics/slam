@@ -70,8 +70,8 @@ void SLAMServiceImpl::CreateMap() {
     for (int i = this->starting_scan_number; i < end_scan_number; i++) {
         if (!b_continue_session) return;
 
-        auto measurement = mapBuilder.GetDataFromFile(this->path_to_data,
-                                                      initial_file, i);
+        auto measurement =
+            mapBuilder.GetDataFromFile(this->path_to_data, initial_file, i);
         if (measurement.ranges.size() > 0) {
             trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
             int num_nodes = mapBuilder.map_builder_->pose_graph()
@@ -90,8 +90,7 @@ void SLAMServiceImpl::CreateMap() {
             if ((num_nodes >= this->starting_scan_number &&
                  num_nodes < this->starting_scan_number + 3) ||
                 num_nodes % this->picture_print_interval == 0) {
-                PaintMap(mapBuilder.map_builder_,
-                         this->path_to_map + "/images",
+                PaintMap(mapBuilder.map_builder_, this->path_to_map + "/images",
                          std::to_string(num_nodes));
             }
         }
