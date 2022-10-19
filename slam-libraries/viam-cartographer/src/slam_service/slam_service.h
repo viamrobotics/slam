@@ -54,13 +54,15 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // started & executed.
     void CreateMap();
 
-    std::string data_dir;
+    std::string path_to_data;
+    std::string path_to_map;
     std::string config_params;
     std::string port;
-    std::string sensors;
+    std::string camera_name;
     std::chrono::milliseconds data_rate_ms;
     std::chrono::seconds map_rate_sec;
     std::string slam_mode;
+    std::atomic<bool> offlineFlag{false};
 
    private:
     int starting_scan_number = 0;

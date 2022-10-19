@@ -12,35 +12,49 @@
 namespace viam {
 namespace config {
 
+int defaultDataRateMS = 200;
+int defaultMapRateSec = 60;
+
 DEFINE_string(data_dir, "",
               "Directory in which sensor data and maps are expected.");
 DEFINE_string(config_param, "", "Config parameters for cartographer.");
 DEFINE_string(port, "", "GRPC port");
 DEFINE_string(sensors, "", "Array of sensors.");
-DEFINE_int64(data_rate_ms, 200, "Frequency at which we grab/save data.");
+DEFINE_int64(data_rate_ms, defaultDataRateMS, "Frequency at which we grab/save data.");
 DEFINE_int64(
-    map_rate_sec, 60,
+    map_rate_sec, defaultMapRateSec,
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
-// Parses and validates the command line arguments. Sets the log level. Throws
-// an exception if the arguments are malformed.
-int ParseAndValidateConfigParams(int argc, char** argv,
-                                 SLAMServiceImpl& slamService) {
+void ParseAndValidateConfigParams(int argc, char** argv,
+                                  SLAMServiceImpl& slamService) {
     google::ParseCommandLineFlags(&argc, &argv, true);
 
-    if (FLAGS_data_dir.empty()) {
-        LOG(ERROR) << "-data_dir is missing.\n";
-        return EXIT_FAILURE;
-    } else if (FLAGS_config_param.empty()) {
-        LOG(ERROR) << "-config_param is missing.\n";
-        return EXIT_FAILURE;
-    } else if (FLAGS_port.empty()) {
-        LOG(ERROR) << "-port is missing.\n";
-        return EXIT_FAILURE;
+    if (FLAGS_config_param.empty()) {
+        throw std::runtime_error("-config_param is missing");
     }
+    const auto minloglevel = ConfigParamParser(FLAGS_config_param, "minloglevel=");
+    if (!minloglevel.empty()) {
+        FLAGS_minloglevel = std::stoi(minloglevel);
+    }
+    const auto v = ConfigParamParser(FLAGS_config_param, "v=");
+    if (!v.empty()) {
+        FLAGS_v = std::stoi(v);
+    }
+
+    if (FLAGS_data_dir.empty()) {
+        throw std::runtime_error("-data_dir is missing");
+    }
+    if (FLAGS_port.empty()) {
+        throw std::runtime_error("-port is missing");
+    }
+    if (FLAGS_sensors.empty()) {
+        LOG(INFO) << "No camera given -> running in offline mode";
+        slamService.offlineFlag = true;
+    }
+
     LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
     LOG(INFO) << "config_param: " << FLAGS_config_param << "\n";
     LOG(INFO) << "port: " << FLAGS_port << "\n";
@@ -48,27 +62,24 @@ int ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms << "\n";
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec << "\n";
 
-    slamService.data_dir = FLAGS_data_dir;
+    slamService.path_to_data = FLAGS_data_dir + "/data";
+    slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
-    slamService.sensors = FLAGS_sensors;
+    slamService.camera_name = FLAGS_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");
     if (slamService.slam_mode.empty()) {
-        LOG(ERROR) << "slam mode is missing\n";
-        return EXIT_FAILURE;
+        throw std::runtime_error("slam mode is missing");
     }
 
     boost::algorithm::to_lower(slamService.slam_mode);
     if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
-        LOG(ERROR) << "Invalid mode: " << slamService.slam_mode << "\n";
-        return EXIT_FAILURE;
+        throw std::runtime_error("Invalid slam_mode=" + slamService.slam_mode);
     }
-
-    return 0;
 }
 
 // Parse a config parameter map for a specific variable name and return the
@@ -89,6 +100,15 @@ std::string ConfigParamParser(std::string map, std::string varName) {
     }
 
     return strVal;
+}
+
+void ResetFlagsForTesting() {
+    FLAGS_config_param = "";
+    FLAGS_data_dir = "";
+    FLAGS_port = "";
+    FLAGS_sensors = "";
+    FLAGS_data_rate_ms = defaultDataRateMS;
+    FLAGS_map_rate_sec = defaultMapRateSec;
 }
 
 }  // namespace config

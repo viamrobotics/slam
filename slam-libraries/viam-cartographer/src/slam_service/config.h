@@ -14,12 +14,14 @@ namespace config {
 
 // Parses and validates the command line arguments. Sets the log level. Throws
 // an exception if the arguments are malformed.
-int ParseAndValidateConfigParams(int argc, char** argv,
-                                 SLAMServiceImpl& slamService);
+void ParseAndValidateConfigParams(int argc, char** argv, SLAMServiceImpl& slamService);
 
 // Parse a config parameter map for a specific variable name and return the
 // value as a string. Returns empty if the variable is not found within the map.
 std::string ConfigParamParser(std::string map, std::string varName);
+
+// Resets command line flags to their default values.
+void ResetFlagsForTesting();
 
 }  // namespace config
 }  // namespace viam

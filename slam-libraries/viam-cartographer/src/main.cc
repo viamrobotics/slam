@@ -30,11 +30,7 @@ int main(int argc, char** argv) {
     sigaction(SIGINT, &sigIntHandler, NULL);
 
     viam::SLAMServiceImpl slamService;
-    int err =
-        viam::config::ParseAndValidateConfigParams(argc, argv, slamService);
-    if (err != 0) {
-        return err;
-    }
+    viam::config::ParseAndValidateConfigParams(argc, argv, slamService);
 
     // Setup the SLAM gRPC server
     grpc::ServerBuilder builder;

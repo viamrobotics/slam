@@ -51,7 +51,7 @@ void SLAMServiceImpl::CreateMap() {
 
     viam::io::ReadFile read_file;
     std::vector<std::string> file_list =
-        read_file.listFilesInDirectory(this->data_dir + "/data");
+        read_file.listFilesInDirectory(this->path_to_data);
     std::string initial_file = file_list[0];
 
     if (this->starting_scan_number < 0 ||
@@ -70,7 +70,7 @@ void SLAMServiceImpl::CreateMap() {
     for (int i = this->starting_scan_number; i < end_scan_number; i++) {
         if (!b_continue_session) return;
 
-        auto measurement = mapBuilder.GetDataFromFile(this->data_dir + "/data",
+        auto measurement = mapBuilder.GetDataFromFile(this->path_to_data,
                                                       initial_file, i);
         if (measurement.ranges.size() > 0) {
             trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
@@ -91,7 +91,7 @@ void SLAMServiceImpl::CreateMap() {
                  num_nodes < this->starting_scan_number + 3) ||
                 num_nodes % this->picture_print_interval == 0) {
                 PaintMap(mapBuilder.map_builder_,
-                         this->data_dir + "/map/images",
+                         this->path_to_map + "/images",
                          std::to_string(num_nodes));
             }
         }
@@ -100,13 +100,13 @@ void SLAMServiceImpl::CreateMap() {
     myfile.close();
 
     // Save the map in a pbstream file
-    const std::string map_file = this->data_dir + "/map/" + "test_rdk.pbstream";
+    const std::string map_file = this->path_to_map + "/test_rdk.pbstream";
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
     mapBuilder.map_builder_->SerializeStateToFile(true, map_file);
 
     mapBuilder.map_builder_->FinishTrajectory(trajectory_id);
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
-    PaintMap(mapBuilder.map_builder_, this->data_dir + "/map/images", "0");
+    PaintMap(mapBuilder.map_builder_, this->path_to_map + "/images", "0");
 
     return;
 }
