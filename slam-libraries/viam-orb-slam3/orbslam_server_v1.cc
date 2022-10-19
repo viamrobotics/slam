@@ -795,7 +795,7 @@ double ReadTimeFromFilename(string filename) {
 void FindTimeFormat(string filename) {
     // Check if we are using the old time format
     auto find_underscores = filename.find("_");
-    if (find_underscores != string::npos) time_format = "%Y-%m-%dT%H_%M_%SZ";
+    if (find_underscores != string::npos) time_format = "%Y-%m-%dT%H_%M_%S";
     return;
 }
 
