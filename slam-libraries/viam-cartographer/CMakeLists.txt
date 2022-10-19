@@ -98,7 +98,7 @@ if(EXISTS ${SRCDIR})
 
   message("PROJECT_SOURCE_DIR and PROJECT_BINARY_DIR: ${PROJECT_SOURCE_DIR}, ${PROJECT_BINARY_DIR}")
 
-  google_binary(main
+  google_binary(carto_grpc_server
     SRCS
       src/main.cc
   )
@@ -120,18 +120,18 @@ if(EXISTS ${SRCDIR})
   # This task is postponed until I start working on these two tickets (the last two tickets to be tackled):
   # https://viam.atlassian.net/browse/DATA-123
   # https://viam.atlassian.net/browse/DATA-124
-  target_link_libraries(main PUBLIC
+  target_link_libraries(carto_grpc_server PUBLIC
     "/usr/local/lib/libcartographer.a" 
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
-  target_include_directories(main SYSTEM PUBLIC
+  target_include_directories(carto_grpc_server SYSTEM PUBLIC
     "/usr/local/include/cartographer"
     ${SRCDIR}
     ${GRPC_INCLUDE_DIRS}
     ${GRPCPP_INCLUDE_DIRS}
     ${PROTOBUF_INCLUDE_DIRS})
-  target_compile_options(main PUBLIC
+  target_compile_options(carto_grpc_server PUBLIC
     ${GRPC_CFLAGS_OTHER}
     ${GRPCPP_CFLAGS_OTHER}
     ${PROTOBUF_CFLAGS_OTHER})
