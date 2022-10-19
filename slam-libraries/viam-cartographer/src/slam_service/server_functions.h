@@ -11,7 +11,6 @@
 #include "cartographer/mapping/map_builder.h"
 
 namespace viam {
-namespace slam_service {
 
 std::vector<cartographer::transform::Rigid3d> GetLocalPoses(
     viam::mapping::MapBuilder& mapBuilder);
@@ -23,7 +22,7 @@ cartographer::transform::Rigid3d GetGlobalPose(
 void PaintMap(
     std::unique_ptr<cartographer::mapping::MapBuilderInterface>& map_builder_,
     std::string output_directory, std::string appendix);
-}  // namespace slam_service
+
 }  // namespace viam
 
 #endif  // SERVER_FUNCTIONS_H_

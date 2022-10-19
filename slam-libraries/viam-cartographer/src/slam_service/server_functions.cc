@@ -9,23 +9,7 @@
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 
-// Functions that need to be implemented:
-// GetPosition(Pose)
-// GetMap (either image or pointcloud, depending on MIME type) --> create two
-// functions, and have if/else in the actual server function?
-
-// GetPosition(Pose)
-/*
-GetPosition (Pose)
-    Purpose: This would return the relative position of the robot with respect
-to the "origin" of the map, which is the starting point from where the map was
-initially created (at least in the case of cartographer) Variables: name = name
-of service Return: Pose of the robot from reference frame of map Note: the
-latency of getPose should be no greater than n (probably 30ms)
-*/
-
 namespace viam {
-namespace slam_service {
 
 std::vector<cartographer::transform::Rigid3d> GetLocalPoses(
     viam::mapping::MapBuilder& mapBuilder) {
@@ -109,25 +93,4 @@ void PaintMap(
     }
 }
 
-// GetMap
-// -- GetImage
-// -- GetPointcloud
-
-/*
-GetMap
-    Purpose: Allow user to get the custom visualization of the current map
-produced by the SLAM library Parameters: Name = name of service mime_type =
-requested MIME type of response image/jpeg image/pcd (optional) camera_position
-= common.v1.pose (optional) include_robot_marker = include robot position on map
-    Optional parameter, defaults to false
-    Return:
-    map = image or point cloud of specified map (based on mime type)
-    Note: use pcd data type in common.proto
-    Mime_type = actual mime_type of response
-
-
-Marker: Red dot overlaid on map
-*/
-
-}  // namespace slam_service
 }  // namespace viam

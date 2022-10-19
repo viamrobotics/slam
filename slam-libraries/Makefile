@@ -59,6 +59,6 @@ setupcarto:
 buildcarto:
 	cd viam-cartographer/scripts && ./build_cartographer.sh && ./build_viam_cartographer.sh
 
-carto-all: setupcarto buildcarto
+carto-all: buf setupcarto buildcarto
 
 include *.make
