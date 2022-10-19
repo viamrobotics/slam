@@ -23,6 +23,7 @@ DEFINE_int64(
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
+DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 // Parses and validates the command line arguments. Sets the log level. Throws
 // an exception if the arguments are malformed.
@@ -38,9 +39,6 @@ int ParseAndValidateConfigParams(int argc, char** argv,
         return EXIT_FAILURE;
     } else if (FLAGS_port.empty()) {
         LOG(ERROR) << "-port is missing.\n";
-        return EXIT_FAILURE;
-    } else if (FLAGS_sensors.empty()) {
-        LOG(ERROR) << "-sensors is missing.\n";
         return EXIT_FAILURE;
     }
     LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";

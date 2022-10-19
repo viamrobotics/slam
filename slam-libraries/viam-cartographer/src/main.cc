@@ -18,6 +18,9 @@ void exit_loop_handler(int s) {
 }
 
 int main(int argc, char** argv) {
+    // glog only supports logging to files and stderr, not stdout.
+    FLAGS_alsologtostderr = 1;
+    google::InitGoogleLogging(argv[0]);
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;
