@@ -32,7 +32,7 @@ cd output
 rm -rf ${OUTPUT_DIRECTORY}
 mkdir ${OUTPUT_DIRECTORY}
 
-../build/main  \
+../build/carto_grpc_server  \
     -data_dir=${DATA_DIR}  \
     -config_param="{mode=2D,}"  \
     -port=8080  \
