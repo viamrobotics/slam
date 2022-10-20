@@ -142,3 +142,7 @@ jobs:
     - name: make buildcarto
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'
+
+    - name: make testcarto
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make testcarto'
