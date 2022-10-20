@@ -99,7 +99,7 @@ void SLAMServiceImpl::CreateMap() {
     myfile.close();
 
     // Save the map in a pbstream file
-    const std::string map_file = this->path_to_map + "/test_rdk.pbstream";
+    const std::string map_file = this->path_to_map + "/map.pbstream";
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
     mapBuilder.map_builder_->SerializeStateToFile(true, map_file);
 
