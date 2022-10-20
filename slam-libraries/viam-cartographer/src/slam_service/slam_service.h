@@ -26,7 +26,7 @@ using viam::service::slam::v1::SLAMService;
 
 namespace viam {
 
-enum class SLAMServiceActionMode {MAPPING, LOCALIZING, UPDATING}
+enum class SLAMServiceActionMode {MAPPING, LOCALIZING, UPDATING};
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 extern std::atomic<bool> b_continue_session;
@@ -75,14 +75,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::atomic<bool> offlineFlag{false};
     mapping::MapBuilder mapBuilder;
 
-   private:
-    int starting_scan_number = 0;
-    int picture_print_interval = 50;
-    std::string configuration_directory = "../lua_files";
-    std::string configuration_mapping_basename = "mapping_new_map.lua";
-    std::string configuration_localization_basename = "locating_in_map.lua";
-    std::string configuration_update_basename = "updating_a_map.lua";
-
     // -- Cartographer specific config params:
     // MAP_BUILDER.pose_graph
     int optimize_every_n_nodes = 3;
@@ -102,6 +94,15 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double occupied_space_weight = 20.0;
     double translation_weight = 10.0;
     double rotation_weight = 1.0;
+
+   private:
+    int starting_scan_number = 0;
+    int picture_print_interval = 50;
+    std::string configuration_directory = "../lua_files";
+    std::string configuration_mapping_basename = "mapping_new_map.lua";
+    std::string configuration_localization_basename = "locating_in_map.lua";
+    std::string configuration_update_basename = "updating_a_map.lua";
+
 };
 
 }  // namespace viam

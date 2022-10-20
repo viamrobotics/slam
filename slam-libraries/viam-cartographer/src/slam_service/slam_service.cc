@@ -29,17 +29,16 @@ std::atomic<bool> b_continue_session{true};
 }
 
 
-void SLAMServiceImpl::DetermineActionMode() {
+SLAMServiceActionMode SLAMServiceImpl::ActionMode() {
     // TODO: Add a case for updating. Requires that an apriori
     // map is detected and loaded. Will be implemented in this ticket:
     // https://viam.atlassian.net/browse/DATA-114
-    if (map_rate_sec == -1) {
+    if (map_rate_sec.count() == -1) {
         LOG(INFO) << "Running in localization only mode";
-        action_mode = SLAMServiceActionMode::LOCALIZING;
-    } else {
-        LOG(INFO) << "Running in mapping mode";
-        action_mode = SLAMServiceActionMode::MAPPING;
+        return SLAMServiceActionMode::LOCALIZING;
     }
+    LOG(INFO) << "Running in mapping mode";
+    return SLAMServiceActionMode::MAPPING;
 }
 
 // TODO[kat]: Write tests for this
@@ -59,18 +58,24 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
     std::cout << "translation_weight: " << mapBuilder.map_builder_options_.pose_graph_options().constraint_builder_options().ceres_scan_matcher_options().translation_weight() << std::endl;
     std::cout << "rotation_weight: " << mapBuilder.map_builder_options_.pose_graph_options().constraint_builder_options().ceres_scan_matcher_options().rotation_weight() << std::endl;
     
+    SLAMServiceActionMode slam_action_mode = ActionMode();
+
     mapBuilder.map_builder_options_.mutable_pose_graph_options()->set_optimize_every_n_nodes(optimize_every_n_nodes);
-    mapBuilder.trajectory_builder_options_.trajectory_builder_2d_options().mutable_submaps_options()->set_num_range_data(num_range_data);
+    mapBuilder.trajectory_builder_options_.mutable_trajectory_builder_2d_options()->mutable_submaps_options()->set_num_range_data(num_range_data);
     mapBuilder.trajectory_builder_options_.mutable_trajectory_builder_2d_options()->set_missing_data_ray_length(missing_data_ray_length);
     mapBuilder.trajectory_builder_options_.mutable_trajectory_builder_2d_options()->set_max_range(max_range);
     mapBuilder.trajectory_builder_options_.mutable_trajectory_builder_2d_options()->set_min_range(min_range);
-    mapBuilder.trajectory_builder_options_.mutable_pure_localization_trimmer()->set_max_submaps_to_keep(max_submaps_to_keep);
-    mapBuilder.map_builder_options_.pose_graph_options().mutable_overlapping_submaps_trimmer_2d()->set_fresh_submaps_count(fresh_submaps_count);
-    mapBuilder.map_builder_options_.pose_graph_options().mutable_overlapping_submaps_trimmer_2d()->set_min_covered_area(min_covered_area);
-    mapBuilder.map_builder_options_.pose_graph_options().mutable_overlapping_submaps_trimmer_2d()->set_min_added_submaps_count(min_added_submaps_count);
-    mapBuilder.map_builder_options_.pose_graph_options().constraint_builder_options().mutable_ceres_scan_matcher_options()->set_occupied_space_weight(occupied_space_weight);
-    mapBuilder.map_builder_options_.pose_graph_options().constraint_builder_options().mutable_ceres_scan_matcher_options()->set_translation_weight(translation_weight);
-    mapBuilder.map_builder_options_.pose_graph_options().constraint_builder_options().mutable_ceres_scan_matcher_options()->set_rotation_weight(rotation_weight);
+    if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
+        mapBuilder.trajectory_builder_options_.mutable_pure_localization_trimmer()->set_max_submaps_to_keep(max_submaps_to_keep);
+    }
+    if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+    mapBuilder.map_builder_options_.mutable_pose_graph_options()->mutable_overlapping_submaps_trimmer_2d()->set_fresh_submaps_count(fresh_submaps_count);
+    mapBuilder.map_builder_options_.mutable_pose_graph_options()->mutable_overlapping_submaps_trimmer_2d()->set_min_covered_area(min_covered_area);
+    mapBuilder.map_builder_options_.mutable_pose_graph_options()->mutable_overlapping_submaps_trimmer_2d()->set_min_added_submaps_count(min_added_submaps_count);
+    }
+    mapBuilder.map_builder_options_.mutable_pose_graph_options()->mutable_constraint_builder_options()->mutable_ceres_scan_matcher_options()->set_occupied_space_weight(occupied_space_weight);
+    mapBuilder.map_builder_options_.mutable_pose_graph_options()->mutable_constraint_builder_options()->mutable_ceres_scan_matcher_options()->set_translation_weight(translation_weight);
+    mapBuilder.map_builder_options_.mutable_pose_graph_options()->mutable_constraint_builder_options()->mutable_ceres_scan_matcher_options()->set_rotation_weight(rotation_weight);
 
     std::cout << "--- New values --- " << std::endl;
     std::cout << "optimize_every_n_nodes: "
