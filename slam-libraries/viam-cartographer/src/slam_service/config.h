@@ -21,6 +21,10 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 // value as a string. Returns empty if the variable is not found within the map.
 std::string ConfigParamParser(std::string map, std::string varName);
 
+// Overwrites cartographer specific config parameters
+void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
+                               std::string parameter);
+
 // Resets command line flags to their default values.
 void ResetFlagsForTesting();
 

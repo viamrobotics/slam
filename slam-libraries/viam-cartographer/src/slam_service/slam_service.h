@@ -63,6 +63,22 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::chrono::seconds map_rate_sec;
     std::string slam_mode;
     std::atomic<bool> offlineFlag{false};
+    // Cartographer specific config params:
+    // TODO[kat]: Potentially change the default parameters to what we already
+    // have in cartographer
+    // TODO: Check in proto if int or float (or other)
+    int optimize_every_n_nodes = 2;
+    int num_range_data = 200;
+    int missing_data_ray_length = 25;
+    int max_range = 25;
+    float min_range = 0.2;
+    int max_submaps_to_keep = 3;      // LOCALIZATION only
+    int fresh_submaps_count = 3;      // UPDATING only
+    float min_covered_area = 2.0;     // UPDATING only
+    int min_added_submaps_count = 1;  // UPDATING only
+    float occupied_space_weight = 20.0;
+    float translation_weight = 10.0;
+    float rotation_weight = 1.0;
 
    private:
     int starting_scan_number = 0;

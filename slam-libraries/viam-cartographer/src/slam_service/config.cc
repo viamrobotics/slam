@@ -82,6 +82,83 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
         throw std::runtime_error("Invalid slam_mode=" + slamService.slam_mode);
     }
+
+    std::vector<std::string> carto_params = {"optimize_every_n_nodes",
+                                             "num_range_data",
+                                             "missing_data_ray_length",
+                                             "max_range",
+                                             "min_range",
+                                             "max_submaps_to_keep",
+                                             "fresh_submaps_count",
+                                             "min_covered_area",
+                                             "min_added_submaps_count",
+                                             "occupied_space_weight",
+                                             "translation_weight",
+                                             "rotation_weight"};
+    for (std::string carto_param : carto_params)
+        OverwriteCartoConfigParam(slamService, carto_param);
+}
+
+void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
+                               std::string parameter) {
+    // TODO[kat]: Make sure I overwrite localization only and updating only
+    // parameters only when the respective mode is activated
+    // TODO: Check if int or float; change stoi respectively
+    // TODO: Validate that the provided values are numbers (ints/floats)
+    std::string new_parameter =
+        ConfigParamParser(slamService.config_params, parameter + "=");
+    LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
+    if (!new_parameter.empty()) {
+        switch (parameter) {
+            case "optimize_every_n_nodes":
+                slamService.optimize_every_n_nodes = std::stoi(new_parameter);
+                break;
+            case "num_range_data":
+                slamService.num_range_data = std::stoi(new_parameter);
+                break;
+            case "missing_data_ray_length":
+                slamService.missing_data_ray_length = std::stoi(new_parameter);
+                break;
+            case "max_range":
+                slamService.max_range = std::stoi(new_parameter);
+                break;
+            case "min_range":
+                slamService.min_range = std::stoi(new_parameter);
+                break;
+            case "max_submaps_to_keep":
+                // Only update when in LOCALIZATION mode
+                // TODO
+                slamService.max_submaps_to_keep = std::stoi(new_parameter);
+                break;
+            case "fresh_submaps_count":
+                // Only update when in UPDATING mode
+                // TODO
+                slamService.fresh_submaps_count = std::stoi(new_parameter);
+                break;
+            case "min_covered_area":
+                // Only update when in UPDATING mode
+                // TODO
+                slamService.min_covered_area = std::stoi(new_parameter);
+                break;
+            case "min_added_submaps_count":
+                // Only update when in UPDATING mode
+                // TODO
+                slamService.min_added_submaps_count = std::stoi(new_parameter);
+                break;
+            case "occupied_space_weight":
+                slamService.occupied_space_weight = std::stoi(new_parameter);
+                break;
+            case "translation_weight":
+                slamService.translation_weight = std::stoi(new_parameter);
+                break;
+            case "rotation_weight":
+                slamService.rotation_weight = std::stoi(new_parameter);
+                break;
+            default:
+                // TODO[kat]: Throw error that the parameter is not
+                // defined/known
+        }
+    }
 }
 
 // Parse a config parameter map for a specific variable name and return the
