@@ -100,6 +100,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         OverwriteCartoConfigParam(slamService, carto_param);
 }
 
+// TODO: Write tests for this function
 void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                                const std::string& parameter) {
     std::string new_parameter =
