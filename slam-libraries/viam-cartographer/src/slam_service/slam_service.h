@@ -11,7 +11,7 @@
 #include "../io/draw_trajectories.h"
 #include "../io/read_PCD_file.h"
 #include "../io/submap_painter.h"
-#include "cartographer/mapping/map_builder.h"
+#include "../mapping/map_builder.h"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -60,6 +60,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters.
     SLAMServiceActionMode ActionMode();
 
+    // OverwriteMapBuilderParameters overwrites cartographer specific
+    // MapBuilder parameters.
+    void OverwriteMapBuilderParameters();
+
     std::string path_to_data;
     std::string path_to_map;
     std::string config_params;
@@ -69,6 +73,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::chrono::seconds map_rate_sec;
     std::string slam_mode;
     std::atomic<bool> offlineFlag{false};
+    mapping::MapBuilder mapBuilder;
 
    private:
     int starting_scan_number = 0;

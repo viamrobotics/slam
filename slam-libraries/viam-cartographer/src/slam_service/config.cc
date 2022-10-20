@@ -102,7 +102,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 // TODO: Write tests for this function
 void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                                std::string parameter) {
-    // TODO: Validate that the provided values are numbers (ints/floats)
     SLAMServiceActionMode slam_action_mode = slamService.ActionMode();
     std::string new_parameter =
         ConfigParamParser(slamService.config_params, parameter + "=");
@@ -154,8 +153,7 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                 slamService.rotation_weight = std::stod(new_parameter);
                 break;
             default:
-                // TODO[kat]: Throw error that the parameter is not
-                // defined/known
+                throw std::runtime_error("unknown cartographer config parameter: " + parameter);
         }
     }
 }
