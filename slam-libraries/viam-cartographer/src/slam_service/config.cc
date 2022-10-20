@@ -99,9 +99,9 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         OverwriteCartoConfigParam(slamService, carto_param);
 }
 
+// TODO: Write tests for this function
 void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                                std::string parameter) {
-    // TODO: Check if int or float; change stoi respectively
     // TODO: Validate that the provided values are numbers (ints/floats)
     SLAMServiceActionMode slam_action_mode = slamService.ActionMode();
     std::string new_parameter =
@@ -116,13 +116,13 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                 slamService.num_range_data = std::stoi(new_parameter);
                 break;
             case "missing_data_ray_length":
-                slamService.missing_data_ray_length = std::stoi(new_parameter);
+                slamService.missing_data_ray_length = std::stof(new_parameter);
                 break;
             case "max_range":
-                slamService.max_range = std::stoi(new_parameter);
+                slamService.max_range = std::stof(new_parameter);
                 break;
             case "min_range":
-                slamService.min_range = std::stoi(new_parameter);
+                slamService.min_range = std::stof(new_parameter);
                 break;
             case "max_submaps_to_keep":
                 if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
@@ -136,7 +136,7 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                 break;
             case "min_covered_area":
                 if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                    slamService.min_covered_area = std::stoi(new_parameter);
+                    slamService.min_covered_area = std::stod(new_parameter);
                 }
                 break;
             case "min_added_submaps_count":
@@ -145,13 +145,13 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                 }
                 break;
             case "occupied_space_weight":
-                slamService.occupied_space_weight = std::stoi(new_parameter);
+                slamService.occupied_space_weight = std::stod(new_parameter);
                 break;
             case "translation_weight":
-                slamService.translation_weight = std::stoi(new_parameter);
+                slamService.translation_weight = std::stod(new_parameter);
                 break;
             case "rotation_weight":
-                slamService.rotation_weight = std::stoi(new_parameter);
+                slamService.rotation_weight = std::stod(new_parameter);
                 break;
             default:
                 // TODO[kat]: Throw error that the parameter is not
