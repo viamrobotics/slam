@@ -107,7 +107,8 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
 
     SLAMServiceActionMode slam_action_mode = slamService.ActionMode();
     if (!new_parameter.empty()) {
-        LOG(INFO) << parameter << "is overwritten to: " << new_parameter << "\n";
+        LOG(INFO) << parameter << "is overwritten to: " << new_parameter
+                  << "\n";
 
         if (parameter == "optimize_every_n_nodes") {
             slamService.optimize_every_n_nodes = std::stoi(new_parameter);
@@ -142,7 +143,8 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "rotation_weight") {
             slamService.rotation_weight = std::stod(new_parameter);
         } else {
-            throw std::runtime_error("unknown cartographer config parameter: " + parameter);
+            throw std::runtime_error("unknown cartographer config parameter: " +
+                                     parameter);
         }
     }
 }

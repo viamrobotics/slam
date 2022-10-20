@@ -26,7 +26,7 @@ using viam::service::slam::v1::SLAMService;
 
 namespace viam {
 
-enum class SLAMServiceActionMode {MAPPING, LOCALIZING, UPDATING};
+enum class SLAMServiceActionMode { MAPPING, LOCALIZING, UPDATING };
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 extern std::atomic<bool> b_continue_session;
@@ -85,11 +85,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     float max_range = 25.0;
     float min_range = 0.2;
     // TRAJECTORY_BUILDER.pure_localization_trimmer
-    int max_submaps_to_keep = 3;        // LOCALIZATION only
+    int max_submaps_to_keep = 3;  // LOCALIZATION only
     // MAP_BUILDER.pose_graph.overlapping_submaps_trimmer_2d
-    int fresh_submaps_count = 3;        // UPDATING only
-    double min_covered_area = 1.0;      // UPDATING only
-    int min_added_submaps_count = 1;    // UPDATING only
+    int fresh_submaps_count = 3;      // UPDATING only
+    double min_covered_area = 1.0;    // UPDATING only
+    int min_added_submaps_count = 1;  // UPDATING only
     // MAP_BUILDER.pose_graph.constraint_builder.ceres_scan_matcher
     double occupied_space_weight = 20.0;
     double translation_weight = 10.0;
@@ -102,7 +102,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string configuration_mapping_basename = "mapping_new_map.lua";
     std::string configuration_localization_basename = "locating_in_map.lua";
     std::string configuration_update_basename = "updating_a_map.lua";
-
 };
 
 }  // namespace viam
