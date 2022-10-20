@@ -101,14 +101,13 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
 void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                                std::string parameter) {
-    // TODO[kat]: Make sure I overwrite localization only and updating only
-    // parameters only when the respective mode is activated
     // TODO: Check if int or float; change stoi respectively
     // TODO: Validate that the provided values are numbers (ints/floats)
+    SLAMServiceActionMode slam_action_mode = slamService.ActionMode();
     std::string new_parameter =
         ConfigParamParser(slamService.config_params, parameter + "=");
-    LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
     if (!new_parameter.empty()) {
+        LOG(INFO) << parameter << "is overwritten to: " << new_parameter << "\n";
         switch (parameter) {
             case "optimize_every_n_nodes":
                 slamService.optimize_every_n_nodes = std::stoi(new_parameter);
@@ -126,24 +125,24 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
                 slamService.min_range = std::stoi(new_parameter);
                 break;
             case "max_submaps_to_keep":
-                // Only update when in LOCALIZATION mode
-                // TODO
-                slamService.max_submaps_to_keep = std::stoi(new_parameter);
+                if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
+                    slamService.max_submaps_to_keep = std::stoi(new_parameter);
+                }
                 break;
             case "fresh_submaps_count":
-                // Only update when in UPDATING mode
-                // TODO
-                slamService.fresh_submaps_count = std::stoi(new_parameter);
+                if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+                    slamService.fresh_submaps_count = std::stoi(new_parameter);
+                }
                 break;
             case "min_covered_area":
-                // Only update when in UPDATING mode
-                // TODO
-                slamService.min_covered_area = std::stoi(new_parameter);
+                if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+                    slamService.min_covered_area = std::stoi(new_parameter);
+                }
                 break;
             case "min_added_submaps_count":
-                // Only update when in UPDATING mode
-                // TODO
-                slamService.min_added_submaps_count = std::stoi(new_parameter);
+                if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+                    slamService.min_added_submaps_count = std::stoi(new_parameter);
+                }
                 break;
             case "occupied_space_weight":
                 slamService.occupied_space_weight = std::stoi(new_parameter);

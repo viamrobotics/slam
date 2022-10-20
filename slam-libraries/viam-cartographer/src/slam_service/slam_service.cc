@@ -28,6 +28,20 @@ std::atomic<bool> b_continue_session{true};
                         "GetMap is not yet implemented.");
 }
 
+
+void SLAMServiceImpl::DetermineActionMode() {
+    // TODO: Add a case for updating. Requires that an apriori
+    // map is detected and loaded. Will be implemented in this ticket:
+    // https://viam.atlassian.net/browse/DATA-114
+    if (map_rate_sec == -1) {
+        LOG(INFO) << "Running in localization only mode";
+        action_mode = SLAMServiceActionMode::LOCALIZING;
+    } else {
+        LOG(INFO) << "Running in mapping mode";
+        action_mode = SLAMServiceActionMode::MAPPING;
+    }
+}
+
 void SLAMServiceImpl::CreateMap() {
     mapping::MapBuilder mapBuilder;
 
