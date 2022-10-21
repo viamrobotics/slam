@@ -55,6 +55,7 @@ message(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(Boost REQUIRED COMPONENTS serialization filesystem log)
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${ORBSLAM_SOURCE_DIR}
@@ -62,7 +63,8 @@ include_directories(
   ${ORBSLAM_SOURCE_DIR}/include/CameraModels
   ${ORBSLAM_SOURCE_DIR}/Thirdparty/Sophus
   ${EIGEN3_INCLUDE_DIR}
-  ${Pangolin_INCLUDE_DIRS})
+  ${Pangolin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
@@ -87,12 +89,10 @@ if(EXISTS ${SRCDIR})
     ${OpenCV_LIBS}
     ${EIGEN3_LIBS}
     ${Pangolin_LIBRARIES}
-    ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-    ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-    ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3.so
-    -lboost_serialization
-    -lboost_filesystem
-    -lboost_log
+    ${Boost_LIBRARIES}
+    ${ORBSLAM_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2${CMAKE_SHARED_LIBRARY_SUFFIX}
+    ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o${CMAKE_SHARED_LIBRARY_SUFFIX}
+    ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3${CMAKE_SHARED_LIBRARY_SUFFIX}
     -ldl
     -lcrypto
     ${GRPC_LIBRARIES}

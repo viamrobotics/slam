@@ -2,8 +2,10 @@
 #include "orbslam_server_v1.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/test/included/unit_test.hpp>
 #include <exception>
+#include <iostream>
 namespace fs = boost::filesystem;
 
 namespace viam {

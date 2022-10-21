@@ -38,7 +38,11 @@ buildorb:
 	cd viam-orb-slam3 && ./build_orbslam.sh
 
 setuporb: 
+ifeq ("Darwin", "$(shell uname -s)")
+	cd viam-orb-slam3 && ./setup_orbslam_macos.sh
+else
 	cd viam-orb-slam3 && ./setup_orbslam.sh
+endif
 
 testorb:
 	cd viam-orb-slam3 && ./test_orbslam.sh
