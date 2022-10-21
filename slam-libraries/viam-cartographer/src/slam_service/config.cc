@@ -97,7 +97,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
                                              "rotation_weight"};
     for (std::string carto_param : carto_params)
         OverwriteCartoConfigParam(slamService, carto_param);
-    slamService.OverwriteMapBuilderParameters();
 }
 
 // TODO: Write tests for this function

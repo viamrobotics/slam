@@ -109,49 +109,32 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
 
     SLAMServiceActionMode slam_action_mode = GetActionMode();
 
-    mapBuilder.map_builder_options_.mutable_pose_graph_options()
-        ->set_optimize_every_n_nodes(optimize_every_n_nodes);
-    mapBuilder.trajectory_builder_options_
-        .mutable_trajectory_builder_2d_options()
-        ->mutable_submaps_options()
-        ->set_num_range_data(num_range_data);
-    mapBuilder.trajectory_builder_options_
-        .mutable_trajectory_builder_2d_options()
-        ->set_missing_data_ray_length(missing_data_ray_length);
-    mapBuilder.trajectory_builder_options_
-        .mutable_trajectory_builder_2d_options()
-        ->set_max_range(max_range);
-    mapBuilder.trajectory_builder_options_
-        .mutable_trajectory_builder_2d_options()
-        ->set_min_range(min_range);
+    auto mutable_pose_graph_options = mapBuilder.map_builder_options_.mutable_pose_graph_options();
+    mutable_pose_graph_options->set_optimize_every_n_nodes(optimize_every_n_nodes);
+    
+    auto mutable_trajectory_builder_2d_options = mapBuilder.trajectory_builder_options_.mutable_trajectory_builder_2d_options();
+    mutable_trajectory_builder_2d_options->mutable_submaps_options()->set_num_range_data(num_range_data);
+    mutable_trajectory_builder_2d_options->set_missing_data_ray_length(missing_data_ray_length);
+    mutable_trajectory_builder_2d_options->set_max_range(max_range);
+    mutable_trajectory_builder_2d_options->set_min_range(min_range);
     if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
         mapBuilder.trajectory_builder_options_
             .mutable_pure_localization_trimmer()
             ->set_max_submaps_to_keep(max_submaps_to_keep);
     }
+
+    auto mutable_overlapping_submaps_trimmer_2d = mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
     if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-        mapBuilder.map_builder_options_.mutable_pose_graph_options()
-            ->mutable_overlapping_submaps_trimmer_2d()
-            ->set_fresh_submaps_count(fresh_submaps_count);
-        mapBuilder.map_builder_options_.mutable_pose_graph_options()
-            ->mutable_overlapping_submaps_trimmer_2d()
-            ->set_min_covered_area(min_covered_area);
-        mapBuilder.map_builder_options_.mutable_pose_graph_options()
-            ->mutable_overlapping_submaps_trimmer_2d()
-            ->set_min_added_submaps_count(min_added_submaps_count);
+        mutable_overlapping_submaps_trimmer_2d->set_fresh_submaps_count(fresh_submaps_count);
+        mutable_overlapping_submaps_trimmer_2d->set_min_covered_area(min_covered_area);
+        mutable_overlapping_submaps_trimmer_2d->set_min_added_submaps_count(min_added_submaps_count);
     }
-    mapBuilder.map_builder_options_.mutable_pose_graph_options()
-        ->mutable_constraint_builder_options()
-        ->mutable_ceres_scan_matcher_options()
-        ->set_occupied_space_weight(occupied_space_weight);
-    mapBuilder.map_builder_options_.mutable_pose_graph_options()
-        ->mutable_constraint_builder_options()
-        ->mutable_ceres_scan_matcher_options()
-        ->set_translation_weight(translation_weight);
-    mapBuilder.map_builder_options_.mutable_pose_graph_options()
-        ->mutable_constraint_builder_options()
-        ->mutable_ceres_scan_matcher_options()
-        ->set_rotation_weight(rotation_weight);
+
+    auto mutable_ceres_scan_matcher_options = mutable_pose_graph_options->mutable_constraint_builder_options()
+        ->mutable_ceres_scan_matcher_options();
+    mutable_ceres_scan_matcher_options->set_occupied_space_weight(occupied_space_weight);
+    mutable_ceres_scan_matcher_options->set_translation_weight(translation_weight);
+    mutable_ceres_scan_matcher_options->set_rotation_weight(rotation_weight);
 
     std::cout << "--- New values --- " << std::endl;
     std::cout << "optimize_every_n_nodes: "
