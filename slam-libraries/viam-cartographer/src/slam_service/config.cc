@@ -97,6 +97,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
                                              "rotation_weight"};
     for (std::string carto_param : carto_params)
         OverwriteCartoConfigParam(slamService, carto_param);
+    slamService.OverwriteMapBuilderParameters();
 }
 
 // TODO: Write tests for this function
@@ -107,7 +108,7 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
 
     SLAMServiceActionMode slam_action_mode = slamService.GetActionMode();
     if (!new_parameter.empty()) {
-        LOG(INFO) << parameter << "is overwritten to: " << new_parameter
+        LOG(INFO) << parameter << " is overwritten to: " << new_parameter
                   << "\n";
 
         if (parameter == "optimize_every_n_nodes") {
