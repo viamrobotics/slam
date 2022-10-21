@@ -1,7 +1,14 @@
 BUILD_CHANNEL?=local
 
 bufsetup:
-	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
+ifeq ("Darwin", "$(shell uname -s)")
+	sudo rm /usr/local/bin/go
+	sudo rm /usr/local/bin/gofmt
+	brew install go || brew upgrade go
+	brew install grpc openssl --quiet
+else
+	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev
+endif
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 	pkg-config openssl || export PKG_CONFIG_PATH=$$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`

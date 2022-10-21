@@ -64,7 +64,7 @@ jobs:
         path: slam
 
     - name: make buf
-      timeout-minutes: 5
+      timeout-minutes: 10
       run: |
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
@@ -105,6 +105,35 @@ jobs:
       run: |
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestOrbslamIntegration'
 
+  build_and_test_orb_macos:
+    name: Build and Test Orbslam (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 180
+
+    steps:
+    - name: Check out code in slam directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        path: slam
+
+    - name: make buf
+      timeout-minutes: 10
+      run: |
+        cd slam/slam-libraries && make buf
+
+    - name: make setuporb
+      run: |
+        cd slam/slam-libraries && make setuporb
+
+    - name: make buildorb
+      run: |
+        cd slam/slam-libraries && make buildorb
+
+    - name: make testorb
+      run: |
+        cd slam/slam-libraries && make testorb
+
   build_and_test_cartographer:
     name: Build and Test Cartographer
     strategy:
@@ -130,7 +159,7 @@ jobs:
         path: slam
 
     - name: make buf
-      timeout-minutes: 5
+      timeout-minutes: 10
       run: |
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
