@@ -60,6 +60,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters.
     SLAMServiceActionMode GetActionMode();
 
+    // SetUpMapBuilder loads the lua file with default cartographer config parameters
+    // depending on the action mode.
+    void SetUpMapBuilder();
+
     // OverwriteMapBuilderParameters overwrites cartographer specific
     // MapBuilder parameters.
     void OverwriteMapBuilderParameters();
@@ -98,10 +102,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
    private:
     int starting_scan_number = 0;
     int picture_print_interval = 50;
-    std::string configuration_directory = "../lua_files";
-    std::string configuration_mapping_basename = "mapping_new_map.lua";
-    std::string configuration_localization_basename = "locating_in_map.lua";
-    std::string configuration_update_basename = "updating_a_map.lua";
+    const std::string configuration_directory = "../lua_files";
+    const std::string configuration_mapping_basename = "mapping_new_map.lua";
+    const std::string configuration_localization_basename = "locating_in_map.lua";
+    const std::string configuration_update_basename = "updating_a_map.lua";
 };
 
 }  // namespace viam

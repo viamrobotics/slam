@@ -40,73 +40,7 @@ SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
     return SLAMServiceActionMode::MAPPING;
 }
 
-// TODO[kat]: Write tests for this
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
-    std::cout << "--- Previous values --- " << std::endl;
-    std::cout << "optimize_every_n_nodes: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .optimize_every_n_nodes()
-              << std::endl;
-    std::cout << "num_range_data: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .submaps_options()
-                     .num_range_data()
-              << std::endl;
-    std::cout << "missing_data_ray_length: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .missing_data_ray_length()
-              << std::endl;
-    std::cout << "max_range: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .max_range()
-              << std::endl;
-    std::cout << "min_range: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .min_range()
-              << std::endl;
-    std::cout << "max_submaps_to_keep: "
-              << mapBuilder.trajectory_builder_options_
-                     .pure_localization_trimmer()
-                     .max_submaps_to_keep()
-              << std::endl;
-    std::cout << "fresh_submaps_count: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .overlapping_submaps_trimmer_2d()
-                     .fresh_submaps_count()
-              << std::endl;
-    std::cout << "min_covered_area: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .overlapping_submaps_trimmer_2d()
-                     .min_covered_area()
-              << std::endl;
-    std::cout << "min_added_submaps_count: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .overlapping_submaps_trimmer_2d()
-                     .min_added_submaps_count()
-              << std::endl;
-    std::cout << "occupied_space_weight: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .constraint_builder_options()
-                     .ceres_scan_matcher_options()
-                     .occupied_space_weight()
-              << std::endl;
-    std::cout << "translation_weight: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .constraint_builder_options()
-                     .ceres_scan_matcher_options()
-                     .translation_weight()
-              << std::endl;
-    std::cout << "rotation_weight: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .constraint_builder_options()
-                     .ceres_scan_matcher_options()
-                     .rotation_weight()
-              << std::endl;
-
     SLAMServiceActionMode slam_action_mode = GetActionMode();
 
     auto mutable_pose_graph_options = mapBuilder.map_builder_options_.mutable_pose_graph_options();
@@ -135,83 +69,30 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
     mutable_ceres_scan_matcher_options->set_occupied_space_weight(occupied_space_weight);
     mutable_ceres_scan_matcher_options->set_translation_weight(translation_weight);
     mutable_ceres_scan_matcher_options->set_rotation_weight(rotation_weight);
+}
 
-    std::cout << "--- New values --- " << std::endl;
-    std::cout << "optimize_every_n_nodes: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .optimize_every_n_nodes()
-              << std::endl;
-    std::cout << "num_range_data: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .submaps_options()
-                     .num_range_data()
-              << std::endl;
-    std::cout << "missing_data_ray_length: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .missing_data_ray_length()
-              << std::endl;
-    std::cout << "max_range: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .max_range()
-              << std::endl;
-    std::cout << "min_range: "
-              << mapBuilder.trajectory_builder_options_
-                     .trajectory_builder_2d_options()
-                     .min_range()
-              << std::endl;
-    std::cout << "max_submaps_to_keep: "
-              << mapBuilder.trajectory_builder_options_
-                     .pure_localization_trimmer()
-                     .max_submaps_to_keep()
-              << std::endl;
-    std::cout << "fresh_submaps_count: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .overlapping_submaps_trimmer_2d()
-                     .fresh_submaps_count()
-              << std::endl;
-    std::cout << "min_covered_area: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .overlapping_submaps_trimmer_2d()
-                     .min_covered_area()
-              << std::endl;
-    std::cout << "min_added_submaps_count: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .overlapping_submaps_trimmer_2d()
-                     .min_added_submaps_count()
-              << std::endl;
-    std::cout << "occupied_space_weight: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .constraint_builder_options()
-                     .ceres_scan_matcher_options()
-                     .occupied_space_weight()
-              << std::endl;
-    std::cout << "translation_weight: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .constraint_builder_options()
-                     .ceres_scan_matcher_options()
-                     .translation_weight()
-              << std::endl;
-    std::cout << "rotation_weight: "
-              << mapBuilder.map_builder_options_.pose_graph_options()
-                     .constraint_builder_options()
-                     .ceres_scan_matcher_options()
-                     .rotation_weight()
-              << std::endl;
+void SLAMServiceImpl::SetUpMapBuilder() {
+    auto action_mode = GetActionMode();
+    if (action_mode == SLAMServiceActionMode::MAPPING) {
+        mapBuilder.SetUp(this->configuration_directory,
+                        this->configuration_mapping_basename);
+    } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+        mapBuilder.SetUp(this->configuration_directory,
+                        this->configuration_localization_basename);
+    } else if (action_mode == SLAMServiceActionMode::UPDATING) {
+        mapBuilder.SetUp(this->configuration_directory,
+                        this->configuration_update_basename);
+    } else {
+        throw std::runtime_error("invalid action mode: " +
+                                    action_mode);
+    }
+    OverwriteMapBuilderParameters();
+    mapBuilder.BuildMapBuilder();
 }
 
 void SLAMServiceImpl::CreateMap() {
-    // Add configs
-    mapBuilder.SetUp(this->configuration_directory,
-                     this->configuration_mapping_basename);
-    // TODO load the respectively relevant lua file depending on action mode here
-
-    OverwriteMapBuilderParameters();
-
-    // Build MapBuilder
-    mapBuilder.BuildMapBuilder();
+    // Set up and build the MapBuilder
+    SetUpMapBuilder();
 
     // Build TrajectoryBuilder
     int trajectory_id = mapBuilder.map_builder_->AddTrajectoryBuilder(
