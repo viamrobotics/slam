@@ -28,7 +28,7 @@ std::atomic<bool> b_continue_session{true};
                         "GetMap is not yet implemented.");
 }
 
-SLAMServiceActionMode SLAMServiceImpl::ActionMode() {
+SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
     // TODO: Add a case for updating. Requires that an apriori
     // map is detected and loaded. Will be implemented in this ticket:
     // https://viam.atlassian.net/browse/DATA-114
@@ -107,7 +107,7 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
                      .rotation_weight()
               << std::endl;
 
-    SLAMServiceActionMode slam_action_mode = ActionMode();
+    SLAMServiceActionMode slam_action_mode = GetActionMode();
 
     mapBuilder.map_builder_options_.mutable_pose_graph_options()
         ->set_optimize_every_n_nodes(optimize_every_n_nodes);
@@ -223,6 +223,7 @@ void SLAMServiceImpl::CreateMap() {
     // Add configs
     mapBuilder.SetUp(this->configuration_directory,
                      this->configuration_mapping_basename);
+    // TODO load the respectively relevant lua file depending on action mode here
 
     OverwriteMapBuilderParameters();
 

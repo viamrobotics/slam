@@ -56,9 +56,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // started & executed.
     void CreateMap();
 
-    // ActionMode returns the slam action mode from the provided
+    // GetActionMode returns the slam action mode from the provided
     // parameters.
-    SLAMServiceActionMode ActionMode();
+    SLAMServiceActionMode GetActionMode();
 
     // OverwriteMapBuilderParameters overwrites cartographer specific
     // MapBuilder parameters.

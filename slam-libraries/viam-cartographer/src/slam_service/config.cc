@@ -105,7 +105,7 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
     std::string new_parameter =
         ConfigParamParser(slamService.config_params, parameter + "=");
 
-    SLAMServiceActionMode slam_action_mode = slamService.ActionMode();
+    SLAMServiceActionMode slam_action_mode = slamService.GetActionMode();
     if (!new_parameter.empty()) {
         LOG(INFO) << parameter << "is overwritten to: " << new_parameter
                   << "\n";
@@ -122,20 +122,24 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
             slamService.min_range = std::stof(new_parameter);
         } else if (parameter == "max_submaps_to_keep") {
             if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
-                slamService.max_submaps_to_keep = std::stoi(new_parameter);
+                LOG(WARNING) << "In localizing action mode: Setting max_submaps_to_keep has no effect\n";
             }
+            slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
             if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                slamService.fresh_submaps_count = std::stoi(new_parameter);
+                LOG(WARNING) << "In updating action mode: Setting fresh_submaps_count has no effect\n";
             }
+            slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
             if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                slamService.min_covered_area = std::stod(new_parameter);
+                LOG(WARNING) << "In updating action mode: Setting min_covered_area has no effect\n";
             }
+            slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
             if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                slamService.min_added_submaps_count = std::stoi(new_parameter);
+                LOG(WARNING) << "In updating action mode: Setting min_added_submaps_count has no effect\n";
             }
+            slamService.min_added_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "occupied_space_weight") {
             slamService.occupied_space_weight = std::stod(new_parameter);
         } else if (parameter == "translation_weight") {
