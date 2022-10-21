@@ -1,12 +1,13 @@
-#define BOOST_TEST_MODULE config tests
 #include "config.h"
 
-#include <boost/test/included/unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 #include <exception>
 
 namespace viam {
 namespace config {
 namespace {
+
+BOOST_AUTO_TEST_SUITE(Config)
 
 void checkParseAndValidateConfigParamsException(int argc, char** argv,
                                                 const std::string& message) {
@@ -318,6 +319,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config_no_camera) {
     delete argv;
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 
 }  // namespace
 }  // namespace config
