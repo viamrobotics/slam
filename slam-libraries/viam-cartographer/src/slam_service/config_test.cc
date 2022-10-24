@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(OverwriteCartoConfigParam_invalid_parameter) {
     slamService.config_params =
         "{mode=2d," + parameter + "=" + std::to_string(parameter_value) + "}";
     const std::string message =
-        "unknown cartographer config parameter: " + parameter;
+        "unsupported cartographer config parameter: " + parameter;
     BOOST_CHECK_EXCEPTION(OverwriteCartoConfigParam(slamService, parameter),
                           std::runtime_error,
                           [&message](const std::runtime_error& ex) {
@@ -226,12 +226,12 @@ BOOST_AUTO_TEST_CASE(
     ResetFlagsForTesting();
     std::string config_param =
         "{mode=2d,"
-        "optimize_every_n_nodes=5,num_range_data=500,"
-        "missing_data_ray_length=50.5,max_range=50.5,"
-        "min_range=0.5,max_submaps_to_keep=5,"
-        "fresh_submaps_count=5,min_covered_area=5.0,"
-        "min_added_submaps_count=5,occupied_space_weight=55.5,"
-        "translation_weight=55.5,rotation_weight=5.5}";
+        "optimize_every_n_nodes=9000,num_range_data=9001,"
+        "missing_data_ray_length=9002.2,max_range=9003.3,"
+        "min_range=9004.4,max_submaps_to_keep=9005,"
+        "fresh_submaps_count=9006,min_covered_area=9007.7,"
+        "min_added_submaps_count=9008,occupied_space_weight=9009.9,"
+        "translation_weight=9010.1,rotation_weight=9011.1}";
     std::vector<std::string> args{
         "carto_grpc_server",  "-config_param=" + config_param,
         "-data_dir=/path/to", "-port=localhost:0",
@@ -247,19 +247,19 @@ BOOST_AUTO_TEST_CASE(
     BOOST_TEST(slamService.path_to_map == "/path/to/map");
     BOOST_TEST(slamService.config_params == config_param);
     BOOST_TEST(slamService.slam_mode == "2d");
-    BOOST_TEST(slamService.optimize_every_n_nodes == 5);
-    BOOST_TEST(slamService.num_range_data == 500);
-    BOOST_TEST(slamService.missing_data_ray_length == 50.5, tolerance);
-    BOOST_TEST(slamService.max_range == 50.5, tolerance);
-    BOOST_TEST(slamService.min_range == 0.5, tolerance);
-    BOOST_TEST(slamService.max_submaps_to_keep == 5);  // LOCALIZATION only
-    BOOST_TEST(slamService.fresh_submaps_count == 5);  // UPDATING only
-    BOOST_TEST(slamService.min_covered_area == 5.0,
-               tolerance);                                 // UPDATING only
-    BOOST_TEST(slamService.min_added_submaps_count == 5);  // UPDATING only
-    BOOST_TEST(slamService.occupied_space_weight == 55.5, tolerance);
-    BOOST_TEST(slamService.translation_weight == 55.5, tolerance);
-    BOOST_TEST(slamService.rotation_weight == 5.5, tolerance);
+    BOOST_TEST(slamService.optimize_every_n_nodes == 9000);
+    BOOST_TEST(slamService.num_range_data == 9001);
+    BOOST_TEST(slamService.missing_data_ray_length == 9002.2, tolerance);
+    BOOST_TEST(slamService.max_range == 9003.3, tolerance);
+    BOOST_TEST(slamService.min_range == 9004.4, tolerance);
+    BOOST_TEST(slamService.max_submaps_to_keep == 9005);  // LOCALIZATION only
+    BOOST_TEST(slamService.fresh_submaps_count == 9006);  // UPDATING only
+    BOOST_TEST(slamService.min_covered_area == 9007.7,
+               tolerance);                                    // UPDATING only
+    BOOST_TEST(slamService.min_added_submaps_count == 9008);  // UPDATING only
+    BOOST_TEST(slamService.occupied_space_weight == 9009.9, tolerance);
+    BOOST_TEST(slamService.translation_weight == 9010.1, tolerance);
+    BOOST_TEST(slamService.rotation_weight == 9011.1, tolerance);
     BOOST_TEST(slamService.port == "localhost:0");
     BOOST_TEST(slamService.data_rate_ms.count() ==
                std::chrono::milliseconds(200).count());

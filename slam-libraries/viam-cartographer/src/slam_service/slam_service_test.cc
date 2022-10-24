@@ -75,17 +75,17 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_mapping) {
     SLAMServiceImpl slamService;
     slamService.map_rate_sec = std::chrono::seconds(60);
     slamService.optimize_every_n_nodes = 9999;
-    slamService.num_range_data = 9999;
-    slamService.missing_data_ray_length = 9999.99;
-    slamService.max_range = 9999.99;
-    slamService.min_range = 9999.99;
-    slamService.max_submaps_to_keep = 9999;
-    slamService.fresh_submaps_count = 9999;
-    slamService.min_covered_area = 9999.99;
-    slamService.min_added_submaps_count = 9999;
-    slamService.occupied_space_weight = 9999.99;
-    slamService.translation_weight = 9999.99;
-    slamService.rotation_weight = 9999.99;
+    slamService.num_range_data = 9998;
+    slamService.missing_data_ray_length = 9997.77;
+    slamService.max_range = 9996.66;
+    slamService.min_range = 9995.55;
+    slamService.max_submaps_to_keep = 9994;
+    slamService.fresh_submaps_count = 9993;
+    slamService.min_covered_area = 9992.22;
+    slamService.min_added_submaps_count = 9991;
+    slamService.occupied_space_weight = 9990.09;
+    slamService.translation_weight = 9989.89;
+    slamService.rotation_weight = 9988.88;
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 }

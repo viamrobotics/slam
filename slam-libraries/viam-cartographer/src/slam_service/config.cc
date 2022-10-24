@@ -96,19 +96,18 @@ void ParseAndValidateConfigParams(int argc, char** argv,
                                              "occupied_space_weight",
                                              "translation_weight",
                                              "rotation_weight"};
-    for (std::string carto_param : carto_params)
+    for (auto&& carto_param : carto_params)
         OverwriteCartoConfigParam(slamService, carto_param);
 }
 
 void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
-                               std::string parameter) {
+                               const std::string& parameter) {
     std::string new_parameter =
         ConfigParamParser(slamService.config_params, parameter + "=");
 
     SLAMServiceActionMode slam_action_mode = slamService.GetActionMode();
     if (!new_parameter.empty()) {
-        LOG(INFO) << parameter << " is overwritten to: " << new_parameter
-                  << "\n";
+        LOG(INFO) << parameter << " is overwritten to: " << new_parameter;
 
         if (parameter == "optimize_every_n_nodes") {
             slamService.optimize_every_n_nodes = std::stoi(new_parameter);
@@ -121,26 +120,26 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "min_range") {
             slamService.min_range = std::stof(new_parameter);
         } else if (parameter == "max_submaps_to_keep") {
-            if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
-                LOG(WARNING) << "In localizing action mode: Setting "
+            if (slam_action_mode != SLAMServiceActionMode::LOCALIZING) {
+                LOG(WARNING) << "Not in localizing action mode: Setting "
                                 "max_submaps_to_keep has no effect\n";
             }
             slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
-            if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                LOG(WARNING) << "In updating action mode: Setting "
+            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+                LOG(WARNING) << "Not in updating action mode: Setting "
                                 "fresh_submaps_count has no effect\n";
             }
             slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
-            if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                LOG(WARNING) << "In updating action mode: Setting "
+            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+                LOG(WARNING) << "Not in updating action mode: Setting "
                                 "min_covered_area has no effect\n";
             }
             slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
-            if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                LOG(WARNING) << "In updating action mode: Setting "
+            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+                LOG(WARNING) << "Not in updating action mode: Setting "
                                 "min_added_submaps_count has no effect\n";
             }
             slamService.min_added_submaps_count = std::stoi(new_parameter);
@@ -151,8 +150,8 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "rotation_weight") {
             slamService.rotation_weight = std::stod(new_parameter);
         } else {
-            throw std::runtime_error("unknown cartographer config parameter: " +
-                                     parameter);
+            throw std::runtime_error(
+                "unsupported cartographer config parameter: " + parameter);
         }
     }
 }
