@@ -51,6 +51,8 @@ endif()
 
 file(GLOB_RECURSE ALL_VIAM_HDRS "src/*.h")
 file(GLOB_RECURSE ALL_VIAM_SRCS "src/*.cc")
+file(GLOB_RECURSE ALL_VIAM_TEST_SRCS "src/*_test.cc")
+list(REMOVE_ITEM ALL_VIAM_SRCS ${ALL_VIAM_TEST_SRCS})
 
 
 if(DEFINED ENV{API_SOURCE_DIR})
@@ -110,7 +112,7 @@ if(EXISTS ${SRCDIR})
 
   google_binary(unit_tests
     SRCS
-      src/config_test.cc
+      ${ALL_VIAM_TEST_SRCS}
   )
 
   # WARNING: PR Review comment:

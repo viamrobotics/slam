@@ -66,6 +66,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
+    slamService.configuration_directory = FLAGS_data_dir + "/config/lua_files";
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
     slamService.camera_name = FLAGS_sensors;
@@ -81,6 +82,77 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     boost::algorithm::to_lower(slamService.slam_mode);
     if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
         throw std::runtime_error("Invalid slam_mode=" + slamService.slam_mode);
+    }
+
+    std::vector<std::string> carto_params = {"optimize_every_n_nodes",
+                                             "num_range_data",
+                                             "missing_data_ray_length",
+                                             "max_range",
+                                             "min_range",
+                                             "max_submaps_to_keep",
+                                             "fresh_submaps_count",
+                                             "min_covered_area",
+                                             "min_added_submaps_count",
+                                             "occupied_space_weight",
+                                             "translation_weight",
+                                             "rotation_weight"};
+    for (auto&& carto_param : carto_params)
+        OverwriteCartoConfigParam(slamService, carto_param);
+}
+
+void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
+                               const std::string& parameter) {
+    std::string new_parameter =
+        ConfigParamParser(slamService.config_params, parameter + "=");
+
+    SLAMServiceActionMode slam_action_mode = slamService.GetActionMode();
+    if (!new_parameter.empty()) {
+        LOG(INFO) << parameter << " is overwritten to: " << new_parameter;
+
+        if (parameter == "optimize_every_n_nodes") {
+            slamService.optimize_every_n_nodes = std::stoi(new_parameter);
+        } else if (parameter == "num_range_data") {
+            slamService.num_range_data = std::stoi(new_parameter);
+        } else if (parameter == "missing_data_ray_length") {
+            slamService.missing_data_ray_length = std::stof(new_parameter);
+        } else if (parameter == "max_range") {
+            slamService.max_range = std::stof(new_parameter);
+        } else if (parameter == "min_range") {
+            slamService.min_range = std::stof(new_parameter);
+        } else if (parameter == "max_submaps_to_keep") {
+            if (slam_action_mode != SLAMServiceActionMode::LOCALIZING) {
+                LOG(WARNING) << "Not in localizing action mode: Setting "
+                                "max_submaps_to_keep has no effect\n";
+            }
+            slamService.max_submaps_to_keep = std::stoi(new_parameter);
+        } else if (parameter == "fresh_submaps_count") {
+            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+                LOG(WARNING) << "Not in updating action mode: Setting "
+                                "fresh_submaps_count has no effect\n";
+            }
+            slamService.fresh_submaps_count = std::stoi(new_parameter);
+        } else if (parameter == "min_covered_area") {
+            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+                LOG(WARNING) << "Not in updating action mode: Setting "
+                                "min_covered_area has no effect\n";
+            }
+            slamService.min_covered_area = std::stod(new_parameter);
+        } else if (parameter == "min_added_submaps_count") {
+            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+                LOG(WARNING) << "Not in updating action mode: Setting "
+                                "min_added_submaps_count has no effect\n";
+            }
+            slamService.min_added_submaps_count = std::stoi(new_parameter);
+        } else if (parameter == "occupied_space_weight") {
+            slamService.occupied_space_weight = std::stod(new_parameter);
+        } else if (parameter == "translation_weight") {
+            slamService.translation_weight = std::stod(new_parameter);
+        } else if (parameter == "rotation_weight") {
+            slamService.rotation_weight = std::stod(new_parameter);
+        } else {
+            throw std::runtime_error(
+                "unsupported cartographer config parameter: " + parameter);
+        }
     }
 }
 

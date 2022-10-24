@@ -32,10 +32,10 @@ cd output
 rm -rf ${OUTPUT_DIRECTORY}
 mkdir ${OUTPUT_DIRECTORY}
 
-../build/carto_grpc_server  \
+/usr/local/bin/carto_grpc_server  \
     -data_dir=${DATA_DIR}  \
     -config_param="{mode=2D,}"  \
     -port=localhost:8083  \
-    -sensors=[]  \
+    -sensors=""  \
     -data_rate_ms=200 \
     -map_rate_sec=60 

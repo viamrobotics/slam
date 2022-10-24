@@ -28,15 +28,87 @@ std::atomic<bool> b_continue_session{true};
                         "GetMap is not yet implemented.");
 }
 
-void SLAMServiceImpl::CreateMap() {
-    mapping::MapBuilder mapBuilder;
+SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
+    // TODO: Add a case for updating. Requires that an apriori
+    // map is detected and loaded. Will be implemented in this ticket:
+    // https://viam.atlassian.net/browse/DATA-114
 
-    // Add configs
-    mapBuilder.SetUp(this->configuration_directory,
-                     this->configuration_mapping_basename);
+    // TODO: Change this depending on the outcome of this scope
+    // doc:
+    // https://docs.google.com/document/d/1RsT-c0QOtkMKa-rwUGY0-emUmKIRSaO3mzT1v6MtFjk/edit#heading=h.tcicyojyqi6c
+    if (map_rate_sec.count() == -1) {
+        LOG(INFO) << "Running in localization only mode";
+        return SLAMServiceActionMode::LOCALIZING;
+    }
+    LOG(INFO) << "Running in mapping mode";
+    return SLAMServiceActionMode::MAPPING;
+}
 
-    // Build MapBuilder
+void SLAMServiceImpl::OverwriteMapBuilderParameters() {
+    SLAMServiceActionMode slam_action_mode = GetActionMode();
+
+    auto mutable_pose_graph_options =
+        mapBuilder.map_builder_options_.mutable_pose_graph_options();
+    mutable_pose_graph_options->set_optimize_every_n_nodes(
+        optimize_every_n_nodes);
+
+    auto mutable_trajectory_builder_2d_options =
+        mapBuilder.trajectory_builder_options_
+            .mutable_trajectory_builder_2d_options();
+    mutable_trajectory_builder_2d_options->mutable_submaps_options()
+        ->set_num_range_data(num_range_data);
+    mutable_trajectory_builder_2d_options->set_missing_data_ray_length(
+        missing_data_ray_length);
+    mutable_trajectory_builder_2d_options->set_max_range(max_range);
+    mutable_trajectory_builder_2d_options->set_min_range(min_range);
+    if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
+        mapBuilder.trajectory_builder_options_
+            .mutable_pure_localization_trimmer()
+            ->set_max_submaps_to_keep(max_submaps_to_keep);
+    }
+
+    auto mutable_overlapping_submaps_trimmer_2d =
+        mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
+    if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+        mutable_overlapping_submaps_trimmer_2d->set_fresh_submaps_count(
+            fresh_submaps_count);
+        mutable_overlapping_submaps_trimmer_2d->set_min_covered_area(
+            min_covered_area);
+        mutable_overlapping_submaps_trimmer_2d->set_min_added_submaps_count(
+            min_added_submaps_count);
+    }
+
+    auto mutable_ceres_scan_matcher_options =
+        mutable_pose_graph_options->mutable_constraint_builder_options()
+            ->mutable_ceres_scan_matcher_options();
+    mutable_ceres_scan_matcher_options->set_occupied_space_weight(
+        occupied_space_weight);
+    mutable_ceres_scan_matcher_options->set_translation_weight(
+        translation_weight);
+    mutable_ceres_scan_matcher_options->set_rotation_weight(rotation_weight);
+}
+
+void SLAMServiceImpl::SetUpMapBuilder() {
+    auto action_mode = GetActionMode();
+    if (action_mode == SLAMServiceActionMode::MAPPING) {
+        mapBuilder.SetUp(this->configuration_directory,
+                         this->configuration_mapping_basename);
+    } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+        mapBuilder.SetUp(this->configuration_directory,
+                         this->configuration_localization_basename);
+    } else if (action_mode == SLAMServiceActionMode::UPDATING) {
+        mapBuilder.SetUp(this->configuration_directory,
+                         this->configuration_update_basename);
+    } else {
+        throw std::runtime_error("invalid action mode");
+    }
+    OverwriteMapBuilderParameters();
     mapBuilder.BuildMapBuilder();
+}
+
+void SLAMServiceImpl::CreateMap() {
+    // Set up and build the MapBuilder
+    SetUpMapBuilder();
 
     // Build TrajectoryBuilder
     int trajectory_id = mapBuilder.map_builder_->AddTrajectoryBuilder(
