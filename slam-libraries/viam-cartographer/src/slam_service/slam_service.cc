@@ -32,6 +32,10 @@ SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
     // TODO: Add a case for updating. Requires that an apriori
     // map is detected and loaded. Will be implemented in this ticket:
     // https://viam.atlassian.net/browse/DATA-114
+
+    // TODO: Change this depending on the outcome of this scope
+    // doc:
+    // https://docs.google.com/document/d/1RsT-c0QOtkMKa-rwUGY0-emUmKIRSaO3mzT1v6MtFjk/edit#heading=h.tcicyojyqi6c
     if (map_rate_sec.count() == -1) {
         LOG(INFO) << "Running in localization only mode";
         return SLAMServiceActionMode::LOCALIZING;
@@ -83,8 +87,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
         mapBuilder.SetUp(this->configuration_directory,
                         this->configuration_update_basename);
     } else {
-        throw std::runtime_error("invalid action mode: " +
-                                    action_mode);
+        throw std::runtime_error("invalid action mode");
     }
     OverwriteMapBuilderParameters();
     mapBuilder.BuildMapBuilder();

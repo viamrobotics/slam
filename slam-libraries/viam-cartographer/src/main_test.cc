@@ -4,7 +4,7 @@
 
 struct GlobalFixture {
   void setup() {
-        google::InitGoogleLogging("config_test");
+        google::InitGoogleLogging("main_test");
   }
 };
 BOOST_TEST_GLOBAL_FIXTURE( GlobalFixture );
