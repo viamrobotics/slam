@@ -145,7 +145,7 @@ void SLAMServiceImpl::CreateMap() {
     if (this->starting_scan_number < 0 ||
         this->starting_scan_number >= int(file_list.size())) {
         throw std::runtime_error("starting_scan_number is out of bounds: " +
-                                    std::to_string(this->starting_scan_number));
+                                 std::to_string(this->starting_scan_number));
     }
 
     std::cout << "Beginning to add data....\n";
