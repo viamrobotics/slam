@@ -70,6 +70,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     std::string path_to_data;
     std::string path_to_map;
+    std::string configuration_directory;
     std::string config_params;
     std::string port;
     std::string camera_name;
@@ -102,7 +103,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
    private:
     int starting_scan_number = 0;
     int picture_print_interval = 50;
-    const std::string configuration_directory = "../lua_files";
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
     const std::string configuration_localization_basename =
         "locating_in_map.lua";

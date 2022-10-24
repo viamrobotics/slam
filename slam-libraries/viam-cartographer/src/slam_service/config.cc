@@ -66,6 +66,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
+    slamService.configuration_directory = FLAGS_data_dir + "/config/lua_files";
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
     slamService.camera_name = FLAGS_sensors;
