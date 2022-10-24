@@ -14,4 +14,5 @@ fi
 # Rebuild viam cartographer.
 pushd build
 ninja
+sudo ninja install
 popd

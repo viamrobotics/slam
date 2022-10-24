@@ -49,6 +49,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
+    // ProcessDataOffline processes all existing data in offline mode until
+    // there is no more data left to go through.
+    void ProcessDataOffline();
+
     // Placeholder function with full "offline mode" functionality that will
     // be picked apart with future tickets into separate functions (GetMap,
     // GetPosition, ProcessDataOnline, ProcessDataOffline). Gives an overview
