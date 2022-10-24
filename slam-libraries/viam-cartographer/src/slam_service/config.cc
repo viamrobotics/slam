@@ -121,22 +121,26 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
             slamService.min_range = std::stof(new_parameter);
         } else if (parameter == "max_submaps_to_keep") {
             if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
-                LOG(WARNING) << "In localizing action mode: Setting max_submaps_to_keep has no effect\n";
+                LOG(WARNING) << "In localizing action mode: Setting "
+                                "max_submaps_to_keep has no effect\n";
             }
             slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
             if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                LOG(WARNING) << "In updating action mode: Setting fresh_submaps_count has no effect\n";
+                LOG(WARNING) << "In updating action mode: Setting "
+                                "fresh_submaps_count has no effect\n";
             }
             slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
             if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                LOG(WARNING) << "In updating action mode: Setting min_covered_area has no effect\n";
+                LOG(WARNING) << "In updating action mode: Setting "
+                                "min_covered_area has no effect\n";
             }
             slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
             if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-                LOG(WARNING) << "In updating action mode: Setting min_added_submaps_count has no effect\n";
+                LOG(WARNING) << "In updating action mode: Setting "
+                                "min_added_submaps_count has no effect\n";
             }
             slamService.min_added_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "occupied_space_weight") {
