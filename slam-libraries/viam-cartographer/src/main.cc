@@ -45,11 +45,8 @@ int main(int argc, char** argv) {
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     LOG(INFO) << "Server listening on " << *selected_port << "\n";
 
-    // Start SLAM: Placeholder function with full "offline mode" functionality
-    // that will be picked apart with future tickets into separate functions
-    // (GetMap, GetPosition, ProcessDataOnline, ProcessDataOffline).
     LOG(INFO) << "Start mapping: offline mode\n";
-    slamService.CreateMap();
+    slamService.ProcessDataOffline();
     LOG(INFO) << "Done mapping: offline mode\n";
 
     while (viam::b_continue_session) {

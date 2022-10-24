@@ -106,10 +106,26 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     mapBuilder.BuildMapBuilder();
 }
 
-void SLAMServiceImpl::CreateMap() {
+void SLAMServiceImpl::ProcessDataOffline() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
 
+    // TODO: Check whether or not we're running localization and/or
+    // updating a map. Create a function to run those modes.
+    // Implemented with these tickets:
+    // https://viam.atlassian.net/browse/DATA-114
+    // https://viam.atlassian.net/browse/DATA-631
+
+    // TODO: Call localization only mode function, if localization only
+    // action mode
+
+    // TODO: Call updating map function, if apriori map was loaded
+
+    // Mapping a new map:
+    CreateMap();
+}
+
+void SLAMServiceImpl::CreateMap() {
     // Build TrajectoryBuilder
     int trajectory_id = mapBuilder.map_builder_->AddTrajectoryBuilder(
         {kRangeSensorId}, mapBuilder.trajectory_builder_options_,
@@ -128,9 +144,8 @@ void SLAMServiceImpl::CreateMap() {
 
     if (this->starting_scan_number < 0 ||
         this->starting_scan_number >= int(file_list.size())) {
-        std::cerr << "starting_scan_number is out of bounds: "
-                  << this->starting_scan_number << std::endl;
-        return;
+        throw std::runtime_error("starting_scan_number is out of bounds: " +
+                                 std::to_string(this->starting_scan_number));
     }
 
     std::cout << "Beginning to add data....\n";
@@ -178,6 +193,8 @@ void SLAMServiceImpl::CreateMap() {
     mapBuilder.map_builder_->FinishTrajectory(trajectory_id);
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
     PaintMap(mapBuilder.map_builder_, this->path_to_map + "/images", "0");
+
+    LOG(INFO) << "Finished processing offline images";
 
     return;
 }
