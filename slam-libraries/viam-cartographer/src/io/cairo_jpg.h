@@ -31,7 +31,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <cairo.h>
+#include "cairo/cairo.h"
 
 #ifdef USE_CAIRO_READ_FUNC_LEN_T
 /*! This is the type for the stream read function. Which must be implemented by
@@ -56,14 +56,5 @@ typedef ssize_t (*cairo_read_func_len_t) (void *closure, unsigned char *data, un
 
 
 cairo_status_t cairo_image_surface_write_to_jpeg_mem(cairo_surface_t *sfc, unsigned char **data, size_t *len, int quality);
-cairo_status_t cairo_image_surface_write_to_jpeg_stream(cairo_surface_t *sfc, cairo_write_func_t write_func, void *closure, int quality);
-cairo_status_t cairo_image_surface_write_to_jpeg(cairo_surface_t *sfc, const char *filename, int quality);
-cairo_surface_t *cairo_image_surface_create_from_jpeg_mem(void *data, size_t len);
-#ifdef USE_CAIRO_READ_FUNC_LEN_T
-cairo_surface_t *cairo_image_surface_create_from_jpeg_stream(cairo_read_func_len_t read_func, void *closure);
-#else
-cairo_surface_t *cairo_image_surface_create_from_jpeg_stream(cairo_read_func_t read_func, void *closure);
-#endif
-cairo_surface_t *cairo_image_surface_create_from_jpeg(const char *filename);
 
 #endif

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../mapping/map_builder.h"
+#include "../io/image.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 #include "cartographer/io/submap_painter.h"
@@ -193,10 +194,11 @@ void SLAMServiceImpl::PaintMap(
 
         cartographer::io::PaintSubmapSlicesResult painted_slices =
             viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-        auto image = cartographer::io::Image(std::move(painted_slices.surface));
+        auto image = viam::io::Image(std::move(painted_slices.surface));
         auto file = cartographer::io::StreamFileWriter(
             output_directory + "/map_" + appendix + ".jpg");
         image.WritePng(&file);
+        image.WriteJpegMem(buffer, 50);
     }
 }
 
