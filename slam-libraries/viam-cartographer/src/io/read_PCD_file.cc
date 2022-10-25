@@ -86,7 +86,9 @@ int ReadFile::removeFile(std::string file_path) {
 
 // Converts UTC time string to a double value.
 double ReadFile::ReadTimeFromFilename(std::string filename) {
-    std::string time_format = "%Y-%m-%dT%H:%M:%SZ";
+    // TODO: change time format "%Y-%m-%dT%H:%M:%SZ"
+    // https://viam.atlassian.net/browse/DATA-638
+    std::string time_format = "%Y-%m-%dT%H_%M_%S";
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);

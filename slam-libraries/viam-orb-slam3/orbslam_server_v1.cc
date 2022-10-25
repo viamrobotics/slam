@@ -792,6 +792,7 @@ double ReadTimeFromFilename(string filename) {
 }
 
 // Checks if using new or old time format
+// TODO: REMOVE AFTER RDK INTEGRATION PASSES
 void FindTimeFormat(string filename) {
     // Check if we are using the old time format
     auto find_underscores = filename.find("_");
