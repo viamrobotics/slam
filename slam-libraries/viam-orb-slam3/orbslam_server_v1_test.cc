@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_time_rgbd) {
     }
 
     // Create the file in the temporary directory
-    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01:00:00.0001.png");
+    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01:00:00.0001Z.png");
     ofs.close();
     BOOST_TEST(utils::FindFrameIndex(files, "rgbd", tmpdir.string(),
                                      utils::FileParserMethod::Recent,
