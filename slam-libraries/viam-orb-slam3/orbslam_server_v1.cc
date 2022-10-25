@@ -782,7 +782,7 @@ double ReadTimeFromFilename(string filename) {
     ss >> std::get_time(&dt, time_format.c_str());
     time_t thisTime = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
-    if ((sub_sec_index != string::npos)) {
+    if (sub_sec_index != string::npos) {
         double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
         double myTime = (double)thisTime + sub_sec;
         return myTime;
