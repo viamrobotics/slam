@@ -2,8 +2,8 @@ BUILD_CHANNEL?=local
 
 bufsetup:
 ifeq ("Darwin", "$(shell uname -s)")
-	sudo rm /usr/local/bin/go
-	sudo rm /usr/local/bin/gofmt
+	sudo rm /usr/local/bin/go || true
+	sudo rm /usr/local/bin/gofmt || true
 	brew install go || brew upgrade go
 	brew install grpc openssl --quiet
 else
