@@ -114,7 +114,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         "locating_in_map.lua";
     const std::string configuration_update_basename = "updating_a_map.lua";
 
-    std::mutex slam_mutex;
+    std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
 };
 

@@ -60,68 +60,55 @@ SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
 
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
     SLAMServiceActionMode slam_action_mode = GetActionMode();
-
     {
-        std::lock_guard<std::mutex> lk(slam_mutex);
-        auto mutable_pose_graph_options =
-            map_builder.map_builder_options_.mutable_pose_graph_options();
-        mutable_pose_graph_options->set_optimize_every_n_nodes(
-            optimize_every_n_nodes);
-
-        auto mutable_trajectory_builder_2d_options =
-            map_builder.trajectory_builder_options_
-                .mutable_trajectory_builder_2d_options();
-        mutable_trajectory_builder_2d_options->mutable_submaps_options()
-            ->set_num_range_data(num_range_data);
-        mutable_trajectory_builder_2d_options->set_missing_data_ray_length(
-            missing_data_ray_length);
-        mutable_trajectory_builder_2d_options->set_max_range(max_range);
-        mutable_trajectory_builder_2d_options->set_min_range(min_range);
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.OverwriteOptimizeEveryNNodes(optimize_every_n_nodes);
+        map_builder.OverwriteNumRangeData(num_range_data);
+        map_builder.OverwriteMissingDataRayLength(missing_data_ray_length);
+        map_builder.OverwriteMaxRange(max_range);
+        map_builder.OverwriteMinRange(min_range);
         if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
-            map_builder.trajectory_builder_options_
-                .mutable_pure_localization_trimmer()
-                ->set_max_submaps_to_keep(max_submaps_to_keep);
+            map_builder.OverwriteMaxSubmapsToKeep(int value);
         }
-
         auto mutable_overlapping_submaps_trimmer_2d =
             mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
         if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
-            mutable_overlapping_submaps_trimmer_2d->set_fresh_submaps_count(
-                fresh_submaps_count);
-            mutable_overlapping_submaps_trimmer_2d->set_min_covered_area(
-                min_covered_area);
-            mutable_overlapping_submaps_trimmer_2d->set_min_added_submaps_count(
-                min_added_submaps_count);
+            map_builder.OverwriteFreshSubmapsCount(fresh_submaps_count);
+            map_builder.OverwriteMinCoveredArea(min_covered_area);
+            map_builder.OverwriteMinAddedSubmapsCount(min_added_submaps_count);
         }
-
-        auto mutable_ceres_scan_matcher_options =
-            mutable_pose_graph_options->mutable_constraint_builder_options()
-                ->mutable_ceres_scan_matcher_options();
-        mutable_ceres_scan_matcher_options->set_occupied_space_weight(
-            occupied_space_weight);
-        mutable_ceres_scan_matcher_options->set_translation_weight(
-            translation_weight);
-        mutable_ceres_scan_matcher_options->set_rotation_weight(rotation_weight);
+        map_builder.OverwriteOccupiedSpaceWeight(occupied_space_weight);
+        map_builder.OverwriteTranslationWeight(translation_weight);
+        map_builder.OverwriteRotationWeight(rotation_weight);
     }
 }
 
 void SLAMServiceImpl::SetUpMapBuilder() {
     auto action_mode = GetActionMode();
-    {
-        std::lock_guard<std::mutex> lk(slam_mutex);
-        if (action_mode == SLAMServiceActionMode::MAPPING) {
+    if (action_mode == SLAMServiceActionMode::MAPPING) {
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetUp(this->configuration_directory,
                             this->configuration_mapping_basename);
-        } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+        }
+    } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetUp(this->configuration_directory,
                             this->configuration_localization_basename);
-        } else if (action_mode == SLAMServiceActionMode::UPDATING) {
+        }
+    } else if (action_mode == SLAMServiceActionMode::UPDATING) {
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetUp(this->configuration_directory,
                             this->configuration_update_basename);
-        } else {
-            throw std::runtime_error("invalid action mode");
         }
-        OverwriteMapBuilderParameters();
+    } else {
+        throw std::runtime_error("invalid action mode");
+    }
+    OverwriteMapBuilderParameters();
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.BuildMapBuilder();
     }
 }
@@ -131,7 +118,7 @@ void SLAMServiceImpl::PaintMap(
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<cartographer::mapping::SubmapId, cartographer::mapping::SubmapPose> submap_poses;
     {
-        std::lock_guard<std::mutex> lk(slam_mutex);
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
         submap_poses = map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
     }
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
@@ -142,7 +129,7 @@ void SLAMServiceImpl::PaintMap(
             cartographer::mapping::proto::SubmapQuery::Response response_proto;
 
             {
-                std::lock_guard<std::mutex> lk(slam_mutex);
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
                 const std::string error =
                     map_builder.map_builder_->SubmapToProto(submap_id_pose.id, &response_proto);
                 if (error != "") {
@@ -186,7 +173,7 @@ void SLAMServiceImpl::PaintMap(
             if (submap_id_pose.id.submap_index == 0 &&
                 submap_id_pose.id.trajectory_id == 0) {
                 {
-                    std::lock_guard<std::mutex> lk(slam_mutex);
+                    std::lock_guard<std::mutex> lk(map_builder_mutex);
                     const auto trajectory_nodes =
                         map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
                 }
@@ -226,17 +213,16 @@ void SLAMServiceImpl::ProcessDataOffline() {
 
 void SLAMServiceImpl::CreateMap() {
     {
-        std::lock_guard<std::mutex> lk(slam_mutex);
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Build TrajectoryBuilder
         int trajectory_id = map_builder.map_builder_->AddTrajectoryBuilder(
             {kRangeSensorId}, map_builder.trajectory_builder_options_,
             map_builder.GetLocalSlamResultCallback());
 
-    LOG(INFO) << "Trajectory ID: " << trajectory_id;
-    LOG(INFO) << "Test test: " << trajectory_id;
+        LOG(INFO) << "Trajectory ID: " << trajectory_id;
 
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder =
-        map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
+        cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder =
+            map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
     }
 
     viam::io::ReadFile read_file;
@@ -259,7 +245,7 @@ void SLAMServiceImpl::CreateMap() {
     for (int i = this->starting_scan_number; i < end_scan_number; i++) {
         if (!b_continue_session) return;
         {
-            std::lock_guard<std::mutex> lk(slam_mutex);
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement =
                 map_builder.GetDataFromFile(this->path_to_data, initial_file, i);
             if (measurement.ranges.size() > 0) {
@@ -268,16 +254,15 @@ void SLAMServiceImpl::CreateMap() {
                                     ->GetTrajectoryNodes()
                                     .size();
 
-                auto local_poses = GetLocalPoses(map_builder);
+                auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
                     auto latest_local_pose = local_poses.back();
                     cartographer::transform::Rigid3d global_pose =
-                        GetGlobalPose(map_builder, trajectory_id, latest_local_pose);
+                        map_builder.GetGlobalPose(trajectory_id, latest_local_pose);
                     myfile << "global_pose: " << global_pose.DebugString()
                         << std::endl;
                 }
             }
-
         }
         if ((num_nodes >= this->starting_scan_number &&
              num_nodes < this->starting_scan_number + 3) ||
@@ -292,7 +277,7 @@ void SLAMServiceImpl::CreateMap() {
     // Save the map in a pbstream file
     const std::string map_file = this->path_to_map + "/map.pbstream";
     {
-        std::lock_guard<std::mutex> lk(slam_mutex);
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
         map_builder.map_builder_->SerializeStateToFile(true, map_file);
 

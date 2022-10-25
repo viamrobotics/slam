@@ -39,6 +39,23 @@ class MapBuilder {
         trajectory_builder_options_;
     std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
 
+    cartographer::transform::Rigid3d GetGlobalPose(
+        int trajectory_id,
+        cartographer::transform::Rigid3d& latest_local_pose_);
+
+    void OverwriteOptimizeEveryNNodes(int value);
+    void OverwriteNumRangeData(int value);
+    void OverwriteMissingDataRayLength(float value);
+    void OverwriteMaxRange(float value);
+    void OverwriteMinRange(float value);
+    void OverwriteMaxSubmapsToKeep(int value);
+    void OverwriteFreshSubmapsCount(int value);
+    void OverwriteMinCoveredArea(double value);
+    void OverwriteMinAddedSubmapsCount(int value);
+    void OverwriteOccupiedSpaceWeight(double value);
+    void OverwriteTranslationWeight(double value);
+    void OverwriteRotationWeight(double value);
+
    private:
     std::vector<::cartographer::transform::Rigid3d> local_slam_result_poses_;
 };
