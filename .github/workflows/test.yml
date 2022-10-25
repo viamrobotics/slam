@@ -129,11 +129,20 @@ jobs:
         submodules: recursive
         path: slam
 
+    - name: make buf
+      timeout-minutes: 5
+      run: |
+        chown -R testbot .
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
+
     - name: make setupcarto
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make setupcarto'
 
     - name: make buildcarto
       run: |
-        chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'
+
+    - name: make testcarto
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make testcarto'

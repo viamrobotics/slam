@@ -120,12 +120,11 @@ void CreateMap(const std::string& mode, const std::string& data_directory,
                                 ->GetTrajectoryNodes()
                                 .size();
 
-            auto local_poses = slam_service::GetLocalPoses(mapBuilder);
+            auto local_poses = GetLocalPoses(mapBuilder);
             if (local_poses.size() > 0) {
                 auto latest_local_pose = local_poses.back();
                 cartographer::transform::Rigid3d global_pose =
-                    slam_service::GetGlobalPose(mapBuilder, trajectory_id,
-                                                latest_local_pose);
+                    GetGlobalPose(mapBuilder, trajectory_id, latest_local_pose);
                 myfile << "global_pose: " << global_pose.DebugString()
                        << std::endl;
             }
@@ -133,9 +132,8 @@ void CreateMap(const std::string& mode, const std::string& data_directory,
             if ((num_nodes >= starting_scan_number &&
                  num_nodes < starting_scan_number + 3) ||
                 num_nodes % picture_print_interval == 0) {
-                slam_service::PaintMap(mapBuilder.map_builder_,
-                                       output_directory,
-                                       std::to_string(num_nodes));
+                PaintMap(mapBuilder.map_builder_, output_directory,
+                         std::to_string(num_nodes));
             }
         }
     }
@@ -149,7 +147,7 @@ void CreateMap(const std::string& mode, const std::string& data_directory,
 
     mapBuilder.map_builder_->FinishTrajectory(trajectory_id);
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
-    slam_service::PaintMap(mapBuilder.map_builder_, output_directory, "0");
+    PaintMap(mapBuilder.map_builder_, output_directory, "0");
 
     return;
 }
@@ -212,8 +210,7 @@ void LoadMapAndRun(const std::string& mode, const std::string& data_directory,
     }
 
     std::cout << "Beginning to add data....\n";
-    slam_service::PaintMap(mapBuilder.map_builder_, output_directory,
-                           "before_" + operation);
+    PaintMap(mapBuilder.map_builder_, output_directory, "before_" + operation);
 
     int end_scan_number = int(file_list.size());
     for (int i = starting_scan_number; i < end_scan_number; i++) {
@@ -224,9 +221,8 @@ void LoadMapAndRun(const std::string& mode, const std::string& data_directory,
             trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
             if ((i >= starting_scan_number && i < starting_scan_number + 3) ||
                 i % picture_print_interval == 0) {
-                slam_service::PaintMap(
-                    mapBuilder.map_builder_, output_directory,
-                    operation + "_" + std::to_string(1 + i++));
+                PaintMap(mapBuilder.map_builder_, output_directory,
+                         operation + "_" + std::to_string(1 + i++));
             }
         }
     }
@@ -240,8 +236,8 @@ void LoadMapAndRun(const std::string& mode, const std::string& data_directory,
     mapBuilder.map_builder_->FinishTrajectory(0);
     mapBuilder.map_builder_->FinishTrajectory(trajectory_id);
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
-    slam_service::PaintMap(mapBuilder.map_builder_, output_directory,
-                           "after_" + operation + "_optimization");
+    PaintMap(mapBuilder.map_builder_, output_directory,
+             "after_" + operation + "_optimization");
 
     return;
 }
@@ -269,14 +265,13 @@ void DrawSavedMap(const std::string& mode, const std::string& output_directory,
                   << it->second << "\n";
     }
 
-    slam_service::PaintMap(mapBuilder.map_builder_, output_directory,
-                           map_output_name + "_saved_map_after_" + operation);
+    PaintMap(mapBuilder.map_builder_, output_directory,
+             map_output_name + "_saved_map_after_" + operation);
 
     mapBuilder.map_builder_->FinishTrajectory(0);
     mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
-    slam_service::PaintMap(
-        mapBuilder.map_builder_, output_directory,
-        "optimized_" + map_output_name + "_saved_map_after_" + operation);
+    PaintMap(mapBuilder.map_builder_, output_directory,
+             "optimized_" + map_output_name + "_saved_map_after_" + operation);
 
     return;
 }
