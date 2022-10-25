@@ -121,7 +121,7 @@ void MapBuilder::OverwriteNumRangeData(int value) {
         ->set_num_range_data(value);
 }
 
-void MapBuilder::OverwriteNumRangeData(float value) {
+void MapBuilder::OverwriteMissingDataRayLength(float value) {
     auto mutable_trajectory_builder_2d_options =
         this->trajectory_builder_options_
             .mutable_trajectory_builder_2d_options();

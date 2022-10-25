@@ -10,14 +10,14 @@ BOOST_AUTO_TEST_SUITE(SLAMService)
 
 void checkCartoMapBuilderParameters(SLAMServiceImpl& slamService) {
     auto pose_graph_options =
-        slamService.mapBuilder.map_builder_options_.pose_graph_options();
+        slamService.map_builder.map_builder_options_.pose_graph_options();
     auto overlapping_submaps_trimmer_2d =
         pose_graph_options.overlapping_submaps_trimmer_2d();
     auto ceres_scan_matcher_options =
         pose_graph_options.constraint_builder_options()
             .ceres_scan_matcher_options();
     auto trajectory_builder_2d_options =
-        slamService.mapBuilder.trajectory_builder_options_
+        slamService.map_builder.trajectory_builder_options_
             .trajectory_builder_2d_options();
 
     auto tolerance = boost::test_tools::tolerance(0.00001);
@@ -36,12 +36,12 @@ void checkCartoMapBuilderParameters(SLAMServiceImpl& slamService) {
         trajectory_builder_2d_options.min_range() == slamService.min_range,
         tolerance);
     if (slamService.GetActionMode() == SLAMServiceActionMode::LOCALIZING) {
-        BOOST_TEST(slamService.mapBuilder.trajectory_builder_options_
+        BOOST_TEST(slamService.map_builder.trajectory_builder_options_
                        .pure_localization_trimmer()
                        .max_submaps_to_keep() ==
                    slamService.max_submaps_to_keep);
     } else {
-        BOOST_TEST(slamService.mapBuilder.trajectory_builder_options_
+        BOOST_TEST(slamService.map_builder.trajectory_builder_options_
                        .pure_localization_trimmer()
                        .max_submaps_to_keep() == 0);
     }

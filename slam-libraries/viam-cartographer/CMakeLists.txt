@@ -105,11 +105,6 @@ if(EXISTS ${SRCDIR})
       src/main.cc
   )
 
-  google_binary(main_old
-    SRCS
-      src/main_old.cc
-  )
-
   google_binary(unit_tests
     SRCS
       ${ALL_VIAM_TEST_SRCS}

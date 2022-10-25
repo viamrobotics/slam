@@ -106,6 +106,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double translation_weight = 10.0;
     double rotation_weight = 1.0;
 
+    std::mutex map_builder_mutex;
+    mapping::MapBuilder map_builder;
+
    private:
     int starting_scan_number = 0;
     int picture_print_interval = 50;
@@ -113,9 +116,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     const std::string configuration_localization_basename =
         "locating_in_map.lua";
     const std::string configuration_update_basename = "updating_a_map.lua";
-
-    std::mutex map_builder_mutex;
-    mapping::MapBuilder map_builder;
 };
 
 }  // namespace viam

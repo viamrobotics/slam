@@ -6,7 +6,6 @@
 #include "../mapping/map_builder.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
-#include "server_functions.h"
 #include "cartographer/io/submap_painter.h"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
@@ -34,7 +33,7 @@ std::atomic<bool> b_continue_session{true};
     response->set_mime_type(mime_type);
 
     PaintMap(this->path_to_map + "/images",
-                std::to_string(num_nodes));
+                std::to_string(9999));
 
 
     LOG(ERROR) << "GetMap is not yet implemented.\n";
@@ -68,10 +67,8 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
         map_builder.OverwriteMaxRange(max_range);
         map_builder.OverwriteMinRange(min_range);
         if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
-            map_builder.OverwriteMaxSubmapsToKeep(int value);
+            map_builder.OverwriteMaxSubmapsToKeep(max_submaps_to_keep);
         }
-        auto mutable_overlapping_submaps_trimmer_2d =
-            mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
         if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
             map_builder.OverwriteFreshSubmapsCount(fresh_submaps_count);
             map_builder.OverwriteMinCoveredArea(min_covered_area);
@@ -116,7 +113,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 void SLAMServiceImpl::PaintMap(
     std::string output_directory, std::string appendix) {
     const double kPixelSize = 0.01;
-    cartographer::mapping::MapById<cartographer::mapping::SubmapId, cartographer::mapping::SubmapPose> submap_poses;
+    cartographer::mapping::MapById<cartographer::mapping::SubmapId, cartographer::mapping::PoseGraphInterface::SubmapPose> submap_poses;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         submap_poses = map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
@@ -172,9 +169,10 @@ void SLAMServiceImpl::PaintMap(
 
             if (submap_id_pose.id.submap_index == 0 &&
                 submap_id_pose.id.trajectory_id == 0) {
+                cartographer::mapping::MapById<cartographer::mapping::NodeId, cartographer::mapping::TrajectoryNode> trajectory_nodes;
                 {
                     std::lock_guard<std::mutex> lk(map_builder_mutex);
-                    const auto trajectory_nodes =
+                    trajectory_nodes =
                         map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
                 }
                 submap_slice.surface = viam::io::DrawTrajectoryNodes(
@@ -212,16 +210,18 @@ void SLAMServiceImpl::ProcessDataOffline() {
 }
 
 void SLAMServiceImpl::CreateMap() {
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
+    int trajectory_id;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Build TrajectoryBuilder
-        int trajectory_id = map_builder.map_builder_->AddTrajectoryBuilder(
+        trajectory_id = map_builder.map_builder_->AddTrajectoryBuilder(
             {kRangeSensorId}, map_builder.trajectory_builder_options_,
             map_builder.GetLocalSlamResultCallback());
 
         LOG(INFO) << "Trajectory ID: " << trajectory_id;
 
-        cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder =
+        trajectory_builder =
             map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
     }
 
@@ -244,13 +244,14 @@ void SLAMServiceImpl::CreateMap() {
     int end_scan_number = int(file_list.size());
     for (int i = this->starting_scan_number; i < end_scan_number; i++) {
         if (!b_continue_session) return;
+        int num_nodes;
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement =
                 map_builder.GetDataFromFile(this->path_to_data, initial_file, i);
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
-                int num_nodes = map_builder.map_builder_->pose_graph()
+                num_nodes = map_builder.map_builder_->pose_graph()
                                     ->GetTrajectoryNodes()
                                     .size();
 
