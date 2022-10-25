@@ -13,12 +13,10 @@
 #include "cartographer/sensor/timed_point_cloud_data.h"
 
 namespace viam {
-static const int filenamePrefixLength = 6;
 namespace io {
-
+static const int filenamePrefixLength = 6;
 class ReadFile {
    public:
-    std::string time_format = "%Y-%m-%dT%H:%M:%SZ";
     std::vector<std::string> listFilesInDirectory(std::string data_directory);
     cartographer::sensor::TimedPointCloudData timedPointCloudDataFromPCDBuilder(
         std::string file_path, std::string initial_filename);
