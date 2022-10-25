@@ -33,13 +33,12 @@ std::atomic<bool> b_continue_session{true};
     auto mime_type = request->mime_type();
     response->set_mime_type(mime_type);
 
-    std::vector<unsigned char> buffer;
-    PaintMap(this->path_to_map + "/images",
-                std::to_string(9999), buffer);
+    std::string jpeg_img = PaintMap(this->path_to_map + "/images",
+                std::to_string(9999));
 
     // Write the image to the response.
     try {
-        response->set_image(std::string(buffer.begin(), buffer.end()));
+        response->set_image(jpeg_img);
         return grpc::Status::OK;
     } catch (std::exception &e) {
         std::ostringstream oss;
@@ -121,8 +120,8 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     }
 }
 
-void SLAMServiceImpl::PaintMap(
-    std::string output_directory, std::string appendix, std::vector<unsigned char> buffer) {
+std::string SLAMServiceImpl::PaintMap(
+    std::string output_directory, std::string appendix) {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<cartographer::mapping::SubmapId, cartographer::mapping::PoseGraphInterface::SubmapPose> submap_poses;
     {
@@ -198,8 +197,9 @@ void SLAMServiceImpl::PaintMap(
         auto file = cartographer::io::StreamFileWriter(
             output_directory + "/map_" + appendix + ".jpg");
         image.WritePng(&file);
-        image.WriteJpegMem(buffer, 50);
+        return image.WriteJpegMem(50);
     }
+    return "";
 }
 
 void SLAMServiceImpl::ProcessDataOffline() {
@@ -280,9 +280,8 @@ void SLAMServiceImpl::CreateMap() {
         if ((num_nodes >= this->starting_scan_number &&
              num_nodes < this->starting_scan_number + 3) ||
             num_nodes % this->picture_print_interval == 0) {
-            std::vector<unsigned char> buffer;
             PaintMap(this->path_to_map + "/images",
-                     std::to_string(num_nodes), buffer);
+                     std::to_string(num_nodes));
         }
     }
 
@@ -298,8 +297,7 @@ void SLAMServiceImpl::CreateMap() {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
     }
-    std::vector<unsigned char> buffer;
-    PaintMap(this->path_to_map + "/images", "0", buffer);
+    PaintMap(this->path_to_map + "/images", "0");
 
     LOG(INFO) << "Finished processing offline images";
 

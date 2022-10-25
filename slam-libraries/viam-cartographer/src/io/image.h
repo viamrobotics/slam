@@ -33,7 +33,7 @@ namespace io {
 class Image : public cartographer::io::Image {
  public:
   using cartographer::io::Image::Image;
-  void WriteJpegMem(std::vector<unsigned char> buffer, int quality);
+  std::string WriteJpegMem(int quality);
 };
 
 }  // namespace io
