@@ -1,3 +1,7 @@
+export LDFLAGS="$LDFLAGS -L/usr/local/opt/openssl/lib"
+export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/openssl/include"
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH /usr/local/opt/openssl/lib/pkgconfig"
+
 BASEDIR=`pwd`
 echo $BASEDIR
 ORBDIR=$BASEDIR/viam-orb-slam3
