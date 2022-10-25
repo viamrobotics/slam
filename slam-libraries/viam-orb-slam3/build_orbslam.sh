@@ -1,6 +1,6 @@
-export LDFLAGS="$LDFLAGS -L/usr/local/opt/openssl/lib"
-export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/openssl/include"
-export PKG_CONFIG_PATH="$PKG_CONFIG_PATH /usr/local/opt/openssl/lib/pkgconfig"
+export LDFLAGS="$LDFLAGS -L/usr/local/opt/openssl@3/lib"
+export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/openssl@3/include"
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH /usr/local/opt/openssl@3/lib/pkgconfig"
 
 BASEDIR=`pwd`
 echo $BASEDIR
