@@ -56,6 +56,7 @@ message(${OpenCV_VERSION})
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(Boost REQUIRED COMPONENTS serialization filesystem log)
+find_package(OpenSSL REQUIRED)
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${ORBSLAM_SOURCE_DIR}
@@ -94,7 +95,7 @@ if(EXISTS ${SRCDIR})
     ${ORBSLAM_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o${CMAKE_SHARED_LIBRARY_SUFFIX}
     ${ORBSLAM_SOURCE_DIR}/lib/libORB_SLAM3${CMAKE_SHARED_LIBRARY_SUFFIX}
     -ldl
-    -lcrypto
+    OpenSSL::SSL
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES})
