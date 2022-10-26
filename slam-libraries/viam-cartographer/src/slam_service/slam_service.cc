@@ -35,7 +35,17 @@ std::atomic<bool> b_continue_session{true};
         // TODO: Check for request->include_robot_marker() and 
         // paint map accordingly with or without the marker
         // included. Ticket: https://viam.atlassian.net/browse/DATA-657
-        std::string jpeg_img = PaintMap();
+        try {
+            std::string jpeg_img = PaintMap();
+        } catch (std::exception &e) {
+            std::ostringstream oss;
+            oss << "error encoding image " << e.what();
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        }
+        if (jpeg_img == "") {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "currently no map exists yet");
+        }
 
         // Write the image to the response.
         try {
