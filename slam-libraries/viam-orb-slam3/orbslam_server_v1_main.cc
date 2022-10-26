@@ -101,9 +101,6 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
-    // TODO: REMOVE AFTER RDK INTEGRATION PASSES
-    viam::utils::FindTimeFormat(
-        myYAML.substr(myYAML.find("_data_") + viam::filenamePrefixLength));
 
     // Grab timestamp from yaml
     slamService.yamlTime = viam::utils::ReadTimeFromFilename(
