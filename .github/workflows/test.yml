@@ -63,11 +63,11 @@ jobs:
         submodules: recursive
         path: slam
 
-    - name: make buf
+    - name: make bufinstall buf
       timeout-minutes: 30
       run: |
         chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
     - name: make setuporb
       run: |
@@ -129,11 +129,11 @@ jobs:
         submodules: recursive
         path: slam
 
-    - name: make buf
+    - name: make bufinstall buf
       timeout-minutes: 30
       run: |
         chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
     - name: make setupcarto
       run: |
