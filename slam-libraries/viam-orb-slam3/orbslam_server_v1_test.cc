@@ -122,9 +122,9 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
 }
 
 BOOST_AUTO_TEST_CASE(ReadTimeFromFilename) {
-    const string filename1 = "2022-01-01T01_00_00.0000";
-    const string filename2 = "2022-01-01T01_00_00.0001";
-    const string filename3 = "2022-01-01T01_00_01.0000";
+    const string filename1 = "2022-01-01T01:00:00.0000Z";
+    const string filename2 = "2022-01-01T01:00:00.0001Z";
+    const string filename3 = "2022-01-01T01:00:01.0000Z";
     const auto time1 = utils::ReadTimeFromFilename(filename1);
     const auto time2 = utils::ReadTimeFromFilename(filename2);
     const auto time3 = utils::ReadTimeFromFilename(filename3);
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromFilename) {
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_no_files) {
-    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const string configTimeString = "2022-01-01T01:00:00.0000Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files;
     double timeInterest;
@@ -143,11 +143,11 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_no_files) {
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_ignore_last) {
-    const string configTimeString = "2022-01-01T01_00_00.0001";
+    const string configTimeString = "2022-01-01T01:00:00.0001Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z"};
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Closest,
@@ -155,22 +155,22 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_ignore_last) {
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_found_time) {
-    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const string configTimeString = "2022-01-01T01:00:00.0000Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002",
-                         "color_data_2022-01-01T01_00_00.0003"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z",
+                         "color_data_2022-01-01T01:00:00.0003Z"};
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Closest,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0001"));
+               utils::ReadTimeFromFilename("2022-01-01T01:00:00.0001Z"));
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_no_files) {
-    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const string configTimeString = "2022-01-01T01:00:00.0000Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
     vector<string> files;
     double timeInterest;
@@ -180,25 +180,25 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_no_files) {
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_mono) {
-    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const string configTimeString = "2022-01-01T01:00:00.0000Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z"};
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0001"));
+               utils::ReadTimeFromFilename("2022-01-01T01:00:00.0001Z"));
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_mono_fail) {
-    const string configTimeString = "2022-01-01T01_00_00.0002";
+    const string configTimeString = "2022-01-01T01:00:00.0002Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z"};
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
@@ -206,11 +206,11 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_mono_fail) {
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_rgbd_fail) {
-    const string configTimeString = "2022-01-01T01_00_00.0002";
+    const string configTimeString = "2022-01-01T01:00:00.0002Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z"};
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "rgbd", "",
                                      utils::FileParserMethod::Recent,
@@ -218,28 +218,28 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_ignore_last_rgbd_fail) {
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_mono) {
-    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const string configTimeString = "2022-01-01T01:00:00.0000Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002",
-                         "color_data_2022-01-01T01_00_00.0003",
-                         "color_data_2022-01-01T01_00_00.0004"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z",
+                         "color_data_2022-01-01T01:00:00.0003Z",
+                         "color_data_2022-01-01T01:00:00.0004Z"};
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 3);
     BOOST_TEST(timeInterest ==
-               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0003"));
+               utils::ReadTimeFromFilename("2022-01-01T01:00:00.0003Z"));
 }
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_time_rgbd) {
-    const string configTimeString = "2022-01-01T01_00_00.0000";
+    const string configTimeString = "2022-01-01T01:00:00.0000Z";
     const auto configTime = utils::ReadTimeFromFilename(configTimeString);
-    vector<string> files{"color_data_2022-01-01T01_00_00.0000",
-                         "color_data_2022-01-01T01_00_00.0001",
-                         "color_data_2022-01-01T01_00_00.0002",
-                         "color_data_2022-01-01T01_00_00.0003"};
+    vector<string> files{"color_data_2022-01-01T01:00:00.0000Z",
+                         "color_data_2022-01-01T01:00:00.0001Z",
+                         "color_data_2022-01-01T01:00:00.0002Z",
+                         "color_data_2022-01-01T01:00:00.0003Z"};
     double timeInterest;
     // Create a unique path in the temp directory
     fs::path tmpdir = fs::temp_directory_path() / fs::unique_path();
@@ -258,13 +258,13 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_time_rgbd) {
     }
 
     // Create the file in the temporary directory
-    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01_00_00.0001.png");
+    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01:00:00.0001Z.png");
     ofs.close();
     BOOST_TEST(utils::FindFrameIndex(files, "rgbd", tmpdir.string(),
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
-               utils::ReadTimeFromFilename("2022-01-01T01_00_00.0001"));
+               utils::ReadTimeFromFilename("2022-01-01T01:00:00.0001Z"));
     // Close the file and remove the temporary directory and its contents.
     fs::remove_all(tmpdir);
 }

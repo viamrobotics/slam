@@ -36,30 +36,9 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
         return timedPCD;
     }
 
-    // KAT NOTE: The file name format for the pcd files is assumed to be, e.g.:
-    // rplidar_data_2022-02-05T01_00_20.9874.pcd
-    int start_pos = initial_filename.find("T") + 1;
-    int len_pos =
-        initial_filename.find(".pcd") - initial_filename.find("T") - 1;
-    std::string initial_file = initial_filename.substr(start_pos, len_pos);
-    std::string next_file = file_path.substr(start_pos, len_pos);
-
-    std::string::size_type sz;
-
-    // Hour
-    float hour_f = std::stof(next_file.substr(0, 2), &sz);
-    float hour_i = std::stof(initial_file.substr(0, 2), &sz);
-
-    // Minute
-    float min_f = std::stof(next_file.substr(3, 2), &sz);
-    float min_i = std::stof(initial_file.substr(3, 2), &sz);
-
-    // Second
-    float sec_f = std::stof(next_file.substr(6), &sz);
-    float sec_i = std::stof(initial_file.substr(6), &sz);
-
-    float time_delta =
-        3600 * (hour_f - hour_i) + 60 * (min_f - min_i) + (sec_f - sec_i);
+    double time_delta = ReadTimeFromFilename(initial_filename.substr(
+        initial_filename.find("_data_") + viam::io::filenamePrefixLength,
+        initial_filename.find(".pcd")));
 
     LOG(INFO) << "------------ FILE DATA -------------\n";
     LOG(INFO) << "Accessing file " << file_path << " ... ";
@@ -103,6 +82,32 @@ int ReadFile::removeFile(std::string file_path) {
         return 0;
     }
     return 1;
+}
+
+// Converts UTC time string to a double value.
+double ReadFile::ReadTimeFromFilename(std::string filename) {
+    // TODO: change time format "%Y-%m-%dT%H:%M:%SZ"
+    // https://viam.atlassian.net/browse/DATA-638
+    std::string time_format = "%Y-%m-%dT%H_%M_%S";
+    std::string::size_type sz;
+    // Create a stream which we will use to parse the string
+    std::istringstream ss(filename);
+
+    // Create a tm object to store the parsed date and time.
+    std::tm dt = {0};
+
+    // Now we read from buffer using get_time manipulator
+    // and formatting the input appropriately.
+    ss >> std::get_time(&dt, time_format.c_str());
+    time_t thisTime = std::mktime(&dt);
+    auto sub_sec_index = filename.find(".");
+    if ((sub_sec_index != std::string::npos)) {
+        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        double myTime = (double)thisTime + sub_sec;
+        return myTime;
+    } else {
+        return (double)thisTime;
+    }
 }
 
 }  // namespace io

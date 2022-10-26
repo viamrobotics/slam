@@ -613,6 +613,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
 }
 
 namespace utils {
+string time_format = "%Y-%m-%dT%H:%M:%SZ";
 // LoadRGB loads in rgb images to be used by ORBSLAM, and
 // returns whether the image was loaded successfully
 bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
@@ -778,13 +779,25 @@ double ReadTimeFromFilename(string filename) {
 
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
-    ss >> std::get_time(&dt, "%Y-%m-%dT%H_%M_%SZ");
-    double sub_sec =
-        (double)std::stof(filename.substr(filename.find(".")), &sz);
+    ss >> std::get_time(&dt, time_format.c_str());
     time_t thisTime = std::mktime(&dt);
+    auto sub_sec_index = filename.find(".");
+    if (sub_sec_index != string::npos) {
+        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        double myTime = (double)thisTime + sub_sec;
+        return myTime;
+    } else {
+        return (double)thisTime;
+    }
+}
 
-    double myTime = (double)thisTime + sub_sec;
-    return myTime;
+// Checks if using new or old time format
+// TODO: REMOVE AFTER RDK INTEGRATION PASSES
+void FindTimeFormat(string filename) {
+    // Check if we are using the old time format
+    auto find_underscores = filename.find("_");
+    if (find_underscores != string::npos) time_format = "%Y-%m-%dT%H_%M_%S";
+    return;
 }
 
 std::vector<std::string> ListFilesInDirectoryForCamera(
@@ -866,16 +879,18 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 
 // Make a filename to a specific location for a sensor with a timestamp
 // currently does not support millisecond resolution
-// TODO change time format to .Format(time.RFC3339Nano)
-// https://viam.atlassian.net/browse/DATA-277
 string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
     std::time_t t = std::time(nullptr);
     char timestamp[100];
-    std::strftime(timestamp, sizeof(timestamp), "%FT%H_%M_%S", std::gmtime(&t));
+    std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
+                  std::gmtime(&t));
     // Save the current atlas map in *.osa style
-    string path_save_file_name =
-        path_to_dir + "/" + camera_name + "_data_" + timestamp + ".0000.osa";
-    return path_save_file_name;
+    auto find_underscores = time_format.find("_");
+    if (find_underscores != string::npos) {
+        return path_to_dir + "/" + camera_name + "_data_" + timestamp +
+               ".0000.osa";
+    }
+    return path_to_dir + "/" + camera_name + "_data_" + timestamp + ".osa";
 }
 
 }  // namespace utils

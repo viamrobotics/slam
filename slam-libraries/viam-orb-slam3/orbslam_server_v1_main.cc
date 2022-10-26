@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
     // report the current yaml file check if it matches our format
     const string myYAML = latest.stem().string();
     BOOST_LOG_TRIVIAL(debug) << "Our yaml file: " << myYAML;
+
     string full_path_to_settings =
         slamService.path_to_settings + "/" + latest.filename().string();
     if (slamService.offlineFlag) {
@@ -100,6 +101,9 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    // TODO: REMOVE AFTER RDK INTEGRATION PASSES
+    viam::utils::FindTimeFormat(
+        myYAML.substr(myYAML.find("_data_") + viam::filenamePrefixLength));
 
     // Grab timestamp from yaml
     slamService.yamlTime = viam::utils::ReadTimeFromFilename(
