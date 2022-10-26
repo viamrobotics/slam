@@ -18,7 +18,7 @@ on:
 
 jobs:
   appimage:
-    uses: viamrobotics/slam/.github/workflows/appimage.yml@main
+    uses: viamrobotics/slam/.github/workflows/appimage.yml@DATA-605
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
       REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
