@@ -51,10 +51,12 @@
  * case of any fatal unrecoverable error on the input stream -1 shall be
  * returned.
  */
-typedef ssize_t (*cairo_read_func_len_t) (void *closure, unsigned char *data, unsigned int length);
+typedef ssize_t (*cairo_read_func_len_t)(void *closure, unsigned char *data,
+                                         unsigned int length);
 #endif
 
-
-cairo_status_t cairo_image_surface_write_to_jpeg_mem(cairo_surface_t *sfc, unsigned char **data, size_t *len, int quality);
+cairo_status_t cairo_image_surface_write_to_jpeg_mem(cairo_surface_t *sfc,
+                                                     unsigned char **data,
+                                                     size_t *len, int quality);
 
 #endif

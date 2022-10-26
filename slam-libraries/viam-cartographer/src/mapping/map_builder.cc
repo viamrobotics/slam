@@ -98,8 +98,7 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 // TODO: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
-    int trajectory_id,
-    cartographer::transform::Rigid3d& latest_local_pose_) {
+    int trajectory_id, cartographer::transform::Rigid3d& latest_local_pose_) {
     auto local_transform =
         this->map_builder_->pose_graph()->GetLocalToGlobalTransform(
             trajectory_id);
@@ -109,8 +108,7 @@ cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
 void MapBuilder::OverwriteOptimizeEveryNNodes(int value) {
     auto mutable_pose_graph_options =
         this->map_builder_options_.mutable_pose_graph_options();
-    mutable_pose_graph_options->set_optimize_every_n_nodes(
-        value);
+    mutable_pose_graph_options->set_optimize_every_n_nodes(value);
 }
 
 void MapBuilder::OverwriteNumRangeData(int value) {
@@ -125,8 +123,7 @@ void MapBuilder::OverwriteMissingDataRayLength(float value) {
     auto mutable_trajectory_builder_2d_options =
         this->trajectory_builder_options_
             .mutable_trajectory_builder_2d_options();
-    mutable_trajectory_builder_2d_options->set_missing_data_ray_length(
-        value);
+    mutable_trajectory_builder_2d_options->set_missing_data_ray_length(value);
 }
 
 void MapBuilder::OverwriteMaxRange(float value) {
@@ -144,8 +141,7 @@ void MapBuilder::OverwriteMinRange(float value) {
 }
 
 void MapBuilder::OverwriteMaxSubmapsToKeep(int value) {
-    this->trajectory_builder_options_
-        .mutable_pure_localization_trimmer()
+    this->trajectory_builder_options_.mutable_pure_localization_trimmer()
         ->set_max_submaps_to_keep(value);
 }
 
@@ -154,8 +150,7 @@ void MapBuilder::OverwriteFreshSubmapsCount(int value) {
         this->map_builder_options_.mutable_pose_graph_options();
     auto mutable_overlapping_submaps_trimmer_2d =
         mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
-    mutable_overlapping_submaps_trimmer_2d->set_fresh_submaps_count(
-        value);
+    mutable_overlapping_submaps_trimmer_2d->set_fresh_submaps_count(value);
 }
 
 void MapBuilder::OverwriteMinCoveredArea(double value) {
@@ -163,8 +158,7 @@ void MapBuilder::OverwriteMinCoveredArea(double value) {
         this->map_builder_options_.mutable_pose_graph_options();
     auto mutable_overlapping_submaps_trimmer_2d =
         mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
-    mutable_overlapping_submaps_trimmer_2d->set_min_covered_area(
-        value);
+    mutable_overlapping_submaps_trimmer_2d->set_min_covered_area(value);
 }
 
 void MapBuilder::OverwriteMinAddedSubmapsCount(int value) {
@@ -172,8 +166,7 @@ void MapBuilder::OverwriteMinAddedSubmapsCount(int value) {
         this->map_builder_options_.mutable_pose_graph_options();
     auto mutable_overlapping_submaps_trimmer_2d =
         mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
-    mutable_overlapping_submaps_trimmer_2d->set_min_added_submaps_count(
-        value);
+    mutable_overlapping_submaps_trimmer_2d->set_min_added_submaps_count(value);
 }
 
 void MapBuilder::OverwriteOccupiedSpaceWeight(double value) {
@@ -183,8 +176,7 @@ void MapBuilder::OverwriteOccupiedSpaceWeight(double value) {
         mutable_pose_graph_options->mutable_constraint_builder_options()
             ->mutable_ceres_scan_matcher_options();
 
-    mutable_ceres_scan_matcher_options->set_occupied_space_weight(
-        value);
+    mutable_ceres_scan_matcher_options->set_occupied_space_weight(value);
 }
 
 void MapBuilder::OverwriteTranslationWeight(double value) {
@@ -194,8 +186,7 @@ void MapBuilder::OverwriteTranslationWeight(double value) {
         mutable_pose_graph_options->mutable_constraint_builder_options()
             ->mutable_ceres_scan_matcher_options();
 
-    mutable_ceres_scan_matcher_options->set_translation_weight(
-        value);
+    mutable_ceres_scan_matcher_options->set_translation_weight(value);
 }
 
 void MapBuilder::OverwriteRotationWeight(double value) {
