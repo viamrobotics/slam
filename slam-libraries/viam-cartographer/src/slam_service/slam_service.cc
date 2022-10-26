@@ -28,27 +28,34 @@ std::atomic<bool> b_continue_session{true};
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
 
-    float max = 0;
-    float min = 10000;
     auto mime_type = request->mime_type();
     response->set_mime_type(mime_type);
+    
+    if (mime_type == "image/jpeg") {
+        // TODO: Check for request->include_robot_marker() and 
+        // paint map accordingly with or without the marker
+        // included. Ticket: https://viam.atlassian.net/browse/DATA-657
+        std::string jpeg_img = PaintMap();
 
-    std::string jpeg_img = PaintMap(this->path_to_map + "/images",
-                std::to_string(9999));
-
-    // Write the image to the response.
-    try {
-        response->set_image(jpeg_img);
-        return grpc::Status::OK;
-    } catch (std::exception &e) {
-        std::ostringstream oss;
-        oss << "error writing image to response " << e.what();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        // Write the image to the response.
+        try {
+            response->set_image(jpeg_img);
+        } catch (std::exception &e) {
+            std::ostringstream oss;
+            oss << "error writing image to response " << e.what();
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        }
+    } else if (mime_type == "pointcloud/pcd") {
+        LOG(ERROR) << "GetMap for mime_type \"pointcloud/pcd\" is not yet implemented.\n";
+        return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
+                            "GetMap for mime_type \"pointcloud/pcd\" is not yet implemented.");
+    } else {
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                            "mime_type should be \"image/jpeg\" or "
+                            "\"pointcloud/pcd\", got \"" +
+                                mime_type + "\"");
     }
-
-    LOG(ERROR) << "GetMap is not yet implemented.\n";
-    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
-                        "GetMap is not yet implemented.");
+    return grpc::Status::OK;
 }
 
 SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
@@ -120,8 +127,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     }
 }
 
-std::string SLAMServiceImpl::PaintMap(
-    std::string output_directory, std::string appendix) {
+std::string SLAMServiceImpl::PaintMap() {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<cartographer::mapping::SubmapId, cartographer::mapping::PoseGraphInterface::SubmapPose> submap_poses;
     {
@@ -194,9 +200,6 @@ std::string SLAMServiceImpl::PaintMap(
         cartographer::io::PaintSubmapSlicesResult painted_slices =
             viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
         auto image = viam::io::Image(std::move(painted_slices.surface));
-        auto file = cartographer::io::StreamFileWriter(
-            output_directory + "/map_" + appendix + ".jpg");
-        image.WritePng(&file);
         return image.WriteJpegMem(50);
     }
     return "";
@@ -277,12 +280,6 @@ void SLAMServiceImpl::CreateMap() {
                 }
             }
         }
-        if ((num_nodes >= this->starting_scan_number &&
-             num_nodes < this->starting_scan_number + 3) ||
-            num_nodes % this->picture_print_interval == 0) {
-            PaintMap(this->path_to_map + "/images",
-                     std::to_string(num_nodes));
-        }
     }
 
     myfile.close();
@@ -297,7 +294,6 @@ void SLAMServiceImpl::CreateMap() {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
     }
-    PaintMap(this->path_to_map + "/images", "0");
 
     LOG(INFO) << "Finished processing offline images";
 

@@ -73,7 +73,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void OverwriteMapBuilderParameters();
 
     // PaintMap paints the map in jpeg format
-    std::string PaintMap(std::string output_directory, std::string appendix);
+    std::string PaintMap();
 
     std::string path_to_data;
     std::string path_to_map;
