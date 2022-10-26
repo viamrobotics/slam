@@ -21,9 +21,9 @@ std::string Image::WriteJpegMem(int quality) {
     CHECK_EQ(cairo_image_surface_write_to_jpeg_mem(surface.get(), &data, &len, quality),
      CAIRO_STATUS_SUCCESS);
     
-    std::string jpeg_image(data, data + len);
+    std::string jpeg_img(data, data + len);
     free(data);
-    return jpeg_image;
+    return jpeg_img;
 }
 
 }  // namespace io
