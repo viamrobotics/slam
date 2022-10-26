@@ -43,17 +43,19 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+// clang-format off
 #include <fcntl.h>
-#include <jpeglib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <jpeglib.h>
 
 #include "cairo/cairo.h"
 #include "cairo_jpg.h"
+// clang-format on
 
 /*! Macro to activate main() function. This is only used for testing. Comment
  * it out (#undef) if you link this file to your own program.
