@@ -216,7 +216,6 @@ std::string SLAMServiceImpl::PaintMap() {
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
     auto image = viam::io::Image(std::move(painted_slices.surface));
     std::string jpeg_img = image.WriteJpegToString(50);
-    std::cout << "JPEG_IMG = " << jpeg_img << std::endl;
     return jpeg_img;
 }
 
