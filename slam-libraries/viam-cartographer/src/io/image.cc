@@ -12,7 +12,7 @@
 namespace viam {
 namespace io {
 
-std::string Image::WriteJpegMem(int quality) {
+std::string Image::WriteJpegToString(int quality) {
     cartographer::io::UniqueCairoSurfacePtr surface = GetCairoSurface();
     CHECK_EQ(cairo_surface_status(surface.get()), CAIRO_STATUS_SUCCESS);
 

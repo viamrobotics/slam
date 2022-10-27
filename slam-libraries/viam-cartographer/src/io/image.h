@@ -17,7 +17,7 @@ namespace io {
 class Image : public cartographer::io::Image {
    public:
     using cartographer::io::Image::Image;
-    std::string WriteJpegMem(int quality);
+    std::string WriteJpegToString(int quality);
 };
 
 }  // namespace io

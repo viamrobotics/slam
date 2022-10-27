@@ -220,7 +220,7 @@ void SLAMServiceImpl::PaintMap(std::string &jpeg_img) {
         cartographer::io::PaintSubmapSlicesResult painted_slices =
             viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
         auto image = viam::io::Image(std::move(painted_slices.surface));
-        jpeg_img = image.WriteJpegMem(50);
+        jpeg_img = image.WriteJpegToString(50);
     }
 }
 
