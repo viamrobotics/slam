@@ -2,8 +2,7 @@
 // integrated into RDK.
 #include "cartographer/mapping/map_builder.h"
 
-#include "../src/io/read_PCD_file.h"
-#include "../src/mapping/map_builder.h"
+#include "../io/read_PCD_file.h"
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
 #include "cartographer/io/proto_stream.h"
@@ -12,6 +11,7 @@
 #include "cartographer/mapping/map_builder_interface.h"
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
+#include "map_builder.h"
 
 namespace viam {
 namespace mapping {
@@ -69,21 +69,29 @@ MapBuilder::GetLocalSlamResultCallback() {
     };
 }
 
+void MapBuilder::SetStartTime(std::string initial_filename) {
+    start_time = viam::io::ReadTimeFromFilename(initial_filename.substr(
+        initial_filename.find("_data_") + viam::io::filenamePrefixLength,
+        initial_filename.find(".pcd")));
+}
+
 cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
-    std::string data_directory, std::string initial_filename, int i) {
-    viam::io::ReadFile read_file;
-    std::vector<std::string> files;
+    std::string data_directory, int i) {
     cartographer::sensor::TimedPointCloudData point_cloud;
 
-    files = read_file.listFilesInDirectory(data_directory);
+    std::vector<std::string> files =
+        viam::io::ListFilesInDirectory(data_directory);
 
     if (files.size() == 0) {
         LOG(INFO) << "No files found in data directory\n";
         return point_cloud;
     }
 
+    if (start_time == -1) {
+        throw std::runtime_error("start_time has not been initialized");
+    }
     point_cloud =
-        read_file.timedPointCloudDataFromPCDBuilder(files[i], initial_filename);
+        viam::io::TimedPointCloudDataFromPCDBuilder(files[i], start_time);
 
     LOG(INFO) << "----------PCD-------";
     LOG(INFO) << "Time: " << point_cloud.time;
@@ -100,54 +108,49 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
     int trajectory_id, cartographer::transform::Rigid3d& latest_local_pose_) {
     auto local_transform =
-        this->map_builder_->pose_graph()->GetLocalToGlobalTransform(
-            trajectory_id);
+        map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
     return local_transform * latest_local_pose_;
 }
 
 void MapBuilder::OverwriteOptimizeEveryNNodes(int value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     mutable_pose_graph_options->set_optimize_every_n_nodes(value);
 }
 
 void MapBuilder::OverwriteNumRangeData(int value) {
     auto mutable_trajectory_builder_2d_options =
-        this->trajectory_builder_options_
-            .mutable_trajectory_builder_2d_options();
+        trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->mutable_submaps_options()
         ->set_num_range_data(value);
 }
 
 void MapBuilder::OverwriteMissingDataRayLength(float value) {
     auto mutable_trajectory_builder_2d_options =
-        this->trajectory_builder_options_
-            .mutable_trajectory_builder_2d_options();
+        trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->set_missing_data_ray_length(value);
 }
 
 void MapBuilder::OverwriteMaxRange(float value) {
     auto mutable_trajectory_builder_2d_options =
-        this->trajectory_builder_options_
-            .mutable_trajectory_builder_2d_options();
+        trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->set_max_range(value);
 }
 
 void MapBuilder::OverwriteMinRange(float value) {
     auto mutable_trajectory_builder_2d_options =
-        this->trajectory_builder_options_
-            .mutable_trajectory_builder_2d_options();
+        trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->set_min_range(value);
 }
 
 void MapBuilder::OverwriteMaxSubmapsToKeep(int value) {
-    this->trajectory_builder_options_.mutable_pure_localization_trimmer()
+    trajectory_builder_options_.mutable_pure_localization_trimmer()
         ->set_max_submaps_to_keep(value);
 }
 
 void MapBuilder::OverwriteFreshSubmapsCount(int value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     auto mutable_overlapping_submaps_trimmer_2d =
         mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
     mutable_overlapping_submaps_trimmer_2d->set_fresh_submaps_count(value);
@@ -155,7 +158,7 @@ void MapBuilder::OverwriteFreshSubmapsCount(int value) {
 
 void MapBuilder::OverwriteMinCoveredArea(double value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     auto mutable_overlapping_submaps_trimmer_2d =
         mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
     mutable_overlapping_submaps_trimmer_2d->set_min_covered_area(value);
@@ -163,7 +166,7 @@ void MapBuilder::OverwriteMinCoveredArea(double value) {
 
 void MapBuilder::OverwriteMinAddedSubmapsCount(int value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     auto mutable_overlapping_submaps_trimmer_2d =
         mutable_pose_graph_options->mutable_overlapping_submaps_trimmer_2d();
     mutable_overlapping_submaps_trimmer_2d->set_min_added_submaps_count(value);
@@ -171,7 +174,7 @@ void MapBuilder::OverwriteMinAddedSubmapsCount(int value) {
 
 void MapBuilder::OverwriteOccupiedSpaceWeight(double value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     auto mutable_ceres_scan_matcher_options =
         mutable_pose_graph_options->mutable_constraint_builder_options()
             ->mutable_ceres_scan_matcher_options();
@@ -181,7 +184,7 @@ void MapBuilder::OverwriteOccupiedSpaceWeight(double value) {
 
 void MapBuilder::OverwriteTranslationWeight(double value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     auto mutable_ceres_scan_matcher_options =
         mutable_pose_graph_options->mutable_constraint_builder_options()
             ->mutable_ceres_scan_matcher_options();
@@ -191,7 +194,7 @@ void MapBuilder::OverwriteTranslationWeight(double value) {
 
 void MapBuilder::OverwriteRotationWeight(double value) {
     auto mutable_pose_graph_options =
-        this->map_builder_options_.mutable_pose_graph_options();
+        map_builder_options_.mutable_pose_graph_options();
     auto mutable_ceres_scan_matcher_options =
         mutable_pose_graph_options->mutable_constraint_builder_options()
             ->mutable_ceres_scan_matcher_options();

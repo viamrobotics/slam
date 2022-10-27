@@ -30,8 +30,9 @@ class MapBuilder {
     cartographer::mapping::MapBuilderInterface::LocalSlamResultCallback
     GetLocalSlamResultCallback();
 
+    void SetStartTime(std::string initial_filename);
     cartographer::sensor::TimedPointCloudData GetDataFromFile(
-        std::string data_directory, std::string initial_filename, int i);
+        std::string data_directory, int i);
 
     std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder_;
     cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
@@ -71,6 +72,7 @@ class MapBuilder {
 
    private:
     std::vector<::cartographer::transform::Rigid3d> local_slam_result_poses_;
+    double start_time = -1;
 };
 
 }  // namespace mapping

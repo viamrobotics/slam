@@ -113,16 +113,16 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     auto action_mode = GetActionMode();
     if (action_mode == SLAMServiceActionMode::MAPPING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SetUp(this->configuration_directory,
-                          this->configuration_mapping_basename);
+        map_builder.SetUp(configuration_directory,
+                          configuration_mapping_basename);
     } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SetUp(this->configuration_directory,
-                          this->configuration_localization_basename);
+        map_builder.SetUp(configuration_directory,
+                          configuration_localization_basename);
     } else if (action_mode == SLAMServiceActionMode::UPDATING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SetUp(this->configuration_directory,
-                          this->configuration_update_basename);
+        map_builder.SetUp(configuration_directory,
+                          configuration_update_basename);
     } else {
         throw std::runtime_error("invalid action mode");
     }
@@ -154,9 +154,8 @@ std::string SLAMServiceImpl::PaintMap() {
 
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            const std::string error =
-                map_builder.map_builder_->SubmapToProto(submap_id_pose.id,
-                                                        &response_proto);
+            const std::string error = map_builder.map_builder_->SubmapToProto(
+                submap_id_pose.id, &response_proto);
             if (error != "") {
                 throw std::runtime_error(error);
             }
@@ -166,8 +165,8 @@ std::string SLAMServiceImpl::PaintMap() {
             absl::make_unique<::cartographer::io::SubmapTextures>();
         submap_textures->version = response_proto.submap_version();
         for (const auto &texture_proto : response_proto.textures()) {
-            const std::string compressed_cells(
-                texture_proto.cells().begin(), texture_proto.cells().end());
+            const std::string compressed_cells(texture_proto.cells().begin(),
+                                               texture_proto.cells().end());
             submap_textures->textures.emplace_back(
                 ::cartographer::io::SubmapTexture{
                     ::cartographer::io::UnpackTextureData(
@@ -191,9 +190,9 @@ std::string SLAMServiceImpl::PaintMap() {
         submap_slice.cairo_data.clear();
 
         submap_slice.surface = ::cartographer::io::DrawTexture(
-            fetched_texture->pixels.intensity,
-            fetched_texture->pixels.alpha, fetched_texture->width,
-            fetched_texture->height, &submap_slice.cairo_data);
+            fetched_texture->pixels.intensity, fetched_texture->pixels.alpha,
+            fetched_texture->width, fetched_texture->height,
+            &submap_slice.cairo_data);
 
         if (submap_id_pose.id.submap_index == 0 &&
             submap_id_pose.id.trajectory_id == 0) {
@@ -204,7 +203,7 @@ std::string SLAMServiceImpl::PaintMap() {
             {
                 std::lock_guard<std::mutex> lk(map_builder_mutex);
                 trajectory_nodes = map_builder.map_builder_->pose_graph()
-                                        ->GetTrajectoryNodes();
+                                       ->GetTrajectoryNodes();
             }
             submap_slice.surface = viam::io::DrawTrajectoryNodes(
                 trajectory_nodes, submap_slice.resolution,
@@ -254,15 +253,20 @@ void SLAMServiceImpl::CreateMap() {
             map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
     }
 
-    viam::io::ReadFile read_file;
     std::vector<std::string> file_list =
-        read_file.listFilesInDirectory(this->path_to_data);
-    std::string initial_file = file_list[0];
+        viam::io::ListFilesInDirectory(path_to_data);
+    if (file_list.size() == 0) {
+        throw std::runtime_error("no data in data directory");
+    }
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SetStartTime(file_list[0]);
+    }
 
-    if (this->starting_scan_number < 0 ||
-        this->starting_scan_number >= int(file_list.size())) {
+    if (starting_scan_number < 0 ||
+        starting_scan_number >= int(file_list.size())) {
         throw std::runtime_error("starting_scan_number is out of bounds: " +
-                                 std::to_string(this->starting_scan_number));
+                                 std::to_string(starting_scan_number));
     }
 
     std::cout << "Beginning to add data....\n";
@@ -271,13 +275,12 @@ void SLAMServiceImpl::CreateMap() {
     myfile.open("log.txt");
 
     int end_scan_number = int(file_list.size());
-    for (int i = this->starting_scan_number; i < end_scan_number; i++) {
+    for (int i = starting_scan_number; i < end_scan_number; i++) {
         if (!b_continue_session) return;
         int num_nodes;
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            auto measurement = map_builder.GetDataFromFile(this->path_to_data,
-                                                           initial_file, i);
+            auto measurement = map_builder.GetDataFromFile(path_to_data, i);
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
@@ -301,7 +304,7 @@ void SLAMServiceImpl::CreateMap() {
     myfile.close();
 
     // Save the map in a pbstream file
-    const std::string map_file = this->path_to_map + "/map.pbstream";
+    const std::string map_file = path_to_map + "/map.pbstream";
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
