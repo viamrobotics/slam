@@ -36,7 +36,7 @@ std::atomic<bool> b_continue_session{true};
         // included. Ticket: https://viam.atlassian.net/browse/DATA-657
         std::string jpeg_img = "";
         try {
-            PaintMap(jpeg_img);
+            jpeg_img = PaintMap();
             if (jpeg_img == "") {
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                     "currently no map exists yet");
@@ -131,7 +131,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     map_builder.BuildMapBuilder();
 }
 
-void SLAMServiceImpl::PaintMap(std::string &jpeg_img) {
+std::string SLAMServiceImpl::PaintMap() {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
@@ -212,7 +212,7 @@ void SLAMServiceImpl::PaintMap(std::string &jpeg_img) {
         cartographer::io::PaintSubmapSlicesResult painted_slices =
             viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
         auto image = viam::io::Image(std::move(painted_slices.surface));
-        jpeg_img = image.WriteJpegToString(50);
+        return image.WriteJpegToString(50);
     }
 }
 
