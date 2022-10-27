@@ -1,6 +1,6 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
-#include "../src/io/read_PCD_file.h"
+#include "read_PCD_file.h"
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -19,9 +19,8 @@ namespace io {
 
 namespace fs = boost::filesystem;
 
-cartographer::sensor::TimedPointCloudData
-ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
-                                            std::string initial_filename) {
+cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
+    std::string file_path, double start_time) {
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
     cartographer::sensor::TimedPointCloudData timedPCD;
@@ -36,9 +35,10 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
         return timedPCD;
     }
 
-    double time_delta = ReadTimeFromFilename(initial_filename.substr(
-        initial_filename.find("_data_") + viam::io::filenamePrefixLength,
-        initial_filename.find(".pcd")));
+    double current_time = ReadTimeFromFilename(file_path.substr(
+        file_path.find("_data_") + viam::io::filenamePrefixLength,
+        file_path.find(".pcd")));
+    double time_delta = current_time - start_time;
 
     LOG(INFO) << "------------ FILE DATA -------------\n";
     LOG(INFO) << "Accessing file " << file_path << " ... ";
@@ -64,8 +64,7 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
     return timedPCD;
 }
 
-std::vector<std::string> ReadFile::listFilesInDirectory(
-    std::string data_directory) {
+std::vector<std::string> ListFilesInDirectory(std::string data_directory) {
     std::vector<std::string> file_paths;
 
     for (const auto& entry : fs::directory_iterator(data_directory)) {
@@ -76,7 +75,7 @@ std::vector<std::string> ReadFile::listFilesInDirectory(
     return file_paths;
 }
 
-int ReadFile::removeFile(std::string file_path) {
+int RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
         LOG(INFO) << "Error removing file";
         return 0;
@@ -85,7 +84,7 @@ int ReadFile::removeFile(std::string file_path) {
 }
 
 // Converts UTC time string to a double value.
-double ReadFile::ReadTimeFromFilename(std::string filename) {
+double ReadTimeFromFilename(std::string filename) {
     // TODO: change time format "%Y-%m-%dT%H:%M:%SZ"
     // https://viam.atlassian.net/browse/DATA-638
     std::string time_format = "%Y-%m-%dT%H_%M_%S";

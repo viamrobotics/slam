@@ -105,11 +105,6 @@ if(EXISTS ${SRCDIR})
       src/main.cc
   )
 
-  google_binary(main_old
-    SRCS
-      src/main_old.cc
-  )
-
   google_binary(unit_tests
     SRCS
       ${ALL_VIAM_TEST_SRCS}
@@ -131,33 +126,39 @@ if(EXISTS ${SRCDIR})
     "/usr/local/lib/libcartographer.a" 
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
-    ${PROTOBUF_LIBRARIES})
+    ${PROTOBUF_LIBRARIES}
+    ${JPEG_LIBRARIES})
   target_include_directories(carto_grpc_server SYSTEM PUBLIC
     "/usr/local/include/cartographer"
     ${SRCDIR}
     ${GRPC_INCLUDE_DIRS}
     ${GRPCPP_INCLUDE_DIRS}
-    ${PROTOBUF_INCLUDE_DIRS})
+    ${PROTOBUF_INCLUDE_DIRS}
+    ${JPEG_INCLUDE_DIRS})
   target_compile_options(carto_grpc_server PUBLIC
     ${GRPC_CFLAGS_OTHER}
     ${GRPCPP_CFLAGS_OTHER}
-    ${PROTOBUF_CFLAGS_OTHER})
+    ${PROTOBUF_CFLAGS_OTHER}
+    ${JPEG_CFLAGS_OTHER})
 
   target_link_libraries(unit_tests PUBLIC
     "/usr/local/lib/libcartographer.a" 
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
-    ${PROTOBUF_LIBRARIES})
+    ${PROTOBUF_LIBRARIES}
+    ${JPEG_LIBRARIES})
   target_include_directories(unit_tests SYSTEM PUBLIC
     "/usr/local/include/cartographer"
     ${SRCDIR}
     ${GRPC_INCLUDE_DIRS}
     ${GRPCPP_INCLUDE_DIRS}
-    ${PROTOBUF_INCLUDE_DIRS})
+    ${PROTOBUF_INCLUDE_DIRS}
+    ${JPEG_INCLUDE_DIRS})
   target_compile_options(unit_tests PUBLIC
     ${GRPC_CFLAGS_OTHER}
     ${GRPCPP_CFLAGS_OTHER}
-    ${PROTOBUF_CFLAGS_OTHER})
+    ${PROTOBUF_CFLAGS_OTHER}
+    ${JPEG_CFLAGS_OTHER})
 
   target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     "${CERES_INCLUDE_DIRS}")

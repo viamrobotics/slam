@@ -9,64 +9,47 @@ namespace {
 BOOST_AUTO_TEST_SUITE(SLAMService)
 
 void checkCartoMapBuilderParameters(SLAMServiceImpl& slamService) {
-    auto pose_graph_options =
-        slamService.mapBuilder.map_builder_options_.pose_graph_options();
-    auto overlapping_submaps_trimmer_2d =
-        pose_graph_options.overlapping_submaps_trimmer_2d();
-    auto ceres_scan_matcher_options =
-        pose_graph_options.constraint_builder_options()
-            .ceres_scan_matcher_options();
-    auto trajectory_builder_2d_options =
-        slamService.mapBuilder.trajectory_builder_options_
-            .trajectory_builder_2d_options();
-
     auto tolerance = boost::test_tools::tolerance(0.00001);
-    BOOST_TEST(pose_graph_options.optimize_every_n_nodes() ==
+
+    BOOST_TEST(slamService.GetOptimizeEveryNNodesFromMapBuilder() ==
                slamService.optimize_every_n_nodes);
-    BOOST_TEST(
-        trajectory_builder_2d_options.submaps_options().num_range_data() ==
-        slamService.num_range_data);
-    BOOST_TEST(trajectory_builder_2d_options.missing_data_ray_length() ==
+    BOOST_TEST(slamService.GetNumRangeDataFromMapBuilder() ==
+               slamService.num_range_data);
+    BOOST_TEST(slamService.GetMissingDataRayLengthFromMapBuilder() ==
                    slamService.missing_data_ray_length,
                tolerance);
-    BOOST_TEST(
-        trajectory_builder_2d_options.max_range() == slamService.max_range,
-        tolerance);
-    BOOST_TEST(
-        trajectory_builder_2d_options.min_range() == slamService.min_range,
-        tolerance);
+    BOOST_TEST(slamService.GetMaxRangeFromMapBuilder() == slamService.max_range,
+               tolerance);
+    BOOST_TEST(slamService.GetMinRangeFromMapBuilder() == slamService.min_range,
+               tolerance);
     if (slamService.GetActionMode() == SLAMServiceActionMode::LOCALIZING) {
-        BOOST_TEST(slamService.mapBuilder.trajectory_builder_options_
-                       .pure_localization_trimmer()
-                       .max_submaps_to_keep() ==
+        BOOST_TEST(slamService.GetMaxSubmapsToKeepFromMapBuilder() ==
                    slamService.max_submaps_to_keep);
     } else {
-        BOOST_TEST(slamService.mapBuilder.trajectory_builder_options_
-                       .pure_localization_trimmer()
-                       .max_submaps_to_keep() == 0);
+        BOOST_TEST(slamService.GetMaxSubmapsToKeepFromMapBuilder() == 0);
     }
+
     if (slamService.GetActionMode() == SLAMServiceActionMode::UPDATING) {
-        BOOST_TEST(overlapping_submaps_trimmer_2d.fresh_submaps_count() ==
+        BOOST_TEST(slamService.GetFreshSubmapsCountFromMapBuilder() ==
                    slamService.fresh_submaps_count);
-        BOOST_TEST(overlapping_submaps_trimmer_2d.min_covered_area() ==
+        BOOST_TEST(slamService.GetMinCoveredAreaFromMapBuilder() ==
                        slamService.min_covered_area,
                    tolerance);
-        BOOST_TEST(overlapping_submaps_trimmer_2d.min_added_submaps_count() ==
+        BOOST_TEST(slamService.GetMinAddedSubmapsCountFromMapBuilder() ==
                    slamService.min_added_submaps_count);
     } else {
-        BOOST_TEST(overlapping_submaps_trimmer_2d.fresh_submaps_count() == 0);
-        BOOST_TEST(overlapping_submaps_trimmer_2d.min_covered_area() == 0,
+        BOOST_TEST(slamService.GetFreshSubmapsCountFromMapBuilder() == 0);
+        BOOST_TEST(slamService.GetMinCoveredAreaFromMapBuilder() == 0,
                    tolerance);
-        BOOST_TEST(overlapping_submaps_trimmer_2d.min_added_submaps_count() ==
-                   0);
+        BOOST_TEST(slamService.GetMinAddedSubmapsCountFromMapBuilder() == 0);
     }
-    BOOST_TEST(ceres_scan_matcher_options.occupied_space_weight() ==
+    BOOST_TEST(slamService.GetOccupiedSpaceWeightFromMapBuilder() ==
                    slamService.occupied_space_weight,
                tolerance);
-    BOOST_TEST(ceres_scan_matcher_options.translation_weight() ==
+    BOOST_TEST(slamService.GetTranslationWeightFromMapBuilder() ==
                    slamService.translation_weight,
                tolerance);
-    BOOST_TEST(ceres_scan_matcher_options.rotation_weight() ==
+    BOOST_TEST(slamService.GetRotationWeightFromMapBuilder() ==
                    slamService.rotation_weight,
                tolerance);
 }

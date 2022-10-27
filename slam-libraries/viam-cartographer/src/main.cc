@@ -9,7 +9,6 @@
 
 #include "glog/logging.h"
 #include "slam_service/config.h"
-#include "slam_service/server_functions.h"
 #include "slam_service/slam_service.h"
 
 void exit_loop_handler(int s) {
