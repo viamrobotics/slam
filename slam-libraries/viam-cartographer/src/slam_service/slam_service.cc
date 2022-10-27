@@ -320,50 +320,62 @@ void SLAMServiceImpl::CreateMap() {
 }
 
 int SLAMServiceImpl::GetOptimizeEveryNNodesFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetOptimizeEveryNNodes();
 }
 
 int SLAMServiceImpl::GetNumRangeDataFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetNumRangeData();
 }
 
 float SLAMServiceImpl::GetMissingDataRayLengthFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMissingDataRayLength();
 }
 
 float SLAMServiceImpl::GetMaxRangeFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMaxRange();
 }
 
 float SLAMServiceImpl::GetMinRangeFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMinRange();
 }
 
 int SLAMServiceImpl::GetMaxSubmapsToKeepFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMaxSubmapsToKeep();
 }
 
 int SLAMServiceImpl::GetFreshSubmapsCountFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetFreshSubmapsCount();
 }
 
 double SLAMServiceImpl::GetMinCoveredAreaFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMinCoveredArea();
 }
 
 int SLAMServiceImpl::GetMinAddedSubmapsCountFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMinAddedSubmapsCount();
 }
 
 double SLAMServiceImpl::GetOccupiedSpaceWeightFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetOccupiedSpaceWeight();
 }
 
 double SLAMServiceImpl::GetTranslationWeightFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetTranslationWeight();
 }
 
 double SLAMServiceImpl::GetRotationWeightFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetRotationWeight();
 }
 
