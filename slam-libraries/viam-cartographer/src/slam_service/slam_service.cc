@@ -318,15 +318,21 @@ int SLAMServiceImpl::GetOptimizeEveryNNodesFromMapBuilder() {
     return map_builder.GetOptimizeEveryNNodes();
 }
 
-int SLAMServiceImpl::GetNumRangeDataFromMapBuilder() { return map_builder.GetNumRangeData(); }
+int SLAMServiceImpl::GetNumRangeDataFromMapBuilder() {
+    return map_builder.GetNumRangeData();
+}
 
 float SLAMServiceImpl::GetMissingDataRayLengthFromMapBuilder() {
     return map_builder.GetMissingDataRayLength();
 }
 
-float SLAMServiceImpl::GetMaxRangeFromMapBuilder() { return map_builder.GetMaxRange(); }
+float SLAMServiceImpl::GetMaxRangeFromMapBuilder() {
+    return map_builder.GetMaxRange();
+}
 
-float SLAMServiceImpl::GetMinRangeFromMapBuilder() { return map_builder.GetMinRange(); }
+float SLAMServiceImpl::GetMinRangeFromMapBuilder() {
+    return map_builder.GetMinRange();
+}
 
 int SLAMServiceImpl::GetMaxSubmapsToKeepFromMapBuilder() {
     return map_builder.GetMaxSubmapsToKeep();
@@ -348,8 +354,12 @@ double SLAMServiceImpl::GetOccupiedSpaceWeightFromMapBuilder() {
     return map_builder.GetOccupiedSpaceWeight();
 }
 
-double SLAMServiceImpl::GetTranslationWeightFromMapBuilder() { return map_builder.GetTranslationWeight(); }
+double SLAMServiceImpl::GetTranslationWeightFromMapBuilder() {
+    return map_builder.GetTranslationWeight();
+}
 
-double SLAMServiceImpl::GetRotationWeightFromMapBuilder() { return map_builder.GetRotationWeight(); }
+double SLAMServiceImpl::GetRotationWeightFromMapBuilder() {
+    return map_builder.GetRotationWeight();
+}
 
 }  // namespace viam
