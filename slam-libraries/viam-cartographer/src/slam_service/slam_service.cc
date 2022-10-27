@@ -112,31 +112,23 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
 void SLAMServiceImpl::SetUpMapBuilder() {
     auto action_mode = GetActionMode();
     if (action_mode == SLAMServiceActionMode::MAPPING) {
-        {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.SetUp(this->configuration_directory,
-                              this->configuration_mapping_basename);
-        }
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SetUp(this->configuration_directory,
+                            this->configuration_mapping_basename);
     } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
-        {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.SetUp(this->configuration_directory,
-                              this->configuration_localization_basename);
-        }
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SetUp(this->configuration_directory,
+                            this->configuration_localization_basename);
     } else if (action_mode == SLAMServiceActionMode::UPDATING) {
-        {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.SetUp(this->configuration_directory,
-                              this->configuration_update_basename);
-        }
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SetUp(this->configuration_directory,
+                            this->configuration_update_basename);
     } else {
         throw std::runtime_error("invalid action mode");
     }
     OverwriteMapBuilderParameters();
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.BuildMapBuilder();
-    }
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
+    map_builder.BuildMapBuilder();
 }
 
 void SLAMServiceImpl::PaintMap(std::string &jpeg_img) {
