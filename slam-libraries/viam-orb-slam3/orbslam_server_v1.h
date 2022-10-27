@@ -72,7 +72,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
 namespace utils {
 
-extern string time_format;
+static const string time_format = "%Y-%m-%dT%H:%M:%SZ";
 enum class FileParserMethod { Recent, Closest };
 // find a specific input argument from rdk and write the value to a string.
 // Returns empty if the argument is not found.
@@ -89,9 +89,6 @@ void ParseAndValidateArguments(const vector<string> &args,
 
 // Converts UTC time string to a double value.
 double ReadTimeFromFilename(const string filename);
-
-// Checks if using new or old time format
-void FindTimeFormat(string filename);
 
 std::vector<std::string> ListFilesInDirectoryForCamera(
     const std::string data_directory, const std::string extension,

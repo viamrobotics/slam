@@ -613,7 +613,6 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
 }
 
 namespace utils {
-string time_format = "%Y-%m-%dT%H:%M:%SZ";
 // LoadRGB loads in rgb images to be used by ORBSLAM, and
 // returns whether the image was loaded successfully
 bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
@@ -791,15 +790,6 @@ double ReadTimeFromFilename(string filename) {
     }
 }
 
-// Checks if using new or old time format
-// TODO: REMOVE AFTER RDK INTEGRATION PASSES
-void FindTimeFormat(string filename) {
-    // Check if we are using the old time format
-    auto find_underscores = filename.find("_");
-    if (find_underscores != string::npos) time_format = "%Y-%m-%dT%H_%M_%S";
-    return;
-}
-
 std::vector<std::string> ListFilesInDirectoryForCamera(
     std::string data_directory, std::string extension,
     std::string camera_name) {
@@ -885,11 +875,6 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
     // Save the current atlas map in *.osa style
-    auto find_underscores = time_format.find("_");
-    if (find_underscores != string::npos) {
-        return path_to_dir + "/" + camera_name + "_data_" + timestamp +
-               ".0000.osa";
-    }
     return path_to_dir + "/" + camera_name + "_data_" + timestamp + ".osa";
 }
 
