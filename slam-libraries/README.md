@@ -11,7 +11,7 @@ To use these servers the Viam API must be built.
 To setup, run:
 
 ```bash
-make buf
+make bufinstall buf
 ```
 
 ## Cartographer
