@@ -114,15 +114,15 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     if (action_mode == SLAMServiceActionMode::MAPPING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(this->configuration_directory,
-                            this->configuration_mapping_basename);
+                          this->configuration_mapping_basename);
     } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(this->configuration_directory,
-                            this->configuration_localization_basename);
+                          this->configuration_localization_basename);
     } else if (action_mode == SLAMServiceActionMode::UPDATING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(this->configuration_directory,
-                            this->configuration_update_basename);
+                          this->configuration_update_basename);
     } else {
         throw std::runtime_error("invalid action mode");
     }
@@ -214,6 +214,7 @@ std::string SLAMServiceImpl::PaintMap() {
         auto image = viam::io::Image(std::move(painted_slices.surface));
         return image.WriteJpegToString(50);
     }
+    return "";
 }
 
 void SLAMServiceImpl::ProcessDataOffline() {
@@ -312,5 +313,43 @@ void SLAMServiceImpl::CreateMap() {
 
     return;
 }
+
+int SLAMServiceImpl::GetOptimizeEveryNNodesFromMapBuilder() {
+    return map_builder.GetOptimizeEveryNNodes();
+}
+
+int SLAMServiceImpl::GetNumRangeDataFromMapBuilder() { return map_builder.GetNumRangeData(); }
+
+float SLAMServiceImpl::GetMissingDataRayLengthFromMapBuilder() {
+    return map_builder.GetMissingDataRayLength();
+}
+
+float SLAMServiceImpl::GetMaxRangeFromMapBuilder() { return map_builder.GetMaxRange(); }
+
+float SLAMServiceImpl::GetMinRangeFromMapBuilder() { return map_builder.GetMinRange(); }
+
+int SLAMServiceImpl::GetMaxSubmapsToKeepFromMapBuilder() {
+    return map_builder.GetMaxSubmapsToKeep();
+}
+
+int SLAMServiceImpl::GetFreshSubmapsCountFromMapBuilder() {
+    return map_builder.GetFreshSubmapsCount();
+}
+
+double SLAMServiceImpl::GetMinCoveredAreaFromMapBuilder() {
+    return map_builder.GetMinCoveredArea();
+}
+
+int SLAMServiceImpl::GetMinAddedSubmapsCountFromMapBuilder() {
+    return map_builder.GetMinAddedSubmapsCount();
+}
+
+double SLAMServiceImpl::GetOccupiedSpaceWeightFromMapBuilder() {
+    return map_builder.GetOccupiedSpaceWeight();
+}
+
+double SLAMServiceImpl::GetTranslationWeightFromMapBuilder() { return map_builder.GetTranslationWeight(); }
+
+double SLAMServiceImpl::GetRotationWeightFromMapBuilder() { return map_builder.GetRotationWeight(); }
 
 }  // namespace viam

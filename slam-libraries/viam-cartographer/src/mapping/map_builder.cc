@@ -199,5 +199,74 @@ void MapBuilder::OverwriteRotationWeight(double value) {
     mutable_ceres_scan_matcher_options->set_rotation_weight(value);
 }
 
+int MapBuilder::GetOptimizeEveryNNodes() {
+    return map_builder_options_.pose_graph_options().optimize_every_n_nodes();
+}
+
+int MapBuilder::GetNumRangeData() {
+    return trajectory_builder_options_.trajectory_builder_2d_options()
+        .submaps_options()
+        .num_range_data();
+}
+
+float MapBuilder::GetMissingDataRayLength() {
+    return trajectory_builder_options_.trajectory_builder_2d_options()
+        .missing_data_ray_length();
+}
+
+float MapBuilder::GetMaxRange() {
+    return trajectory_builder_options_.trajectory_builder_2d_options()
+        .max_range();
+}
+
+float MapBuilder::GetMinRange() {
+    return trajectory_builder_options_.trajectory_builder_2d_options()
+        .min_range();
+}
+
+int MapBuilder::GetMaxSubmapsToKeep() {
+    return trajectory_builder_options_.pure_localization_trimmer()
+        .max_submaps_to_keep();
+}
+
+int MapBuilder::GetFreshSubmapsCount() {
+    return map_builder_options_.pose_graph_options()
+        .overlapping_submaps_trimmer_2d()
+        .fresh_submaps_count();
+}
+
+double MapBuilder::GetMinCoveredArea() {
+    return map_builder_options_.pose_graph_options()
+        .overlapping_submaps_trimmer_2d()
+        .min_covered_area();
+}
+
+int MapBuilder::GetMinAddedSubmapsCount() {
+    return map_builder_options_.pose_graph_options()
+        .overlapping_submaps_trimmer_2d()
+        .min_added_submaps_count();
+}
+
+double MapBuilder::GetOccupiedSpaceWeight() {
+    return map_builder_options_.pose_graph_options()
+        .constraint_builder_options()
+        .ceres_scan_matcher_options()
+        .occupied_space_weight();
+}
+
+double MapBuilder::GetTranslationWeight() {
+    return map_builder_options_.pose_graph_options()
+        .constraint_builder_options()
+        .ceres_scan_matcher_options()
+        .translation_weight();
+}
+
+double MapBuilder::GetRotationWeight() {
+    return map_builder_options_.pose_graph_options()
+        .constraint_builder_options()
+        .ceres_scan_matcher_options()
+        .rotation_weight();
+}
+
 }  // namespace mapping
 }  // namespace viam

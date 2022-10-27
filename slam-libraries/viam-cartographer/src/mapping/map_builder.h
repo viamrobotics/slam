@@ -56,6 +56,19 @@ class MapBuilder {
     void OverwriteTranslationWeight(double value);
     void OverwriteRotationWeight(double value);
 
+    int GetOptimizeEveryNNodes();
+    int GetNumRangeData();
+    float GetMissingDataRayLength();
+    float GetMaxRange();
+    float GetMinRange();
+    int GetMaxSubmapsToKeep();
+    int GetFreshSubmapsCount();
+    double GetMinCoveredArea();
+    int GetMinAddedSubmapsCount();
+    double GetOccupiedSpaceWeight();
+    double GetTranslationWeight();
+    double GetRotationWeight();
+
    private:
     std::vector<::cartographer::transform::Rigid3d> local_slam_result_poses_;
 };

@@ -75,6 +75,20 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // PaintMap paints the map in jpeg format
     std::string PaintMap();
 
+    // Getter functions for map_builder parameters (called: options)
+    int GetOptimizeEveryNNodesFromMapBuilder();
+    int GetNumRangeDataFromMapBuilder();
+    float GetMissingDataRayLengthFromMapBuilder();
+    float GetMaxRangeFromMapBuilder();
+    float GetMinRangeFromMapBuilder();
+    int GetMaxSubmapsToKeepFromMapBuilder();
+    int GetFreshSubmapsCountFromMapBuilder();
+    double GetMinCoveredAreaFromMapBuilder();
+    int GetMinAddedSubmapsCountFromMapBuilder();
+    double GetOccupiedSpaceWeightFromMapBuilder();
+    double GetTranslationWeightFromMapBuilder();
+    double GetRotationWeightFromMapBuilder();
+
     std::string path_to_data;
     std::string path_to_map;
     std::string configuration_directory;
@@ -106,9 +120,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double translation_weight = 10.0;
     double rotation_weight = 1.0;
 
-    std::mutex map_builder_mutex;
-    mapping::MapBuilder map_builder;
-
    private:
     int starting_scan_number = 0;
     int picture_print_interval = 50;
@@ -116,6 +127,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     const std::string configuration_localization_basename =
         "locating_in_map.lua";
     const std::string configuration_update_basename = "updating_a_map.lua";
+
+    std::mutex map_builder_mutex;
+    mapping::MapBuilder map_builder;
 };
 
 }  // namespace viam
