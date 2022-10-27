@@ -36,9 +36,13 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
         return timedPCD;
     }
 
-    double time_delta = ReadTimeFromFilename(initial_filename.substr(
+    double start_time = ReadTimeFromFilename(initial_filename.substr(
         initial_filename.find("_data_") + viam::io::filenamePrefixLength,
         initial_filename.find(".pcd")));
+    double current_time = ReadTimeFromFilename(file_path.substr(
+        initial_filename.find("_data_") + viam::io::filenamePrefixLength,
+        initial_filename.find(".pcd")));
+    double time_delta = current_time - start_time;
 
     LOG(INFO) << "------------ FILE DATA -------------\n";
     LOG(INFO) << "Accessing file " << file_path << " ... ";
