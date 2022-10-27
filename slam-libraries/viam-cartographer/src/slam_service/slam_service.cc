@@ -145,76 +145,79 @@ std::string SLAMServiceImpl::PaintMap() {
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
 
-    if (submap_poses.size() > 0) {
-        for (const auto &submap_id_pose : submap_poses) {
-            cartographer::mapping::proto::SubmapQuery::Response response_proto;
+    if (submap_poses.size() == 0) {
+        return "";
+    }
 
-            {
-                std::lock_guard<std::mutex> lk(map_builder_mutex);
-                const std::string error =
-                    map_builder.map_builder_->SubmapToProto(submap_id_pose.id,
-                                                            &response_proto);
-                if (error != "") {
-                    throw std::runtime_error(error);
-                }
-            }
+    for (const auto &submap_id_pose : submap_poses) {
+        cartographer::mapping::proto::SubmapQuery::Response response_proto;
 
-            auto submap_textures =
-                absl::make_unique<::cartographer::io::SubmapTextures>();
-            submap_textures->version = response_proto.submap_version();
-            for (const auto &texture_proto : response_proto.textures()) {
-                const std::string compressed_cells(
-                    texture_proto.cells().begin(), texture_proto.cells().end());
-                submap_textures->textures.emplace_back(
-                    ::cartographer::io::SubmapTexture{
-                        ::cartographer::io::UnpackTextureData(
-                            compressed_cells, texture_proto.width(),
-                            texture_proto.height()),
-                        texture_proto.width(), texture_proto.height(),
-                        texture_proto.resolution(),
-                        cartographer::transform::ToRigid3(
-                            texture_proto.slice_pose())});
-            }
-
-            // Prepares SubmapSlice
-            ::cartographer::io::SubmapSlice &submap_slice =
-                submap_slices[submap_id_pose.id];
-            const auto fetched_texture = submap_textures->textures.begin();
-            submap_slice.pose = submap_id_pose.data.pose;
-            submap_slice.width = fetched_texture->width;
-            submap_slice.height = fetched_texture->height;
-            submap_slice.slice_pose = fetched_texture->slice_pose;
-            submap_slice.resolution = fetched_texture->resolution;
-            submap_slice.cairo_data.clear();
-
-            submap_slice.surface = ::cartographer::io::DrawTexture(
-                fetched_texture->pixels.intensity,
-                fetched_texture->pixels.alpha, fetched_texture->width,
-                fetched_texture->height, &submap_slice.cairo_data);
-
-            if (submap_id_pose.id.submap_index == 0 &&
-                submap_id_pose.id.trajectory_id == 0) {
-                cartographer::mapping::MapById<
-                    cartographer::mapping::NodeId,
-                    cartographer::mapping::TrajectoryNode>
-                    trajectory_nodes;
-                {
-                    std::lock_guard<std::mutex> lk(map_builder_mutex);
-                    trajectory_nodes = map_builder.map_builder_->pose_graph()
-                                           ->GetTrajectoryNodes();
-                }
-                submap_slice.surface = viam::io::DrawTrajectoryNodes(
-                    trajectory_nodes, submap_slice.resolution,
-                    submap_slice.slice_pose, submap_slice.surface.get());
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            const std::string error =
+                map_builder.map_builder_->SubmapToProto(submap_id_pose.id,
+                                                        &response_proto);
+            if (error != "") {
+                throw std::runtime_error(error);
             }
         }
 
-        cartographer::io::PaintSubmapSlicesResult painted_slices =
-            viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-        auto image = viam::io::Image(std::move(painted_slices.surface));
-        return image.WriteJpegToString(50);
+        auto submap_textures =
+            absl::make_unique<::cartographer::io::SubmapTextures>();
+        submap_textures->version = response_proto.submap_version();
+        for (const auto &texture_proto : response_proto.textures()) {
+            const std::string compressed_cells(
+                texture_proto.cells().begin(), texture_proto.cells().end());
+            submap_textures->textures.emplace_back(
+                ::cartographer::io::SubmapTexture{
+                    ::cartographer::io::UnpackTextureData(
+                        compressed_cells, texture_proto.width(),
+                        texture_proto.height()),
+                    texture_proto.width(), texture_proto.height(),
+                    texture_proto.resolution(),
+                    cartographer::transform::ToRigid3(
+                        texture_proto.slice_pose())});
+        }
+
+        // Prepares SubmapSlice
+        ::cartographer::io::SubmapSlice &submap_slice =
+            submap_slices[submap_id_pose.id];
+        const auto fetched_texture = submap_textures->textures.begin();
+        submap_slice.pose = submap_id_pose.data.pose;
+        submap_slice.width = fetched_texture->width;
+        submap_slice.height = fetched_texture->height;
+        submap_slice.slice_pose = fetched_texture->slice_pose;
+        submap_slice.resolution = fetched_texture->resolution;
+        submap_slice.cairo_data.clear();
+
+        submap_slice.surface = ::cartographer::io::DrawTexture(
+            fetched_texture->pixels.intensity,
+            fetched_texture->pixels.alpha, fetched_texture->width,
+            fetched_texture->height, &submap_slice.cairo_data);
+
+        if (submap_id_pose.id.submap_index == 0 &&
+            submap_id_pose.id.trajectory_id == 0) {
+            cartographer::mapping::MapById<
+                cartographer::mapping::NodeId,
+                cartographer::mapping::TrajectoryNode>
+                trajectory_nodes;
+            {
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
+                trajectory_nodes = map_builder.map_builder_->pose_graph()
+                                        ->GetTrajectoryNodes();
+            }
+            submap_slice.surface = viam::io::DrawTrajectoryNodes(
+                trajectory_nodes, submap_slice.resolution,
+                submap_slice.slice_pose, submap_slice.surface.get());
+        }
     }
-    return "";
+
+    cartographer::io::PaintSubmapSlicesResult painted_slices =
+        viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
+    auto image = viam::io::Image(std::move(painted_slices.surface));
+    std::string jpeg_img = image.WriteJpegToString(50);
+    std::cout << "JPEG_IMG = " << jpeg_img << std::endl;
+    return jpeg_img;
 }
 
 void SLAMServiceImpl::ProcessDataOffline() {
