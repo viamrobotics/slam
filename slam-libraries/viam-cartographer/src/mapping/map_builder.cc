@@ -76,22 +76,14 @@ void MapBuilder::SetStartTime(std::string initial_filename) {
 }
 
 cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
-    std::string data_directory, int i) {
+    std::string file) {
     cartographer::sensor::TimedPointCloudData point_cloud;
-
-    std::vector<std::string> files =
-        viam::io::ListFilesInDirectory(data_directory);
-
-    if (files.size() == 0) {
-        LOG(INFO) << "No files found in data directory\n";
-        return point_cloud;
-    }
 
     if (start_time == -1) {
         throw std::runtime_error("start_time has not been initialized");
     }
     point_cloud =
-        viam::io::TimedPointCloudDataFromPCDBuilder(files[i], start_time);
+        viam::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
 
     LOG(INFO) << "----------PCD-------";
     LOG(INFO) << "Time: " << point_cloud.time;

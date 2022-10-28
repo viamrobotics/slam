@@ -218,7 +218,7 @@ std::string SLAMServiceImpl::PaintMap() {
     return jpeg_img;
 }
 
-void SLAMServiceImpl::ProcessDataOffline() {
+void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
 
@@ -237,6 +237,43 @@ void SLAMServiceImpl::ProcessDataOffline() {
     CreateMap();
 }
 
+std::string SLAMServiceImpl::GetNextDataFile() {
+    if (offlineFlag) {
+        if (!b_continue_session) {
+            return "";
+        }
+        if (file_list_offline.size() == 0) {
+            file_list_offline = viam::io::ListFilesInDirectory(path_to_data);
+        }
+        if (file_list_offline.size() == 0) {
+            throw std::runtime_error("no data in data directory");
+        }
+        if (current_file_offline == file_list_offline.size()) {
+            LOG(INFO) << "Finished processing offline images";
+            return "";
+        }
+        const auto to_return = file_list_offline[current_file_offline];
+        current_file_offline++;
+        return to_return;
+    }
+    // online processing
+    while(b_continue_session) {
+        const auto file_list_online = viam::io::ListFilesInDirectory(path_to_data);
+        if (file_list_online.size() > 1) {
+            // Get the second-most-recent file, since the most-recent file may
+            // still be being written.
+            const auto to_return = file_list_online[file_list_online.size()-2];
+            if (to_return.compare(current_file_online) != 0) {
+                current_file_online = to_return;
+                return to_return;
+            }
+        }
+        VLOG(1) << "No new files found";
+        std::this_thread::sleep_for(data_rate_ms);
+    }
+    return "";
+}
+
 void SLAMServiceImpl::CreateMap() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
@@ -253,34 +290,24 @@ void SLAMServiceImpl::CreateMap() {
             map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
     }
 
-    std::vector<std::string> file_list =
-        viam::io::ListFilesInDirectory(path_to_data);
-    if (file_list.size() == 0) {
-        throw std::runtime_error("no data in data directory");
-    }
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SetStartTime(file_list[0]);
-    }
-
-    if (starting_scan_number < 0 ||
-        starting_scan_number >= int(file_list.size())) {
-        throw std::runtime_error("starting_scan_number is out of bounds: " +
-                                 std::to_string(starting_scan_number));
-    }
-
-    std::cout << "Beginning to add data....\n";
+    LOG(INFO) << "Beginning to add data...";
 
     std::ofstream myfile;
     myfile.open("log.txt");
 
-    int end_scan_number = int(file_list.size());
-    for (int i = starting_scan_number; i < end_scan_number; i++) {
-        if (!b_continue_session) return;
+    bool set_start_time = false;
+    auto file = GetNextDataFile();
+    while (file != "") {
+        if (!set_start_time) {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.SetStartTime(file);
+            set_start_time = true;
+        }
+
         int num_nodes;
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            auto measurement = map_builder.GetDataFromFile(path_to_data, i);
+            auto measurement = map_builder.GetDataFromFile(file);
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
@@ -299,9 +326,13 @@ void SLAMServiceImpl::CreateMap() {
                 }
             }
         }
+
+        file = GetNextDataFile();
     }
 
     myfile.close();
+
+    if (!set_start_time) return;
 
     // Save the map in a pbstream file
     const std::string map_file = path_to_map + "/map.pbstream";
@@ -313,8 +344,6 @@ void SLAMServiceImpl::CreateMap() {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
     }
-
-    LOG(INFO) << "Finished processing offline images";
 
     return;
 }

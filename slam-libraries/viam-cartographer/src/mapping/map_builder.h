@@ -31,8 +31,7 @@ class MapBuilder {
     GetLocalSlamResultCallback();
 
     void SetStartTime(std::string initial_filename);
-    cartographer::sensor::TimedPointCloudData GetDataFromFile(
-        std::string data_directory, int i);
+    cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
 
     std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder_;
     cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
