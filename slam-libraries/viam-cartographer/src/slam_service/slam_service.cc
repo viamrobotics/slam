@@ -56,11 +56,17 @@ std::atomic<bool> b_continue_session{true};
             return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
         }
     } else if (mime_type == "pointcloud/pcd") {
-        LOG(ERROR) << "GetMap for mime_type \"pointcloud/pcd\" is not yet "
-                      "implemented.\n";
-        return grpc::Status(
-            grpc::StatusCode::UNIMPLEMENTED,
-            "GetMap for mime_type \"pointcloud/pcd\" is not yet implemented.");
+        std::stringbuf buffer;
+        bool has_points = ExtractPointCloudToBuffer(buffer);
+        if (has_points) {
+            common::v1::PointCloudObject *pco = response->mutable_point_cloud();
+            pco->set_point_cloud(buffer.str());
+        } else {
+            LOG(ERROR) << "map pointcloud does not have points yet\n";
+            return grpc::Status(
+                grpc::StatusCode::UNIMPLEMENTED,
+                "map pointcloud does not have points yet");
+        }
     } else {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             "mime_type should be \"image/jpeg\" or "
@@ -217,6 +223,65 @@ std::string SLAMServiceImpl::PaintMap() {
     std::string jpeg_img = image.WriteJpegToString(50);
     return jpeg_img;
 }
+
+bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
+    std::ostream oss(&buffer);
+    bool has_points = false;
+
+    long number_points = 0;
+    const auto trajectory_nodes = map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
+    for (auto trajectory_node : trajectory_nodes) {
+        auto point_cloud = trajectory_node.data.constant_data->filtered_gravity_aligned_point_cloud;
+        number_points += point_cloud.size();
+    }
+
+    // Write our PCD file, which is written as a binary.
+    oss << "VERSION .7\n"
+        << "FIELDS x y z rgb\n"
+        << "SIZE 4 4 4 4\n"
+        << "TYPE F F F I\n"
+        << "COUNT 1 1 1 1\n"
+        << "WIDTH " << number_points << "\n"
+        << "HEIGHT " << 1 << "\n"
+        << "VIEWPOINT 0 0 0 1 0 0 0\n"
+        << "POINTS " << number_points << "\n"
+        << "DATA binary\n";
+
+    // TODO[kat]: Wrap into mutex
+    int i = 0;
+    for (auto trajectory_node : trajectory_nodes) {
+        cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
+            trajectory_node.data.constant_data->filtered_gravity_aligned_point_cloud;
+        
+        // cartographer::sensor::PointCloud local_point_cloud =
+        //     cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud,
+        //         cartographer::transform::Rigid3d::Rotation(trajectory_node.data.constant_data->gravity_alignment).inverse().cast<float>());
+        cartographer::sensor::PointCloud global_point_cloud =
+            cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud,
+                trajectory_node.data.global_pose.cast<float>());
+
+        // cartographer::transform::Rigid3d local_to_global_transform = 
+        //     map_builder.map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_node.id.trajectory_id);
+
+        // auto local_to_global =
+        //     local_to_global_transform.cast<float>();
+        // cartographer::sensor::PointCloud global_point_cloud =
+        //     cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud, local_to_global);
+
+        for (auto point : global_point_cloud) {
+            int rgb = 0;
+            buffer.sputn((const char *)&point.position[0], 4);
+            buffer.sputn((const char *)&point.position[2], 4);
+            buffer.sputn((const char *)&point.position[1], 4);
+            buffer.sputn((const char *)&rgb, 4);
+            has_points = true;
+        }
+        // i++;
+        // if (i == 100) break;
+    }
+    return has_points;
+}
+
 
 void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder

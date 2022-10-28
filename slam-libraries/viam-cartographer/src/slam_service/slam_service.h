@@ -87,6 +87,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // PaintMap paints the map in jpeg format
     std::string PaintMap();
 
+    // ExtractPointCloud extracts the pointcloud from the map_builder
+    bool ExtractPointCloudToBuffer(std::stringbuf &buffer);
+
     // Getter functions for map_builder parameters (called: options)
     int GetOptimizeEveryNNodesFromMapBuilder();
     int GetNumRangeDataFromMapBuilder();
