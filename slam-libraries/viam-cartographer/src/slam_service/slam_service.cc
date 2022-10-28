@@ -257,12 +257,14 @@ std::string SLAMServiceImpl::GetNextDataFile() {
         return to_return;
     }
     // online processing
-    while(b_continue_session) {
-        const auto file_list_online = viam::io::ListFilesInDirectory(path_to_data);
+    while (b_continue_session) {
+        const auto file_list_online =
+            viam::io::ListFilesInDirectory(path_to_data);
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
-            const auto to_return = file_list_online[file_list_online.size()-2];
+            const auto to_return =
+                file_list_online[file_list_online.size() - 2];
             if (to_return.compare(current_file_online) != 0) {
                 current_file_online = to_return;
                 return to_return;

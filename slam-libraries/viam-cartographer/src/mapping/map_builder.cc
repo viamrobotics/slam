@@ -82,8 +82,7 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
     if (start_time == -1) {
         throw std::runtime_error("start_time has not been initialized");
     }
-    point_cloud =
-        viam::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
+    point_cloud = viam::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
 
     LOG(INFO) << "----------PCD-------";
     LOG(INFO) << "Time: " << point_cloud.time;
