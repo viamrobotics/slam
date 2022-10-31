@@ -286,7 +286,6 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     return has_points;
 }
 
-
 void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
