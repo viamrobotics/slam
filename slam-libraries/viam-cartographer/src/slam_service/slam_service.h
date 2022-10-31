@@ -49,15 +49,27 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // ProcessDataOffline processes all existing data in offline mode until
-    // there is no more data left to go through.
-    void ProcessDataOffline();
+    // ProcessData process the data in the data directory. In offline mode,
+    // all data in the directory is processed. In online mode, the most
+    // recently generated data is processed until a shutdown signal is
+    // received.
+    void ProcessData();
 
-    // Placeholder function with full "offline mode" functionality that will
-    // be picked apart with future tickets into separate functions (GetMap,
-    // GetPosition, ProcessDataOnline, ProcessDataOffline). Gives an overview
-    // over how mapping + png map image creation + pbstream map saving is
-    // started & executed.
+    // GetNextDataFile returns the next data file to be processed, determined
+    // by whether cartographer is running in offline or online mode.
+    std::string GetNextDataFile();
+
+    // GetNextDataFileOffline returns the next data file in the directory.
+    // Returns an empty string if done processing files or if stop has been
+    // signaled.
+    std::string GetNextDataFileOffline();
+
+    // GetNextDataFileOnline returns the most recently generated data that has
+    // not been been processed, blocking if no new file is found. Returns an
+    // empty string if stop has been signaled.
+    std::string GetNextDataFileOnline();
+
+    // CreateMap creates a map from scratch.
     void CreateMap();
 
     // GetActionMode returns the slam action mode from the provided
@@ -121,12 +133,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
-    int starting_scan_number = 0;
-    int picture_print_interval = 50;
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
     const std::string configuration_localization_basename =
         "locating_in_map.lua";
     const std::string configuration_update_basename = "updating_a_map.lua";
+    std::vector<std::string> file_list_offline;
+    size_t current_file_offline = 0;
+    std::string current_file_online;
 
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
