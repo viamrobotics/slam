@@ -98,7 +98,8 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
     int trajectory_id, cartographer::transform::Rigid3d& latest_local_pose_) {
-    // TODO: should be able to grab the global pose directly from the trajectory node
+    // TODO: should be able to grab the global pose directly from the trajectory
+    // node
     auto local_transform =
         map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
     return local_transform * latest_local_pose_;

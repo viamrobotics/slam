@@ -63,9 +63,8 @@ std::atomic<bool> b_continue_session{true};
             pco->set_point_cloud(buffer.str());
         } else {
             LOG(ERROR) << "map pointcloud does not have points yet\n";
-            return grpc::Status(
-                grpc::StatusCode::UNIMPLEMENTED,
-                "map pointcloud does not have points yet");
+            return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
+                                "map pointcloud does not have points yet");
         }
     } else {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
@@ -231,13 +230,16 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     long number_points = 0;
 
     cartographer::mapping::MapById<cartographer::mapping::NodeId,
-        cartographer::mapping::TrajectoryNode> trajectory_nodes;
+                                   cartographer::mapping::TrajectoryNode>
+        trajectory_nodes;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        trajectory_nodes = map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
+        trajectory_nodes =
+            map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
     }
     for (auto trajectory_node : trajectory_nodes) {
-        auto point_cloud = trajectory_node.data.constant_data->filtered_gravity_aligned_point_cloud;
+        auto point_cloud = trajectory_node.data.constant_data
+                               ->filtered_gravity_aligned_point_cloud;
         number_points += point_cloud.size();
     }
 
@@ -255,16 +257,22 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
 
     for (auto trajectory_node : trajectory_nodes) {
         cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
-            trajectory_node.data.constant_data->filtered_gravity_aligned_point_cloud;
+            trajectory_node.data.constant_data
+                ->filtered_gravity_aligned_point_cloud;
 
-        // We're only applying the transformation of the `global_pose` on the point cloud here, as 
-        // opposed to using both the translation and rotation of the global pose of the trajectory node.
-        // The reason for this seems to be that since the point cloud is already gravity aligned, the 
-        // rotational part of the transformation relative to the world frame is already taken care of.
+        // We're only applying the transformation of the `global_pose` on the
+        // point cloud here, as opposed to using both the translation and
+        // rotation of the global pose of the trajectory node. The reason for
+        // this seems to be that since the point cloud is already gravity
+        // aligned, the rotational part of the transformation relative to the
+        // world frame is already taken care of.
         cartographer::sensor::PointCloud global_point_cloud =
-            cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud,
-                cartographer::transform::Rigid3f(trajectory_node.data.global_pose.cast<float>().translation(),
-                                                    cartographer::transform::Rigid3f::Quaternion::Identity()));
+            cartographer::sensor::TransformPointCloud(
+                local_gravity_aligned_point_cloud,
+                cartographer::transform::Rigid3f(
+                    trajectory_node.data.global_pose.cast<float>()
+                        .translation(),
+                    cartographer::transform::Rigid3f::Quaternion::Identity()));
 
         for (auto point : global_point_cloud) {
             int rgb = 0;
