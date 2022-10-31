@@ -257,8 +257,9 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
-    while(b_continue_session) {
-        const auto file_list_online = viam::io::ListFilesInDirectory(path_to_data);
+    while (b_continue_session) {
+        const auto file_list_online =
+            viam::io::ListFilesInDirectory(path_to_data);
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
