@@ -25,12 +25,13 @@ std::atomic<bool> b_continue_session{true};
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        if(map_builder.GetLocalSlamResultPoses().size() > 0) {
-                global_pose = map_builder.GetLastGlobalPose(trajectory_id);
-                    LOG(INFO) << "global_pose: " << global_pose.DebugString();
+        if (map_builder.GetLocalSlamResultPoses().size() > 0) {
+            global_pose = map_builder.GetLastGlobalPose(trajectory_id);
+            LOG(INFO) << "global_pose: " << global_pose.DebugString();
         } else {
             std::cout << "Pose is not ready " << std::endl;
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE, "GetPosition is not ready yet");
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "GetPosition is not ready yet");
         }
     }
     // Setup mapping of pose message to the response. NOTE not using
@@ -45,15 +46,20 @@ std::atomic<bool> b_continue_session{true};
 
     // TODO DATA-531: Remove extraction and conversion of quaternion from the
     // extra field in the response once the Rust spatial math library is
-    // available and the desired math can be implemented on the Cartographer side
+    // available and the desired math can be implemented on the Cartographer
+    // side
 
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(global_pose.rotation().w());
-    q->mutable_fields()->operator[]("imag").set_number_value(global_pose.rotation().x());
-    q->mutable_fields()->operator[]("jmag").set_number_value(global_pose.rotation().y());
-    q->mutable_fields()->operator[]("kmag").set_number_value(global_pose.rotation().z());
+    q->mutable_fields()->operator[]("real").set_number_value(
+        global_pose.rotation().w());
+    q->mutable_fields()->operator[]("imag").set_number_value(
+        global_pose.rotation().x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(
+        global_pose.rotation().y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(
+        global_pose.rotation().z());
 }
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
@@ -317,7 +323,7 @@ std::string SLAMServiceImpl::GetNextDataFile() {
 
 void SLAMServiceImpl::CreateMap() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    
+
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Build TrajectoryBuilder

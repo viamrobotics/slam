@@ -98,16 +98,16 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetLastGlobalPose(
     int trajectory_id) {
-    if(GetLocalSlamResultPoses().size() > 0){
+    if (GetLocalSlamResultPoses().size() > 0) {
         auto latest_local_pose_ = GetLocalSlamResultPoses().back();
         auto local_transform =
-            map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
+            map_builder_->pose_graph()->GetLocalToGlobalTransform(
+                trajectory_id);
 
         return local_transform * latest_local_pose_;
-    }else{
+    } else {
         return cartographer::transform::Rigid3d();
     }
-    
 }
 
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(

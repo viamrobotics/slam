@@ -17,16 +17,16 @@
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
 
+using google::protobuf::Struct;
 using grpc::ServerContext;
+using viam::common::v1::PointCloudObject;
+using viam::common::v1::Pose;
+using viam::common::v1::PoseInFrame;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
-using google::protobuf::Struct;
-using viam::common::v1::PointCloudObject;
-using viam::common::v1::Pose;
-using viam::common::v1::PoseInFrame;
 
 namespace viam {
 
@@ -136,6 +136,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double translation_weight = 10.0;
     double rotation_weight = 1.0;
     int trajectory_id = 0;
+
    private:
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
     const std::string configuration_localization_basename =
