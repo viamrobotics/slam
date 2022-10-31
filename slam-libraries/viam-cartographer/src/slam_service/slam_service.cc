@@ -229,7 +229,13 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     bool has_points = false;
 
     long number_points = 0;
-    const auto trajectory_nodes = map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
+
+    cartographer::mapping::MapById<cartographer::mapping::NodeId,
+        cartographer::mapping::TrajectoryNode> trajectory_nodes;
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        trajectory_nodes = map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
+    }
     for (auto trajectory_node : trajectory_nodes) {
         auto point_cloud = trajectory_node.data.constant_data->filtered_gravity_aligned_point_cloud;
         number_points += point_cloud.size();
@@ -247,37 +253,27 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
         << "POINTS " << number_points << "\n"
         << "DATA binary\n";
 
-    // TODO[kat]: Wrap into mutex
-    int i = 0;
     for (auto trajectory_node : trajectory_nodes) {
         cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
             trajectory_node.data.constant_data->filtered_gravity_aligned_point_cloud;
-        
-        // cartographer::sensor::PointCloud local_point_cloud =
-        //     cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud,
-        //         cartographer::transform::Rigid3d::Rotation(trajectory_node.data.constant_data->gravity_alignment).inverse().cast<float>());
+
+        // We're only applying the transformation of the `global_pose` on the point cloud here, as 
+        // opposed to using both the translation and rotation of the global pose of the trajectory node.
+        // The reason for this seems to be that since the point cloud is already gravity aligned, the 
+        // rotational part of the transformation relative to the world frame is already taken care of.
         cartographer::sensor::PointCloud global_point_cloud =
             cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud,
-                trajectory_node.data.global_pose.cast<float>());
-
-        // cartographer::transform::Rigid3d local_to_global_transform = 
-        //     map_builder.map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_node.id.trajectory_id);
-
-        // auto local_to_global =
-        //     local_to_global_transform.cast<float>();
-        // cartographer::sensor::PointCloud global_point_cloud =
-        //     cartographer::sensor::TransformPointCloud(local_gravity_aligned_point_cloud, local_to_global);
+                cartographer::transform::Rigid3f(trajectory_node.data.global_pose.cast<float>().translation(),
+                                                    cartographer::transform::Rigid3f::Quaternion::Identity()));
 
         for (auto point : global_point_cloud) {
             int rgb = 0;
-            buffer.sputn((const char *)&point.position[0], 4);
-            buffer.sputn((const char *)&point.position[2], 4);
             buffer.sputn((const char *)&point.position[1], 4);
+            buffer.sputn((const char *)&point.position[2], 4);
+            buffer.sputn((const char *)&point.position[0], 4);
             buffer.sputn((const char *)&rgb, 4);
             has_points = true;
         }
-        // i++;
-        // if (i == 100) break;
     }
     return has_points;
 }
