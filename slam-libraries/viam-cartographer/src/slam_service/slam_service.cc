@@ -227,8 +227,6 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     std::ostream oss(&buffer);
     bool has_points = false;
 
-    long number_points = 0;
-
     cartographer::mapping::MapById<cartographer::mapping::NodeId,
                                    cartographer::mapping::TrajectoryNode>
         trajectory_nodes;
@@ -237,6 +235,8 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
         trajectory_nodes =
             map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
     }
+
+    long number_points = 0;
     for (auto trajectory_node : trajectory_nodes) {
         auto point_cloud = trajectory_node.data.constant_data
                                ->filtered_gravity_aligned_point_cloud;
