@@ -40,6 +40,9 @@ class MapBuilder {
         trajectory_builder_options_;
     std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
 
+    cartographer::transform::Rigid3d GetLastGlobalPose(
+        int trajectory_id);
+
     cartographer::transform::Rigid3d GetGlobalPose(
         int trajectory_id,
         cartographer::transform::Rigid3d& latest_local_pose_);
