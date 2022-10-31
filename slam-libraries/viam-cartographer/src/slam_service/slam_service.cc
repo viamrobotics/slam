@@ -22,6 +22,38 @@ std::atomic<bool> b_continue_session{true};
     LOG(ERROR) << "GetPosition is not yet implemented.\n";
     return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
                         "GetPosition is not yet implemented.");
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        if(map_builder.GetLocalSlamResultPoses().size() > 0) {
+                global_pose = map_builder.GetLastGlobalPose(trajectory_id);
+                    LOG(INFO) << "global_pose: " << global_pose.DebugString();
+        } else {
+            std::cout << "Pose is not ready " << std::endl;
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, "GetPosition is not ready yet");
+        }
+    }
+    // Setup mapping of pose message to the response. NOTE not using
+    // inFrame->set_reference_frame yet
+    PoseInFrame *inFrame = response->mutable_pose();
+    Pose *myPose = inFrame->mutable_pose();
+
+    // set pose for our response
+    myPose->set_x(global_pose.translation().x());
+    myPose->set_y(global_pose.translation().y());
+    myPose->set_z(global_pose.translation().z());
+
+    // TODO DATA-531: Remove extraction and conversion of quaternion from the
+    // extra field in the response once the Rust spatial math library is
+    // available and the desired math can be implemented on the Cartographer side
+
+    google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(global_pose.rotation().w());
+    q->mutable_fields()->operator[]("imag").set_number_value(global_pose.rotation().x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(global_pose.rotation().y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(global_pose.rotation().z());
 }
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
@@ -285,7 +317,7 @@ std::string SLAMServiceImpl::GetNextDataFile() {
 
 void SLAMServiceImpl::CreateMap() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id;
+    
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Build TrajectoryBuilder
@@ -301,9 +333,6 @@ void SLAMServiceImpl::CreateMap() {
 
     LOG(INFO) << "Beginning to add data...";
 
-    std::ofstream myfile;
-    myfile.open("log.txt");
-
     bool set_start_time = false;
     auto file = GetNextDataFile();
     while (file != "") {
@@ -313,33 +342,17 @@ void SLAMServiceImpl::CreateMap() {
             set_start_time = true;
         }
 
-        int num_nodes;
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
-                num_nodes = map_builder.map_builder_->pose_graph()
-                                ->GetTrajectoryNodes()
-                                .size();
-
-                auto local_poses = map_builder.GetLocalSlamResultPoses();
-                if (local_poses.size() > 0) {
-                    auto latest_local_pose = local_poses.back();
-                    cartographer::transform::Rigid3d global_pose =
-                        map_builder.GetGlobalPose(trajectory_id,
-                                                  latest_local_pose);
-                    myfile << "global_pose: " << global_pose.DebugString()
-                           << std::endl;
-                }
             }
         }
 
         file = GetNextDataFile();
     }
-
-    myfile.close();
 
     if (!set_start_time) return;
 
