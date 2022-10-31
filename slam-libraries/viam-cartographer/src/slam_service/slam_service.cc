@@ -237,29 +237,28 @@ void SLAMServiceImpl::ProcessData() {
     CreateMap();
 }
 
-std::string SLAMServiceImpl::GetNextDataFile() {
-    if (offlineFlag) {
-        if (!b_continue_session) {
-            return "";
-        }
-        if (file_list_offline.size() == 0) {
-            file_list_offline = viam::io::ListFilesInDirectory(path_to_data);
-        }
-        if (file_list_offline.size() == 0) {
-            throw std::runtime_error("no data in data directory");
-        }
-        if (current_file_offline == file_list_offline.size()) {
-            LOG(INFO) << "Finished processing offline images";
-            return "";
-        }
-        const auto to_return = file_list_offline[current_file_offline];
-        current_file_offline++;
-        return to_return;
+std::string SLAMServiceImpl::GetNextDataFileOffline() {
+    if (!b_continue_session) {
+        return "";
     }
-    // online processing
-    while (b_continue_session) {
-        const auto file_list_online =
-            viam::io::ListFilesInDirectory(path_to_data);
+    if (file_list_offline.size() == 0) {
+        file_list_offline = viam::io::ListFilesInDirectory(path_to_data);
+    }
+    if (file_list_offline.size() == 0) {
+        throw std::runtime_error("no data in data directory");
+    }
+    if (current_file_offline == file_list_offline.size()) {
+        LOG(INFO) << "Finished processing offline images";
+        return "";
+    }
+    const auto to_return = file_list_offline[current_file_offline];
+    current_file_offline++;
+    return to_return;
+}
+
+std::string SLAMServiceImpl::GetNextDataFileOnline() {
+    while(b_continue_session) {
+        const auto file_list_online = viam::io::ListFilesInDirectory(path_to_data);
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
@@ -274,6 +273,13 @@ std::string SLAMServiceImpl::GetNextDataFile() {
         std::this_thread::sleep_for(data_rate_ms);
     }
     return "";
+}
+
+std::string SLAMServiceImpl::GetNextDataFile() {
+    if (offlineFlag) {
+        return GetNextDataFileOffline();
+    }
+    return GetNextDataFileOnline();
 }
 
 void SLAMServiceImpl::CreateMap() {
@@ -347,6 +353,7 @@ void SLAMServiceImpl::CreateMap() {
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
     }
 
+    LOG(INFO) << "Finished optimizing final map";
     return;
 }
 
