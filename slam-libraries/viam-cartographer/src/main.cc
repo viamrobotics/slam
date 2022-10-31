@@ -44,9 +44,9 @@ int main(int argc, char** argv) {
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     LOG(INFO) << "Server listening on " << *selected_port << "\n";
 
-    LOG(INFO) << "Start mapping: offline mode\n";
-    slamService.ProcessDataOffline();
-    LOG(INFO) << "Done mapping: offline mode\n";
+    LOG(INFO) << "Start mapping";
+    slamService.ProcessData();
+    LOG(INFO) << "Done mapping";
 
     while (viam::b_continue_session) {
         LOG(INFO) << "Cartographer is running\n";
