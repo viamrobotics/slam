@@ -316,7 +316,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         throw std::runtime_error("no data in data directory");
     }
     if (current_file_offline == file_list_offline.size()) {
-        LOG(INFO) << "Finished processing offline images";
+        LOG(INFO) << "Finished processing offline data";
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
@@ -403,6 +403,7 @@ void SLAMServiceImpl::CreateMap() {
                 }
             }
         }
+        VLOG(1) << "Passed sensor data to SLAM " << file;
 
         file = GetNextDataFile();
     }
