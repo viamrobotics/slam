@@ -19,9 +19,7 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-    LOG(ERROR) << "GetPosition is not yet implemented.\n";
-    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
-                        "GetPosition is not yet implemented.");
+
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -29,7 +27,7 @@ std::atomic<bool> b_continue_session{true};
             global_pose = map_builder.GetLastGlobalPose(trajectory_id);
             LOG(INFO) << "global_pose: " << global_pose.DebugString();
         } else {
-            std::cout << "Pose is not ready " << std::endl;
+            LOG(ERROR) << "GetPosition is not yet implemented.\n";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "GetPosition is not ready yet");
         }
