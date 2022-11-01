@@ -274,7 +274,7 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
                         .translation(),
                     cartographer::transform::Rigid3f::Quaternion::Identity()));
 
-        for (const auto &&point : global_point_cloud) {
+        for (auto &&point : global_point_cloud) {
             int rgb = 0;
             buffer.sputn((const char *)&point.position[1], 4);
             buffer.sputn((const char *)&point.position[2], 4);
