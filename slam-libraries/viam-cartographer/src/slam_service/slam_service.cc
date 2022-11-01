@@ -347,10 +347,11 @@ void SLAMServiceImpl::CreateMap() {
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
-                
+
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
-                    latest_global_pose = map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+                    latest_global_pose = map_builder.GetGlobalPose(
+                        trajectory_id, local_poses.back());
                 }
             }
         }
