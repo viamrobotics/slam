@@ -27,7 +27,7 @@ std::atomic<bool> b_continue_session{true};
             global_pose = map_builder.GetLastGlobalPose(trajectory_id);
             LOG(INFO) << "global_pose: " << global_pose.DebugString();
         } else {
-            LOG(ERROR) << "GetPosition is not yet implemented.\n";
+            LOG(ERROR) << "GetPosition is not ready.\n";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "GetPosition is not ready yet");
         }
