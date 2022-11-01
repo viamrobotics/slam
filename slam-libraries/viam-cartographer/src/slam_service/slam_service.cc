@@ -19,18 +19,13 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-
+    LOG(ERROR) << "GetPosition is not yet implemented.\n";
+    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
+                        "GetPosition is not yet implemented.");
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        if (map_builder.GetLocalSlamResultPoses().size() > 0) {
-            global_pose = map_builder.GetLastGlobalPose(trajectory_id);
-            LOG(INFO) << "global_pose: " << global_pose.DebugString();
-        } else {
-            LOG(ERROR) << "GetPosition is not ready.\n";
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                "GetPosition is not ready yet");
-        }
+        global_pose = latest_global_pose;
     }
     // Setup mapping of pose message to the response. NOTE not using
     // inFrame->set_reference_frame yet
@@ -321,7 +316,7 @@ std::string SLAMServiceImpl::GetNextDataFile() {
 
 void SLAMServiceImpl::CreateMap() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-
+    int trajectory_id = 0;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Build TrajectoryBuilder
@@ -352,6 +347,11 @@ void SLAMServiceImpl::CreateMap() {
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
+                
+                auto local_poses = map_builder.GetLocalSlamResultPoses();
+                if (local_poses.size() > 0) {
+                    latest_global_pose = map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+                }
             }
         }
 

@@ -135,7 +135,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double occupied_space_weight = 20.0;
     double translation_weight = 10.0;
     double rotation_weight = 1.0;
-    int trajectory_id = 0;
+    cartographer::transform::Rigid3d latest_global_pose = cartographer::transform::Rigid3d();
 
    private:
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
