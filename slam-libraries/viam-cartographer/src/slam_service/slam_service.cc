@@ -237,7 +237,7 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     }
 
     long number_points = 0;
-    for (const auto&& trajectory_node : trajectory_nodes) {
+    for (const auto &&trajectory_node : trajectory_nodes) {
         auto point_cloud = trajectory_node.data.constant_data
                                ->filtered_gravity_aligned_point_cloud;
         number_points += point_cloud.size();
@@ -255,7 +255,7 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
         << "POINTS " << number_points << "\n"
         << "DATA binary\n";
 
-    for (const auto&& trajectory_node : trajectory_nodes) {
+    for (const auto &&trajectory_node : trajectory_nodes) {
         cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
             trajectory_node.data.constant_data
                 ->filtered_gravity_aligned_point_cloud;
@@ -274,7 +274,7 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
                         .translation(),
                     cartographer::transform::Rigid3f::Quaternion::Identity()));
 
-        for (const auto&& point : global_point_cloud) {
+        for (const auto &&point : global_point_cloud) {
             int rgb = 0;
             buffer.sputn((const char *)&point.position[1], 4);
             buffer.sputn((const char *)&point.position[2], 4);
