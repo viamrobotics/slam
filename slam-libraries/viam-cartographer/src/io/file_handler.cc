@@ -1,6 +1,6 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
-#include "read_PCD_file.h"
+#include "file_handler.h"
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -64,7 +64,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     return timedPCD;
 }
 
-std::vector<std::string> ListFilesInDirectory(std::string data_directory) {
+std::vector<std::string> ListSortedFilesInDirectory(std::string data_directory) {
     std::vector<std::string> file_paths;
 
     for (const auto& entry : fs::directory_iterator(data_directory)) {
