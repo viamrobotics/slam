@@ -64,7 +64,8 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     return timedPCD;
 }
 
-std::vector<std::string> ListSortedFilesInDirectory(std::string data_directory) {
+std::vector<std::string> ListSortedFilesInDirectory(
+    std::string data_directory) {
     std::vector<std::string> file_paths;
 
     for (const auto& entry : fs::directory_iterator(data_directory)) {

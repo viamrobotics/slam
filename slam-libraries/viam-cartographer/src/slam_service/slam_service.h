@@ -77,7 +77,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // scratch, updating an apriori map, or localizing on an apriori map.
     void RunSLAM();
 
-
     // DetermineActionMode determines the action mode the slam service runs in,
     // which is either mapping, updating, or localizing
     void SLAMServiceImpl::DetermineActionMode();

@@ -107,10 +107,11 @@ std::atomic<bool> b_continue_session{true};
 
 void SLAMServiceImpl::DetermineActionMode() {
     // Check if there is an apriori map in the path_to_map directory
-    std::vector<std::string> map_filenames = viam::io::ListSortedFilesInDirectory(path_to_map);
+    std::vector<std::string> map_filenames =
+        viam::io::ListSortedFilesInDirectory(path_to_map);
     if (map_filenames.size() != 0) {
-        // There is an apriori map present, so we're running either in updating or
-        // localization mode.
+        // There is an apriori map present, so we're running either in updating
+        // or localization mode.
         if (map_rate_sec.count() == 0) {
             LOG(INFO) << "Running in localization only mode";
             action_mode = SLAMServiceActionMode::LOCALIZING;
@@ -124,9 +125,7 @@ void SLAMServiceImpl::DetermineActionMode() {
     action_mode = SLAMServiceActionMode::MAPPING;
 }
 
-SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
-    return action_mode;
-}
+SLAMServiceActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
 
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
     SLAMServiceActionMode slam_action_mode = GetActionMode();
@@ -327,17 +326,19 @@ void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
     DetermineActionMode();
-    
+
     if (action_mode == SLAMServiceActionMode::UPDATING ||
         action_mode == SLAMServiceActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
-        std::vector<std::string> map_filenames = viam::io::ListSortedFilesInDirectory(path_to_map);
+        std::vector<std::string> map_filenames =
+            viam::io::ListSortedFilesInDirectory(path_to_map);
         if (map_filenames.size() == 0) {
-            throw std::runtime_error("can not find maps but they should be present");
+            throw std::runtime_error(
+                "can not find maps but they should be present");
         }
         std::string latest_map_filename = map_filenames.back();
         bool optimize = true;
-        bool load_frozen_trajectory = true; // true for LOCALIZING action mode
+        bool load_frozen_trajectory = true;  // true for LOCALIZING action mode
         if (action_mode == SLAMServiceActionMode::UPDATING) {
             load_frozen_trajectory = false;
         }
@@ -402,7 +403,8 @@ void SLAMServiceImpl::RunSLAM() {
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
-        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder, {kRangeSensorId});
+        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder,
+                                                         {kRangeSensorId});
         LOG(INFO) << "Using trajectory ID: " << trajectory_id;
     }
 
