@@ -55,10 +55,10 @@ jobs:
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make clean-all'
     
-    - name: make buf
-      timeout-minutes: 5
+    - name: make bufinstall buf
+      timeout-minutes: 30
       run: |
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make buf'
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
     - name: make setuporb
       run: |

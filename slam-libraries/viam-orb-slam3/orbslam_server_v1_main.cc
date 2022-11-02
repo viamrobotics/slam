@@ -55,6 +55,8 @@ int main(int argc, char **argv) {
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
+
+    // This log line is needed by rdk to get the port.
     BOOST_LOG_TRIVIAL(info) << "Server listening on " << *selected_port;
 
     // Determine which settings file to use(.yaml)
@@ -87,6 +89,7 @@ int main(int argc, char **argv) {
     // report the current yaml file check if it matches our format
     const string myYAML = latest.stem().string();
     BOOST_LOG_TRIVIAL(debug) << "Our yaml file: " << myYAML;
+
     string full_path_to_settings =
         slamService.path_to_settings + "/" + latest.filename().string();
     if (slamService.offlineFlag) {

@@ -12,30 +12,14 @@ else
 fi
 
 # ---- Edit based on your needs:
-DATE="October01"
-
 DATA_BASE_DIRECTORY="$HOME/viam/lidar_data"
-MAPPING_DATA_DIRECTORY="$DATA_BASE_DIRECTORY/data_Feb_11_2022_small/data"
-LOCALIZATION_DATA_DIRECTORY="$DATA_BASE_DIRECTORY/data_Feb_24_2022_printer_room"
-UPDATE_DATA_DIRECTORY="$DATA_BASE_DIRECTORY/data_Feb_24_2022_printer_room"
-
-DESCRIPTION="_refactor"
-OUTPUT_DIRECTORY="pics${DESCRIPTION}_${DATE}"
-MAP_OUTPUT_NAME="map${DESCRIPTION}_${DATE}.pbstream"
-
+DATA_DIR="$DATA_BASE_DIRECTORY/data-carto"
 # ----
 
-DATA_DIR=MAPPING_DATA_DIRECTORY
-
-mkdir -p output
-cd output
-rm -rf ${OUTPUT_DIRECTORY}
-mkdir ${OUTPUT_DIRECTORY}
-
-../build/main  \
+/usr/local/bin/carto_grpc_server  \
     -data_dir=${DATA_DIR}  \
     -config_param="{mode=2D,}"  \
-    -port=8080  \
-    -sensors=[]  \
+    -port=localhost:8083  \
+    -sensors=""  \
     -data_rate_ms=200 \
     -map_rate_sec=60 

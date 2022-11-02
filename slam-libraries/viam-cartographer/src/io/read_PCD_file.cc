@@ -1,6 +1,6 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
-#include "../src/io/read_PCD_file.h"
+#include "read_PCD_file.h"
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -19,9 +19,8 @@ namespace io {
 
 namespace fs = boost::filesystem;
 
-cartographer::sensor::TimedPointCloudData
-ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
-                                            std::string initial_filename) {
+cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
+    std::string file_path, double start_time) {
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
     cartographer::sensor::TimedPointCloudData timedPCD;
@@ -36,30 +35,10 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
         return timedPCD;
     }
 
-    // KAT NOTE: The file name format for the pcd files is assumed to be, e.g.:
-    // rplidar_data_2022-02-05T01_00_20.9874.pcd
-    int start_pos = initial_filename.find("T") + 1;
-    int len_pos =
-        initial_filename.find(".pcd") - initial_filename.find("T") - 1;
-    std::string initial_file = initial_filename.substr(start_pos, len_pos);
-    std::string next_file = file_path.substr(start_pos, len_pos);
-
-    std::string::size_type sz;
-
-    // Hour
-    float hour_f = std::stof(next_file.substr(0, 2), &sz);
-    float hour_i = std::stof(initial_file.substr(0, 2), &sz);
-
-    // Minute
-    float min_f = std::stof(next_file.substr(3, 2), &sz);
-    float min_i = std::stof(initial_file.substr(3, 2), &sz);
-
-    // Second
-    float sec_f = std::stof(next_file.substr(6), &sz);
-    float sec_i = std::stof(initial_file.substr(6), &sz);
-
-    float time_delta =
-        3600 * (hour_f - hour_i) + 60 * (min_f - min_i) + (sec_f - sec_i);
+    double current_time = ReadTimeFromFilename(file_path.substr(
+        file_path.find("_data_") + viam::io::filenamePrefixLength,
+        file_path.find(".pcd")));
+    double time_delta = current_time - start_time;
 
     LOG(INFO) << "------------ FILE DATA -------------\n";
     LOG(INFO) << "Accessing file " << file_path << " ... ";
@@ -85,8 +64,7 @@ ReadFile::timedPointCloudDataFromPCDBuilder(std::string file_path,
     return timedPCD;
 }
 
-std::vector<std::string> ReadFile::listFilesInDirectory(
-    std::string data_directory) {
+std::vector<std::string> ListFilesInDirectory(std::string data_directory) {
     std::vector<std::string> file_paths;
 
     for (const auto& entry : fs::directory_iterator(data_directory)) {
@@ -97,12 +75,37 @@ std::vector<std::string> ReadFile::listFilesInDirectory(
     return file_paths;
 }
 
-int ReadFile::removeFile(std::string file_path) {
+int RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
         LOG(INFO) << "Error removing file";
         return 0;
     }
     return 1;
+}
+
+// Converts UTC time string to a double value.
+double ReadTimeFromFilename(std::string filename) {
+    std::string time_format = "%Y-%m-%dT%H:%M:%SZ";
+
+    std::string::size_type sz;
+    // Create a stream which we will use to parse the string
+    std::istringstream ss(filename);
+
+    // Create a tm object to store the parsed date and time.
+    std::tm dt = {0};
+
+    // Now we read from buffer using get_time manipulator
+    // and formatting the input appropriately.
+    ss >> std::get_time(&dt, time_format.c_str());
+    time_t thisTime = std::mktime(&dt);
+    auto sub_sec_index = filename.find(".");
+    if ((sub_sec_index != std::string::npos)) {
+        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        double myTime = (double)thisTime + sub_sec;
+        return myTime;
+    } else {
+        return (double)thisTime;
+    }
 }
 
 }  // namespace io

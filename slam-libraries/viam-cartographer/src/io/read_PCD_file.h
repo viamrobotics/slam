@@ -14,14 +14,17 @@
 
 namespace viam {
 namespace io {
+static const int filenamePrefixLength = 6;
 
-class ReadFile {
-   public:
-    std::vector<std::string> listFilesInDirectory(std::string data_directory);
-    cartographer::sensor::TimedPointCloudData timedPointCloudDataFromPCDBuilder(
-        std::string file_path, std::string initial_filename);
-    int removeFile(std::string);
-};
+std::vector<std::string> ListFilesInDirectory(std::string data_directory);
+
+cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
+    std::string file_path, double start_time);
+
+int RemoveFile(std::string);
+
+// Converts UTC time string to a double value.
+double ReadTimeFromFilename(std::string filename);
 
 }  // namespace io
 }  // namespace viam

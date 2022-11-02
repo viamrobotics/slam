@@ -1,7 +1,9 @@
 BUILD_CHANNEL?=local
 
-bufsetup:
+bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
+
+bufsetup:
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 	pkg-config openssl || export PKG_CONFIG_PATH=$$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
@@ -38,12 +40,16 @@ buildorb:
 	cd viam-orb-slam3 && ./build_orbslam.sh
 
 setuporb: 
+ifeq ("Darwin", "$(shell uname -s)")
+	cd viam-orb-slam3 && ./setup_orbslam_macos.sh
+else
 	cd viam-orb-slam3 && ./setup_orbslam.sh
+endif
 
 testorb:
 	cd viam-orb-slam3 && ./test_orbslam.sh
 
-orbslam-all: buf setuporb buildorb testorb
+orbslam-all: bufinstall buf setuporb buildorb testorb
 
 
 appimage: buildorb
@@ -52,5 +58,16 @@ appimage: buildorb
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
+
+setupcarto:
+	cd viam-cartographer/scripts && ./setup_cartographer.sh
+
+buildcarto:
+	cd viam-cartographer/scripts && ./build_cartographer.sh && ./build_viam_cartographer.sh
+
+testcarto:
+	cd viam-cartographer/scripts && ./test_cartographer.sh
+
+carto-all: buf setupcarto buildcarto testcarto
 
 include *.make

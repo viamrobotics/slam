@@ -11,8 +11,5 @@ else
     exit 1
 fi
 
-# Rebuild viam cartographer.
-pushd build
-ninja
-sudo ninja install
-popd
+echo "Running tests..."
+./build/unit_tests

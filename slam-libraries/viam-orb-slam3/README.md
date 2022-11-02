@@ -13,17 +13,16 @@ For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLA
 ## Installation instructions
 Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup) in addition to the steps below. 
 
-### Automatic Dependency Installation
+### Automatic Dependency Installation (x64, arm64, or macOS)
 To automatically install dependencies, use the target 
 ```
 ./setup_orbslam.sh
 ```
-
-which installs all dependencies required for ORB_SLAM3. the dependencies installed this way are
+or
 ```
-cmake libglew-dev libopencv-dev libeigen3-dev libssl-dev libboost-all-dev libpangolin-dev
+./setup_orbslam_macos.sh
 ```
-### Manual Dependency Install
+### Manual Dependency Install (x64 or arm64)
 ```bash
 # Install & build Pangolin (includes eigen)
 git clone --recursive https://github.com/stevenlovegrove/Pangolin.git
