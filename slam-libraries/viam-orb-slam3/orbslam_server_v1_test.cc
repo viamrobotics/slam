@@ -104,13 +104,21 @@ BOOST_AUTO_TEST_CASE(
     BOOST_TEST(slamService.slam_mode == "rgbd");
 }
 
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_data_rate_msec) {
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
+                              "-port=20000",        "-sensors=color",
+                              "-data_rate_ms=",     "-map_rate_sec=60"};
+    const string message = "No camera data rate specified";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
                               "-data_rate_ms=200",  "-map_rate_sec="};
-    SLAMServiceImpl slamService;
-    utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(60).count());
+    const string message = "No map data rate specified";
+    checkParseAndValidateArgumentsException(args, message);
+}
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
