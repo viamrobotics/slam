@@ -97,10 +97,10 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 // TODO: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
-    int trajectory_id, cartographer::transform::Rigid3d& latest_local_pose_) {
+    int trajectory_id, cartographer::transform::Rigid3d& local_pose) {
     auto local_transform =
         map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
-    return local_transform * latest_local_pose_;
+    return local_transform * local_pose;
 }
 
 void MapBuilder::OverwriteOptimizeEveryNNodes(int value) {

@@ -19,9 +19,39 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-    LOG(ERROR) << "GetPosition is not yet implemented.\n";
-    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
-                        "GetPosition is not yet implemented.");
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        global_pose = latest_global_pose;
+    }
+    // Setup mapping of pose message to the response. NOTE not using
+    // inFrame->set_reference_frame
+    PoseInFrame *inFrame = response->mutable_pose();
+    Pose *myPose = inFrame->mutable_pose();
+
+    // set pose for our response
+    myPose->set_x(global_pose.translation().x());
+    myPose->set_y(global_pose.translation().y());
+    myPose->set_z(global_pose.translation().z());
+
+    // TODO DATA-531: Remove extraction and conversion of quaternion from the
+    // extra field in the response once the Rust spatial math library is
+    // available and the desired math can be implemented on the Cartographer
+    // side
+
+    google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(
+        global_pose.rotation().w());
+    q->mutable_fields()->operator[]("imag").set_number_value(
+        global_pose.rotation().x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(
+        global_pose.rotation().y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(
+        global_pose.rotation().z());
+
+    return grpc::Status::OK;
 }
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
@@ -370,11 +400,12 @@ void SLAMServiceImpl::CreateMap() {
 
     LOG(INFO) << "Beginning to add data...";
 
-    std::ofstream myfile;
-    myfile.open("log.txt");
-
     bool set_start_time = false;
     auto file = GetNextDataFile();
+
+    // define tmp_global_pose here so it always has the previous pose
+    cartographer::transform::Rigid3d tmp_global_pose =
+        cartographer::transform::Rigid3d();
     while (file != "") {
         if (!set_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -382,27 +413,23 @@ void SLAMServiceImpl::CreateMap() {
             set_start_time = true;
         }
 
-        int num_nodes;
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
-                num_nodes = map_builder.map_builder_->pose_graph()
-                                ->GetTrajectoryNodes()
-                                .size();
 
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
-                    auto latest_local_pose = local_poses.back();
-                    cartographer::transform::Rigid3d global_pose =
-                        map_builder.GetGlobalPose(trajectory_id,
-                                                  latest_local_pose);
-                    myfile << "global_pose: " << global_pose.DebugString()
-                           << std::endl;
+                    tmp_global_pose = map_builder.GetGlobalPose(
+                        trajectory_id, local_poses.back());
                 }
             }
+        }
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
         }
 
         // This log line is needed by rdk integration tests.
@@ -410,8 +437,6 @@ void SLAMServiceImpl::CreateMap() {
 
         file = GetNextDataFile();
     }
-
-    myfile.close();
 
     if (!set_start_time) return;
 

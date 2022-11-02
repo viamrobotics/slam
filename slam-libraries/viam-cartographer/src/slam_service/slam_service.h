@@ -17,7 +17,11 @@
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
 
+using google::protobuf::Struct;
 using grpc::ServerContext;
+using viam::common::v1::PointCloudObject;
+using viam::common::v1::Pose;
+using viam::common::v1::PoseInFrame;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -147,6 +151,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
+
+    std::mutex viam_response_mutex;
+    cartographer::transform::Rigid3d latest_global_pose =
+        cartographer::transform::Rigid3d();
 };
 
 }  // namespace viam
