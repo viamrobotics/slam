@@ -316,6 +316,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         throw std::runtime_error("no data in data directory");
     }
     if (current_file_offline == file_list_offline.size()) {
+        // This log line is needed by rdk integration tests.
         LOG(INFO) << "Finished processing offline data";
         return "";
     }
@@ -403,6 +404,8 @@ void SLAMServiceImpl::CreateMap() {
                 }
             }
         }
+
+        // This log line is needed by rdk integration tests.
         VLOG(1) << "Passed sensor data to SLAM " << file;
 
         file = GetNextDataFile();

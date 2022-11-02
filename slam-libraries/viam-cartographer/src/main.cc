@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
 
     // Start the SLAM gRPC server
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+
+    // This log line is needed by rdk to get the port.
     LOG(INFO) << "Server listening on " << *selected_port << "\n";
 
     LOG(INFO) << "Start mapping";
