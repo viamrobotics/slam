@@ -418,7 +418,7 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             }
 
             UpdateMapAndPosition(SLAM, tmpPose);
-            
+
              // This log line is needed by rdk integration tests.
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
         }
@@ -485,6 +485,8 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             }
 
             UpdateMapAndPosition(SLAM, tmpPose);
+
+            // This log line is needed by rdk integration tests.
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
         }
         if (!b_continue_session) break;
