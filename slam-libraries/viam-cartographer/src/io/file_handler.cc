@@ -44,6 +44,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     LOG(INFO) << "Accessing file " << file_path << " ... ";
     LOG(INFO) << "Loaded " << cloud->width * cloud->height << " data points \n";
     LOG(INFO) << "Size " << cloud->points.size() << "\n";
+    LOG(INFO) << "start_time, current_time: " << start_time << ", " << current_time << "\n";
     LOG(INFO) << "TD " << time_delta << "\n";
     LOG(INFO) << "------------------------------------\n";
 
@@ -88,6 +89,10 @@ int RemoveFile(std::string file_path) {
 double ReadTimeFromFilename(std::string filename) {
     std::string time_format = "%Y-%m-%dT%H:%M:%SZ";
 
+    if (filename.find("_") != std::string::npos) {
+        time_format = "%Y-%m-%dT%H_%M_%S";
+    }
+
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);
@@ -98,6 +103,9 @@ double ReadTimeFromFilename(std::string filename) {
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
     ss >> std::get_time(&dt, time_format.c_str());
+    if (ss.fail()) {
+        throw std::runtime_error("parsing time has failed");
+    }
     time_t thisTime = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
     if ((sub_sec_index != std::string::npos)) {
