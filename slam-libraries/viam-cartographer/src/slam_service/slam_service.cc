@@ -21,7 +21,7 @@ std::atomic<bool> b_continue_session{true};
                                             GetPositionResponse *response) {
     cartographer::transform::Rigid3d global_pose;
     {
-        std::lock_guard<std::mutex> lk(pose_mutex);
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
     // Setup mapping of pose message to the response. NOTE not using
@@ -333,13 +333,17 @@ void SLAMServiceImpl::CreateMap() {
 
     bool set_start_time = false;
     auto file = GetNextDataFile();
+
+    //define tmp_global_pose here so it always has the previous pose
+    cartographer::transform::Rigid3d tmp_global_pose =
+        cartographer::transform::Rigid3d();
     while (file != "") {
         if (!set_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetStartTime(file);
             set_start_time = true;
         }
-
+        
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
@@ -349,11 +353,14 @@ void SLAMServiceImpl::CreateMap() {
 
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
-                    std::lock_guard<std::mutex> lk(pose_mutex);
-                    latest_global_pose = map_builder.GetGlobalPose(
+                    tmp_global_pose = map_builder.GetGlobalPose(
                         trajectory_id, local_poses.back());
                 }
             }
+        }
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
         }
 
         file = GetNextDataFile();

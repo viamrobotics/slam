@@ -148,7 +148,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
 
-    std::mutex pose_mutex;
+    std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
 };
