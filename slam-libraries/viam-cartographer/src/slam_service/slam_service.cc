@@ -25,7 +25,7 @@ std::atomic<bool> b_continue_session{true};
         global_pose = latest_global_pose;
     }
     // Setup mapping of pose message to the response. NOTE not using
-    // inFrame->set_reference_frame yet
+    // inFrame->set_reference_frame
     PoseInFrame *inFrame = response->mutable_pose();
     Pose *myPose = inFrame->mutable_pose();
 
