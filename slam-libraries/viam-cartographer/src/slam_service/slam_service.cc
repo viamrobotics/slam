@@ -334,7 +334,7 @@ void SLAMServiceImpl::CreateMap() {
     bool set_start_time = false;
     auto file = GetNextDataFile();
 
-    //define tmp_global_pose here so it always has the previous pose
+    // define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
@@ -343,7 +343,7 @@ void SLAMServiceImpl::CreateMap() {
             map_builder.SetStartTime(file);
             set_start_time = true;
         }
-        
+
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
