@@ -485,7 +485,6 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
             }
 
             UpdateMapAndPosition(SLAM, tmpPose);
-
         }
         if (!b_continue_session) break;
     }
@@ -508,12 +507,14 @@ void SLAMServiceImpl::UpdateMapAndPosition(ORB_SLAM3::System *SLAM,
         if (SLAM->GetTrackingState() ==
             ORB_SLAM3::Tracking::eTrackingState::OK) {
             poseGrpc = tmpPose.inverse();
-            if (n_key_frames != keyframes.size()) {
+            if ((n_key_frames != keyframes.size()) ||
+                (curr_map_id != currMap->GetId())) {
                 currMapPoints = currMap->GetAllMapPoints();
             }
         }
     }
     n_key_frames = keyframes.size();
+    curr_map_id = currMap->GetId();
     return;
 }
 

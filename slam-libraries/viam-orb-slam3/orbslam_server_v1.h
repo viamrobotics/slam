@@ -62,6 +62,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     bool local_viewer_flag = false;
     bool pure_localization_mode = false;
     int n_key_frames = 0;
+    int curr_map_id = 0;
 
    private:
     void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM);
