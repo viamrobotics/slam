@@ -326,13 +326,86 @@ void SLAMServiceImpl::ProcessData() {
     // https://viam.atlassian.net/browse/DATA-114
     // https://viam.atlassian.net/browse/DATA-631
 
-    // TODO: Call localization only mode function, if localization only
-    // action mode
-
     // TODO: Call updating map function, if apriori map was loaded
+    // Check if there is an apriori map in the path_to_map directory
+    std::vector<std::string> map_filenames = viam::io::ListSortedFilesInDirectory(path_to_map);
+    if (map_filenames.size() != 0) {
+        // TODO[kat]: Get the latest map and use that to call "UpdateMap"
+        std::string latest_map_filename = map_filenames.back();
+        UpdateMap(latest_map_filename);
+    }
+
+    // TODO: Call localization only mode function, if localization only
+    // action mode and if apriori map exists:
+    // Ticket https://viam.atlassian.net/browse/DATA-631
+
 
     // Mapping a new map:
     CreateMap();
+}
+
+void SLAMServiceImpl::UpdateMap(std::string map_filename) {
+    // TODO: Might allow the user to choose whether or not to
+    // optimize the map afer loading it into the MapBuilder, see ticket: 
+    // https://viam.atlassian.net/browse/DATA-117
+    bool optimize = true;
+    bool load_frozen_trajectory = true;
+    if (action_mode == SLAMServiceActionMode::UPDATING) {
+        load_frozen_trajectory = false;
+    } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+        load_frozen_trajectory = true;
+    } else {
+        throw std::runtime_error("invalid action mode");
+    }
+
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
+    int trajectory_id = 0;
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        // Load apriori map
+        mapBuilder.LoadFromFile(map_filename, load_frozen_trajectory, optimize);
+        // Set TrajectoryBuilder
+        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder, {kRangeSensorId});
+        LOG(INFO) << "Using trajectory ID: " << trajectory_id;
+    }
+
+    LOG(INFO) << "Beginning to add data...";
+
+    io::ReadFile read_file;
+    std::vector<std::string> file_list =
+        read_file.listSortedFilesInDirectory(data_directory);
+    std::string initial_file = file_list[0];
+
+    std::cout << "Beginning to add data....\n";
+    PaintMap(mapBuilder.map_builder_, output_directory, "before_" + operation);
+
+    int end_scan_number = int(file_list.size());
+    for (int i = starting_scan_number; i < end_scan_number; i++) {
+        auto measurement =
+            mapBuilder.GetDataFromFile(data_directory, initial_file, i);
+
+        if (measurement.ranges.size() > 0) {
+            trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
+            if ((i >= starting_scan_number && i < starting_scan_number + 3) ||
+                i % picture_print_interval == 0) {
+                PaintMap(mapBuilder.map_builder_, output_directory,
+                         operation + "_" + std::to_string(1 + i++));
+            }
+        }
+    }
+
+    // saved map after localization is finished
+    const std::string map_file_2 =
+        "./after_" + operation + "_" + map_output_name;
+    mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
+    mapBuilder.map_builder_->SerializeStateToFile(true, map_file_2);
+
+    mapBuilder.map_builder_->FinishTrajectory(0);
+    mapBuilder.map_builder_->FinishTrajectory(trajectory_id);
+    mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
+
+    return;
+}
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
@@ -340,7 +413,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         return "";
     }
     if (file_list_offline.size() == 0) {
-        file_list_offline = viam::io::ListFilesInDirectory(path_to_data);
+        file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
     if (file_list_offline.size() == 0) {
         throw std::runtime_error("no data in data directory");
@@ -358,7 +431,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
     while (b_continue_session) {
         const auto file_list_online =
-            viam::io::ListFilesInDirectory(path_to_data);
+            viam::io::ListSortedFilesInDirectory(path_to_data);
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
@@ -383,19 +456,16 @@ std::string SLAMServiceImpl::GetNextDataFile() {
 }
 
 void SLAMServiceImpl::CreateMap() {
+    if (action_mode != SLAMServiceActionMode::MAPPING) {
+        throw std::runtime_error("invalid action mode");
+    }
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        // Build TrajectoryBuilder
-        trajectory_id = map_builder.map_builder_->AddTrajectoryBuilder(
-            {kRangeSensorId}, map_builder.trajectory_builder_options_,
-            map_builder.GetLocalSlamResultCallback());
-
-        LOG(INFO) << "Trajectory ID: " << trajectory_id;
-
-        trajectory_builder =
-            map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
+        // Set TrajectoryBuilder
+        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder, {kRangeSensorId});
+        LOG(INFO) << "Using trajectory ID: " << trajectory_id;
     }
 
     LOG(INFO) << "Beginning to add data...";

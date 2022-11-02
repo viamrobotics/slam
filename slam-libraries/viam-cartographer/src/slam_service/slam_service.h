@@ -9,7 +9,7 @@
 #include <string>
 
 #include "../io/draw_trajectories.h"
-#include "../io/read_PCD_file.h"
+#include "../io/file_handler.h"
 #include "../io/submap_painter.h"
 #include "../mapping/map_builder.h"
 #include "common/v1/common.grpc.pb.h"
@@ -75,6 +75,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // CreateMap creates a map from scratch.
     void CreateMap();
+
+    // UpdateMap updates an apriori map with new data.
+    void UpdateMap(std::string map_filename);
 
     // GetActionMode returns the slam action mode from the provided
     // parameters.

@@ -12,7 +12,7 @@
 #include "cartographer/metrics/register.h"
 #include "glog/logging.h"
 #include "io/draw_trajectories.h"
-#include "io/read_PCD_file.h"
+#include "io/file_handler.h"
 #include "io/submap_painter.h"
 #include "mapping/map_builder.h"
 #include "slam_service/server_functions.h"
@@ -95,7 +95,7 @@ void CreateMap(const std::string& mode, const std::string& data_directory,
 
     viam::io::ReadFile read_file;
     std::vector<std::string> file_list =
-        read_file.listFilesInDirectory(data_directory);
+        read_file.listSortedFilesInDirectory(data_directory);
     std::string initial_file = file_list[0];
 
     if (starting_scan_number < 0 ||
@@ -116,10 +116,6 @@ void CreateMap(const std::string& mode, const std::string& data_directory,
             mapBuilder.GetDataFromFile(data_directory, initial_file, i);
         if (measurement.ranges.size() > 0) {
             trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
-            int num_nodes = mapBuilder.map_builder_->pose_graph()
-                                ->GetTrajectoryNodes()
-                                .size();
-
             auto local_poses = GetLocalPoses(mapBuilder);
             if (local_poses.size() > 0) {
                 auto latest_local_pose = local_poses.back();
@@ -199,7 +195,7 @@ void LoadMapAndRun(const std::string& mode, const std::string& data_directory,
 
     io::ReadFile read_file;
     std::vector<std::string> file_list =
-        read_file.listFilesInDirectory(data_directory);
+        read_file.listSortedFilesInDirectory(data_directory);
     std::string initial_file = file_list[0];
 
     if (starting_scan_number < 0 ||
