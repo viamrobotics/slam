@@ -86,11 +86,16 @@ std::atomic<bool> b_continue_session{true};
             return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
         }
     } else if (mime_type == "pointcloud/pcd") {
-        LOG(ERROR) << "GetMap for mime_type \"pointcloud/pcd\" is not yet "
-                      "implemented.\n";
-        return grpc::Status(
-            grpc::StatusCode::UNIMPLEMENTED,
-            "GetMap for mime_type \"pointcloud/pcd\" is not yet implemented.");
+        std::stringbuf buffer;
+        bool has_points = ExtractPointCloudToBuffer(buffer);
+        if (has_points) {
+            common::v1::PointCloudObject *pco = response->mutable_point_cloud();
+            pco->set_point_cloud(buffer.str());
+        } else {
+            LOG(ERROR) << "map pointcloud does not have points yet";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "map pointcloud does not have points yet");
+        }
     } else {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             "mime_type should be \"image/jpeg\" or "
@@ -248,6 +253,69 @@ std::string SLAMServiceImpl::PaintMap() {
     return jpeg_img;
 }
 
+bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
+    std::ostream oss(&buffer);
+    bool has_points = false;
+
+    cartographer::mapping::MapById<cartographer::mapping::NodeId,
+                                   cartographer::mapping::TrajectoryNode>
+        trajectory_nodes;
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        trajectory_nodes =
+            map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
+    }
+
+    long number_points = 0;
+    for (const auto &&trajectory_node : trajectory_nodes) {
+        auto point_cloud = trajectory_node.data.constant_data
+                               ->filtered_gravity_aligned_point_cloud;
+        number_points += point_cloud.size();
+    }
+
+    // Write our PCD file, which is written as a binary.
+    oss << "VERSION .7\n"
+        << "FIELDS x y z rgb\n"
+        << "SIZE 4 4 4 4\n"
+        << "TYPE F F F I\n"
+        << "COUNT 1 1 1 1\n"
+        << "WIDTH " << number_points << "\n"
+        << "HEIGHT " << 1 << "\n"
+        << "VIEWPOINT 0 0 0 1 0 0 0\n"
+        << "POINTS " << number_points << "\n"
+        << "DATA binary\n";
+
+    for (const auto &&trajectory_node : trajectory_nodes) {
+        cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
+            trajectory_node.data.constant_data
+                ->filtered_gravity_aligned_point_cloud;
+
+        // We're only applying the translation of the `global_pose` on the
+        // point cloud here, as opposed to using both the translation and
+        // rotation of the global pose of the trajectory node. The reason for
+        // this seems to be that since the point cloud is already gravity
+        // aligned, the rotational part of the transformation relative to the
+        // world frame is already taken care of.
+        cartographer::sensor::PointCloud global_point_cloud =
+            cartographer::sensor::TransformPointCloud(
+                local_gravity_aligned_point_cloud,
+                cartographer::transform::Rigid3f(
+                    trajectory_node.data.global_pose.cast<float>()
+                        .translation(),
+                    cartographer::transform::Rigid3f::Quaternion::Identity()));
+
+        for (auto &&point : global_point_cloud) {
+            int rgb = 0;
+            buffer.sputn((const char *)&point.position[1], 4);
+            buffer.sputn((const char *)&point.position[2], 4);
+            buffer.sputn((const char *)&point.position[0], 4);
+            buffer.sputn((const char *)&rgb, 4);
+            has_points = true;
+        }
+    }
+    return has_points;
+}
+
 void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
@@ -278,7 +346,8 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         throw std::runtime_error("no data in data directory");
     }
     if (current_file_offline == file_list_offline.size()) {
-        LOG(INFO) << "Finished processing offline images";
+        // This log line is needed by rdk integration tests.
+        LOG(INFO) << "Finished processing offline data";
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
@@ -362,6 +431,9 @@ void SLAMServiceImpl::CreateMap() {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
+
+        // This log line is needed by rdk integration tests.
+        VLOG(1) << "Passed sensor data to SLAM " << file;
 
         file = GetNextDataFile();
     }
