@@ -431,6 +431,8 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                     }
                 }
             }
+
+            // This log line is needed by rdk integration tests.
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
             nkeyframes = keyframes.size();
         }
@@ -516,6 +518,8 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
         if (!b_continue_session) break;
     }
     finished_processing_offline = true;
+
+    // This log line is needed by rdk integration tests.
     BOOST_LOG_TRIVIAL(info) << "Finished processing offline images";
     return;
 }
@@ -581,6 +585,8 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
             }
+
+            // This log line is needed by rdk integration tests.
             BOOST_LOG_TRIVIAL(debug) << "Finished saving final map";
             return;
         }

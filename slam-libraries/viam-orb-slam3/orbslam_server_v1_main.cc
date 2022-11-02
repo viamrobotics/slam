@@ -55,6 +55,8 @@ int main(int argc, char **argv) {
 
     // Start the SLAM gRPC server
     std::unique_ptr<Server> server(builder.BuildAndStart());
+
+    // This log line is needed by rdk to get the port.
     BOOST_LOG_TRIVIAL(info) << "Server listening on " << *selected_port;
 
     // Determine which settings file to use(.yaml)
