@@ -19,12 +19,9 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-    LOG(ERROR) << "GetPosition is not yet implemented.\n";
-    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED,
-                        "GetPosition is not yet implemented.");
     cartographer::transform::Rigid3d global_pose;
     {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        std::lock_guard<std::mutex> lk(pose_mutex);
         global_pose = latest_global_pose;
     }
     // Setup mapping of pose message to the response. NOTE not using
@@ -53,6 +50,8 @@ std::atomic<bool> b_continue_session{true};
         global_pose.rotation().y());
     q->mutable_fields()->operator[]("kmag").set_number_value(
         global_pose.rotation().z());
+
+    return grpc::Status::OK;
 }
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
@@ -316,7 +315,7 @@ std::string SLAMServiceImpl::GetNextDataFile() {
 
 void SLAMServiceImpl::CreateMap() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id = 0;
+    int trajectory_id;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Build TrajectoryBuilder
@@ -350,6 +349,7 @@ void SLAMServiceImpl::CreateMap() {
 
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
+                    std::lock_guard<std::mutex> lk(pose_mutex);
                     latest_global_pose = map_builder.GetGlobalPose(
                         trajectory_id, local_poses.back());
                 }
