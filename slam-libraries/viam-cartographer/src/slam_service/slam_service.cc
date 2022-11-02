@@ -344,7 +344,7 @@ void SLAMServiceImpl::ProcessData() {
         }
         // Load apriori map
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        mapBuilder.LoadFromFile(map_filename, load_frozen_trajectory, optimize);
+        map_builder.LoadFromFile(latest_map_filename, load_frozen_trajectory, optimize);
     }
 
     RunSLAM();

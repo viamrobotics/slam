@@ -30,7 +30,7 @@ class MapBuilder {
                       bool optimize);
     int SetTrajectoryBuilder(
         cartographer::mapping::TrajectoryBuilderInterface* trajectory_builder,
-        cartographer ::mapping::TrajectoryBuilderInterface::SensorId sensorId);
+        std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId> sensorId);
 
     cartographer::mapping::MapBuilderInterface::LocalSlamResultCallback
     GetLocalSlamResultCallback();

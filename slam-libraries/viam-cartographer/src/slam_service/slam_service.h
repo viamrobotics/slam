@@ -79,7 +79,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // DetermineActionMode determines the action mode the slam service runs in,
     // which is either mapping, updating, or localizing
-    void SLAMServiceImpl::DetermineActionMode();
+    void DetermineActionMode();
 
     // GetActionMode returns the slam action mode from the provided
     // parameters.

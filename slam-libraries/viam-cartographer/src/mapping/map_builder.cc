@@ -65,7 +65,7 @@ void MapBuilder::LoadFromFile(std::string map_filename,
     if (optimize) {
         map_builder_->pose_graph()->RunFinalOptimization();
     }
-    for (const auto&& trajectory_ids_pair : trajectory_ids_map)
+    for (auto&& trajectory_ids_pair : trajectory_ids_map)
         LOG(INFO) << "Trajectory ids mapping: " << trajectory_ids_pair.first
                   << " " << trajectory_ids_pair.second;
 }
