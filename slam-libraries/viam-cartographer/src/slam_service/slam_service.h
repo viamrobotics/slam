@@ -30,7 +30,7 @@ using viam::service::slam::v1::SLAMService;
 
 namespace viam {
 
-enum class SLAMServiceActionMode { MAPPING, LOCALIZING, UPDATING };
+enum SLAMServiceActionMode { MAPPING, LOCALIZING, UPDATING };
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 extern std::atomic<bool> b_continue_session;
@@ -73,11 +73,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // empty string if stop has been signaled.
     std::string GetNextDataFileOnline();
 
-    // CreateMap creates a map from scratch.
-    void CreateMap();
+    // RunSLAM runs SLAM in the SLAMServiceActionMode mode: Either mapping from
+    // scratch, updating an apriori map, or localizing on an apriori map.
+    void RunSLAM();
 
-    // UpdateMap updates an apriori map with new data.
-    void UpdateMap(std::string map_filename);
+
+    // DetermineActionMode determines the action mode the slam service runs in,
+    // which is either mapping, updating, or localizing
+    void SLAMServiceImpl::DetermineActionMode();
 
     // GetActionMode returns the slam action mode from the provided
     // parameters.
@@ -144,6 +147,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
+    SLAMServiceActionMode action_mode = SLAMServiceActionMode::MAPPING;
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
     const std::string configuration_localization_basename =
         "locating_in_map.lua";

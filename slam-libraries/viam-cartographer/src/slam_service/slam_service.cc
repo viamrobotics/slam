@@ -105,20 +105,27 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
-    // TODO: Add a case for updating. Requires that an apriori
-    // map is detected and loaded. Will be implemented in this ticket:
-    // https://viam.atlassian.net/browse/DATA-114
-
-    // TODO: Change this depending on the outcome of this scope
-    // doc:
-    // https://docs.google.com/document/d/1RsT-c0QOtkMKa-rwUGY0-emUmKIRSaO3mzT1v6MtFjk/edit#heading=h.tcicyojyqi6c
-    if (map_rate_sec.count() == -1) {
-        LOG(INFO) << "Running in localization only mode";
-        return SLAMServiceActionMode::LOCALIZING;
+void SLAMServiceImpl::DetermineActionMode() {
+    // Check if there is an apriori map in the path_to_map directory
+    std::vector<std::string> map_filenames = viam::io::ListSortedFilesInDirectory(path_to_map);
+    if (map_filenames.size() != 0) {
+        // There is an apriori map present, so we're running either in updating or
+        // localization mode.
+        if (map_rate_sec.count() == 0) {
+            LOG(INFO) << "Running in localization only mode";
+            action_mode = SLAMServiceActionMode::LOCALIZING;
+            return;
+        }
+        LOG(INFO) << "Running in updating mode";
+        action_mode = SLAMServiceActionMode::UPDATING;
+        return;
     }
     LOG(INFO) << "Running in mapping mode";
-    return SLAMServiceActionMode::MAPPING;
+    action_mode = SLAMServiceActionMode::MAPPING;
+}
+
+SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
+    return action_mode;
 }
 
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
@@ -319,93 +326,27 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
 void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
-
-    // TODO: Check whether or not we're running localization and/or
-    // updating a map. Create a function to run those modes.
-    // Implemented with these tickets:
-    // https://viam.atlassian.net/browse/DATA-114
-    // https://viam.atlassian.net/browse/DATA-631
-
-    // TODO: Call updating map function, if apriori map was loaded
-    // Check if there is an apriori map in the path_to_map directory
-    std::vector<std::string> map_filenames = viam::io::ListSortedFilesInDirectory(path_to_map);
-    if (map_filenames.size() != 0) {
-        // TODO[kat]: Get the latest map and use that to call "UpdateMap"
-        std::string latest_map_filename = map_filenames.back();
-        UpdateMap(latest_map_filename);
-    }
-
-    // TODO: Call localization only mode function, if localization only
-    // action mode and if apriori map exists:
-    // Ticket https://viam.atlassian.net/browse/DATA-631
-
-
-    // Mapping a new map:
-    CreateMap();
-}
-
-void SLAMServiceImpl::UpdateMap(std::string map_filename) {
-    // TODO: Might allow the user to choose whether or not to
-    // optimize the map afer loading it into the MapBuilder, see ticket: 
-    // https://viam.atlassian.net/browse/DATA-117
-    bool optimize = true;
-    bool load_frozen_trajectory = true;
-    if (action_mode == SLAMServiceActionMode::UPDATING) {
-        load_frozen_trajectory = false;
-    } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
-        load_frozen_trajectory = true;
-    } else {
-        throw std::runtime_error("invalid action mode");
-    }
-
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id = 0;
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        // Load apriori map
-        mapBuilder.LoadFromFile(map_filename, load_frozen_trajectory, optimize);
-        // Set TrajectoryBuilder
-        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder, {kRangeSensorId});
-        LOG(INFO) << "Using trajectory ID: " << trajectory_id;
-    }
-
-    LOG(INFO) << "Beginning to add data...";
-
-    io::ReadFile read_file;
-    std::vector<std::string> file_list =
-        read_file.listSortedFilesInDirectory(data_directory);
-    std::string initial_file = file_list[0];
-
-    std::cout << "Beginning to add data....\n";
-    PaintMap(mapBuilder.map_builder_, output_directory, "before_" + operation);
-
-    int end_scan_number = int(file_list.size());
-    for (int i = starting_scan_number; i < end_scan_number; i++) {
-        auto measurement =
-            mapBuilder.GetDataFromFile(data_directory, initial_file, i);
-
-        if (measurement.ranges.size() > 0) {
-            trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
-            if ((i >= starting_scan_number && i < starting_scan_number + 3) ||
-                i % picture_print_interval == 0) {
-                PaintMap(mapBuilder.map_builder_, output_directory,
-                         operation + "_" + std::to_string(1 + i++));
-            }
+    DetermineActionMode();
+    
+    if (action_mode == SLAMServiceActionMode::UPDATING ||
+        action_mode == SLAMServiceActionMode::LOCALIZING) {
+        // Check if there is an apriori map in the path_to_map directory
+        std::vector<std::string> map_filenames = viam::io::ListSortedFilesInDirectory(path_to_map);
+        if (map_filenames.size() == 0) {
+            throw std::runtime_error("can not find maps but they should be present");
         }
+        std::string latest_map_filename = map_filenames.back();
+        bool optimize = true;
+        bool load_frozen_trajectory = true; // true for LOCALIZING action mode
+        if (action_mode == SLAMServiceActionMode::UPDATING) {
+            load_frozen_trajectory = false;
+        }
+        // Load apriori map
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        mapBuilder.LoadFromFile(map_filename, load_frozen_trajectory, optimize);
     }
 
-    // saved map after localization is finished
-    const std::string map_file_2 =
-        "./after_" + operation + "_" + map_output_name;
-    mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
-    mapBuilder.map_builder_->SerializeStateToFile(true, map_file_2);
-
-    mapBuilder.map_builder_->FinishTrajectory(0);
-    mapBuilder.map_builder_->FinishTrajectory(trajectory_id);
-    mapBuilder.map_builder_->pose_graph()->RunFinalOptimization();
-
-    return;
-}
+    RunSLAM();
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
@@ -455,10 +396,7 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     return GetNextDataFileOnline();
 }
 
-void SLAMServiceImpl::CreateMap() {
-    if (action_mode != SLAMServiceActionMode::MAPPING) {
-        throw std::runtime_error("invalid action mode");
-    }
+void SLAMServiceImpl::RunSLAM() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
