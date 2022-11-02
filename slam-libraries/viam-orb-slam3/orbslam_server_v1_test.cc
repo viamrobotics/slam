@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
                               "-data_rate_ms=200",  "-map_rate_sec="};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(0).count());
+    BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(60).count());
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
