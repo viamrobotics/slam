@@ -337,18 +337,18 @@ void SLAMServiceImpl::ProcessData() {
         std::vector<std::string> map_filenames =
             viam::io::ListSortedFilesInDirectory(path_to_map);
 
-        std::string::size_type n;
+        bool found_map = false;
         std::string latest_map_filename;
         for (size_t i = map_filenames.size()-1; i == 0; i--) {
-            n = map_filenames.at(i).find("*.pbstream");
-            if (n != std::string::npos) {
+            if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
                 latest_map_filename = map_filenames.at(i);
+                found_map = true;
                 break;
             }
         }
-        if (n == std::string::npos) {
+        if (!found_map) {
             throw std::runtime_error(
-                "can not find maps but they should be present");
+                "cannot find maps but they should be present");
         }
         bool optimize = true;
         bool load_frozen_trajectory = true;  // true for LOCALIZING action mode
@@ -416,12 +416,8 @@ void SLAMServiceImpl::RunSLAM() {
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
-        // trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder,
-        //                                                  {kRangeSensorId});
-        int trajectory_id = map_builder.map_builder_->AddTrajectoryBuilder(
-            {kRangeSensorId}, map_builder.trajectory_builder_options_, map_builder.GetLocalSlamResultCallback());
-
-        trajectory_builder = map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
+        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder,
+                                                         {kRangeSensorId});
         LOG(INFO) << "Using trajectory ID: " << trajectory_id;
     }
 
@@ -434,10 +430,12 @@ void SLAMServiceImpl::RunSLAM() {
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
+        std::cout << "FILENAME: " << file << std::endl;
         if (file.find(".pcd") == std::string::npos) {
             file = GetNextDataFile();
             continue;
         }
+        std::cout << "CONTINUED?" << std::endl;
         if (!set_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetStartTime(file);
@@ -448,11 +446,8 @@ void SLAMServiceImpl::RunSLAM() {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
             if (measurement.ranges.size() > 0) {
-                std::cout << "measurement - adding to sensor data" << std::endl;
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
-                std::cout << "measurement - added to sensor data" << std::endl;
-
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
                     tmp_global_pose = map_builder.GetGlobalPose(
