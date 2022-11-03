@@ -113,8 +113,8 @@ void SLAMServiceImpl::DetermineActionMode() {
     // Check if there is a *.pbstream map in the path_to_map directory
     for (auto filename : map_filenames) {
         if (filename.find(".pbstream") != std::string::npos) {
-            // There is an apriori map present, so we're running either in updating
-            // or localization mode.
+            // There is an apriori map present, so we're running either in
+            // updating or localization mode.
             if (map_rate_sec.count() == 0) {
                 LOG(INFO) << "Running in localization only mode";
                 action_mode = SLAMServiceActionMode::LOCALIZING;
@@ -339,7 +339,7 @@ void SLAMServiceImpl::ProcessData() {
 
         bool found_map = false;
         std::string latest_map_filename;
-        for (size_t i = map_filenames.size()-1; i == 0; i--) {
+        for (size_t i = map_filenames.size() - 1; i == 0; i--) {
             if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
                 latest_map_filename = map_filenames.at(i);
                 found_map = true;
@@ -357,7 +357,8 @@ void SLAMServiceImpl::ProcessData() {
         }
         // Load apriori map
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.LoadFromFile(latest_map_filename, load_frozen_trajectory, optimize);
+        map_builder.LoadFromFile(latest_map_filename, load_frozen_trajectory,
+                                 optimize);
     }
 
     RunSLAM();
