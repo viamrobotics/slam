@@ -748,8 +748,7 @@ void ParseAndValidateArguments(const vector<string> &args,
 
     auto map_rate_sec = ArgParser(args, "-map_rate_sec=");
     if (map_rate_sec.empty()) {
-        BOOST_LOG_TRIVIAL(info) << "map_rate_sec set to default (60)";
-        map_rate_sec = "60";
+        throw runtime_error("No map data rate specified");
     }
     slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
     if (slamService.map_rate_sec == chrono::seconds(0)) {
