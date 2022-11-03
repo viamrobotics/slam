@@ -65,8 +65,9 @@ std::atomic<bool> b_continue_session{true};
         // paint map accordingly with or without the marker
         // included. Ticket: https://viam.atlassian.net/browse/DATA-657
         std::string jpeg_img = "";
+        bool marker_flag = request->include_robot_marker();
         try {
-            jpeg_img = PaintMap();
+            jpeg_img = PaintMap(marker_flag);
             if (jpeg_img == "") {
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                     "currently no map exists yet");
@@ -166,7 +167,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     map_builder.BuildMapBuilder();
 }
 
-std::string SLAMServiceImpl::PaintMap() {
+std::string SLAMServiceImpl::PaintMap(bool marker_flag) {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
@@ -253,7 +254,7 @@ std::string SLAMServiceImpl::PaintMap() {
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-
+    if(marker_flag)
     viam::io::DrawPositionOnSurface(&painted_slices, global_pose, kPixelSize);
 
     auto image = viam::io::Image(std::move(painted_slices.surface));
