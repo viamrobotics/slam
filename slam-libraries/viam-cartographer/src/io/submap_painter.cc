@@ -106,7 +106,7 @@ cartographer::io::PaintSubmapSlicesResult PaintSubmapSlices(
                 cairo_set_source_surface(cr.get(), submap_slice.surface.get(),
                                          0., 0.);
                 cairo_paint(cr.get());
-            });        
+            });
         cairo_surface_flush(surface.get());
     }
     return cartographer::io::PaintSubmapSlicesResult(std::move(surface),
@@ -114,17 +114,23 @@ cartographer::io::PaintSubmapSlicesResult PaintSubmapSlices(
 }
 
 // Draw a position on the current map
-void DrawPositionOnSurface(cartographer::io::PaintSubmapSlicesResult *painted_slices, cartographer::transform::Rigid3d global_pose, float resolution){
+void DrawPositionOnSurface(
+    cartographer::io::PaintSubmapSlicesResult* painted_slices,
+    cartographer::transform::Rigid3d global_pose, float resolution) {
     float marker_size = .3;
-    
-    auto cr = cartographer::io::MakeUniqueCairoPtr(cairo_create(painted_slices->surface.get()));
+
+    auto cr = cartographer::io::MakeUniqueCairoPtr(
+        cairo_create(painted_slices->surface.get()));
 
     // move to origin of map
-    cairo_translate(cr.get(), painted_slices->origin.x(), painted_slices->origin.y());
-    cairo_set_source_rgba(cr.get(),1,0,0,1);
+    cairo_translate(cr.get(), painted_slices->origin.x(),
+                    painted_slices->origin.y());
+    cairo_set_source_rgba(cr.get(), 1, 0, 0, 1);
 
-    //draw circle at desired global pose
-    cairo_arc(cr.get(), global_pose.translation().x() / resolution, -global_pose.translation().y() / resolution, marker_size / resolution, 0, 2*M_PI);
+    // draw circle at desired global pose
+    cairo_arc(cr.get(), global_pose.translation().x() / resolution,
+              -global_pose.translation().y() / resolution,
+              marker_size / resolution, 0, 2 * M_PI);
     cairo_fill(cr.get());
     cairo_surface_flush(painted_slices->surface.get());
 }

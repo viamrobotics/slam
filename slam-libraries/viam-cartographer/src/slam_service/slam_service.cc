@@ -254,8 +254,9 @@ std::string SLAMServiceImpl::PaintMap(bool marker_flag) {
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-    if(marker_flag)
-    viam::io::DrawPositionOnSurface(&painted_slices, global_pose, kPixelSize);
+    if (marker_flag)
+        viam::io::DrawPositionOnSurface(&painted_slices, global_pose,
+                                        kPixelSize);
 
     auto image = viam::io::Image(std::move(painted_slices.surface));
     std::string jpeg_img = image.WriteJpegToString(50);
@@ -460,11 +461,11 @@ void SLAMServiceImpl::CreateMap() {
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
         auto local_poses = map_builder.GetLocalSlamResultPoses();
         if (local_poses.size() > 0) {
-            tmp_global_pose = map_builder.GetGlobalPose(
-                trajectory_id, local_poses.back());
+            tmp_global_pose =
+                map_builder.GetGlobalPose(trajectory_id, local_poses.back());
         }
     }
-    
+
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         latest_global_pose = tmp_global_pose;

@@ -21,7 +21,9 @@ cartographer::io::PaintSubmapSlicesResult PaintSubmapSlices(
                    cartographer::io::SubmapSlice>& submaps,
     double resolution);
 
-void DrawPositionOnSurface(cartographer::io::PaintSubmapSlicesResult *painted_slices, cartographer::transform::Rigid3d global_pose, float resolution);
+void DrawPositionOnSurface(
+    cartographer::io::PaintSubmapSlicesResult* painted_slices,
+    cartographer::transform::Rigid3d global_pose, float resolution);
 
 }  // namespace io
 }  // namespace viam
