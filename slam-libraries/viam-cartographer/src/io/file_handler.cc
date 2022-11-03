@@ -98,9 +98,6 @@ double ReadTimeFromFilename(std::string filename) {
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
     ss >> std::get_time(&dt, time_format.c_str());
-    if (ss.fail()) {
-        throw std::runtime_error("parsing the time has failed");
-    }
     time_t thisTime = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
     if ((sub_sec_index != std::string::npos)) {

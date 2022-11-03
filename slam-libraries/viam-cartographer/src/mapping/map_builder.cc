@@ -71,13 +71,13 @@ void MapBuilder::LoadFromFile(std::string map_filename,
 }
 
 int MapBuilder::SetTrajectoryBuilder(
-    cartographer::mapping::TrajectoryBuilderInterface* trajectory_builder,
+    cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
     std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>
         sensorIdSet) {
     int trajectory_id = map_builder_->AddTrajectoryBuilder(
         sensorIdSet, trajectory_builder_options_, GetLocalSlamResultCallback());
 
-    trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
+    *trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
     return trajectory_id;
 }
 

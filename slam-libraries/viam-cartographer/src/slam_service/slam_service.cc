@@ -416,7 +416,7 @@ void SLAMServiceImpl::RunSLAM() {
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
-        trajectory_id = map_builder.SetTrajectoryBuilder(trajectory_builder,
+        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
                                                          {kRangeSensorId});
         LOG(INFO) << "Using trajectory ID: " << trajectory_id;
     }
