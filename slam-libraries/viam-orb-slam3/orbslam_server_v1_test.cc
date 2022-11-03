@@ -119,7 +119,6 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
     const string message = "No map data rate specified";
     checkParseAndValidateArgumentsException(args, message);
 }
-}
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
     const vector<string> args{
