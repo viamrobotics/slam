@@ -417,7 +417,7 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
 
-            UpdateMapAndPosition(SLAM, tmpPose);
+            UpdateMapAndPose(SLAM, tmpPose);
 
             // This log line is needed by rdk integration tests.
             BOOST_LOG_TRIVIAL(debug) << "Passed image to SLAM";
@@ -484,7 +484,7 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
                 BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
             }
 
-            UpdateMapAndPosition(SLAM, tmpPose);
+            UpdateMapAndPose(SLAM, tmpPose);
         }
         if (!b_continue_session) break;
     }
@@ -495,11 +495,10 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
     return;
 }
 
-// Update map nd position when new image is successfully passed to the system
-void SLAMServiceImpl::UpdateMapAndPosition(ORB_SLAM3::System *SLAM,
+// UpdateMapAndPose updates the copy of the current map and pose when a change 
+// in keyframes occurs
+void SLAMServiceImpl::UpdateMapAndPose(ORB_SLAM3::System *SLAM,
                                            Sophus::SE3f tmpPose) {
-    // Update pose every loop during tracking as well as map when n_key_frames
-    // changes
     ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
     std::vector<ORB_SLAM3::KeyFrame *> keyframes = currMap->GetAllKeyFrames();
     {

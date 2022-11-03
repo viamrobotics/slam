@@ -41,7 +41,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // in the center, for testing GetMap and GetPosition.
     void ProcessDataForTesting(ORB_SLAM3::System *SLAM);
 
-    void UpdateMapAndPosition(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
+    void UpdateMapAndPose(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
 
     void StartSaveAtlasAsOsa(ORB_SLAM3::System *SLAM);
 
