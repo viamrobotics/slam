@@ -430,12 +430,10 @@ void SLAMServiceImpl::RunSLAM() {
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
-        std::cout << "FILENAME: " << file << std::endl;
         if (file.find(".pcd") == std::string::npos) {
             file = GetNextDataFile();
             continue;
         }
-        std::cout << "CONTINUED?" << std::endl;
         if (!set_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetStartTime(file);
