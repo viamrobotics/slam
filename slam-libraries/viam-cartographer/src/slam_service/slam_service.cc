@@ -177,6 +177,11 @@ std::string SLAMServiceImpl::PaintMap() {
         submap_poses =
             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
     }
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        global_pose = latest_global_pose;
+    }
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
 
@@ -248,6 +253,9 @@ std::string SLAMServiceImpl::PaintMap() {
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
+
+    viam::io::DrawPositionOnSurface(&painted_slices, global_pose, kPixelSize);
+
     auto image = viam::io::Image(std::move(painted_slices.surface));
     std::string jpeg_img = image.WriteJpegToString(50);
     return jpeg_img;
@@ -449,6 +457,16 @@ void SLAMServiceImpl::CreateMap() {
 
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
+        auto local_poses = map_builder.GetLocalSlamResultPoses();
+        if (local_poses.size() > 0) {
+            tmp_global_pose = map_builder.GetGlobalPose(
+                trajectory_id, local_poses.back());
+        }
+    }
+    
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        latest_global_pose = tmp_global_pose;
     }
 
     LOG(INFO) << "Finished optimizing final map";
