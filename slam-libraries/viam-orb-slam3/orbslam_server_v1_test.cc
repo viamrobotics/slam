@@ -67,11 +67,19 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_port) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_camera_data_rate) {
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_data_rate_msec) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
-                              "-map_rate_sec=60",   "-unknown=unknown"};
-    const string message = "No camera data rate specified";
+                              "-data_rate_ms=",     "-map_rate_sec=60"};
+    const string message = "a data_rate_ms value is required";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
+    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
+                              "-port=20000",        "-sensors=color",
+                              "-data_rate_ms=200",  "-map_rate_sec="};
+    const string message = "a map_rate_sec value is required";
     checkParseAndValidateArgumentsException(args, message);
 }
 
@@ -102,22 +110,6 @@ BOOST_AUTO_TEST_CASE(
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
-}
-
-BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_data_rate_msec) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=",     "-map_rate_sec=60"};
-    const string message = "a data_rate_ms value is required";
-    checkParseAndValidateArgumentsException(args, message);
-}
-
-BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec="};
-    const string message = "a map_rate_sec value is required";
-    checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
