@@ -41,6 +41,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // in the center, for testing GetMap and GetPosition.
     void ProcessDataForTesting(ORB_SLAM3::System *SLAM);
 
+    void UpdateMapAndPose(ORB_SLAM3::System *SLAM, Sophus::SE3f tmpPose);
+
     void StartSaveAtlasAsOsa(ORB_SLAM3::System *SLAM);
 
     void StopSaveAtlasAsOsa();
@@ -58,6 +60,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double yamlTime;
     std::atomic<bool> offlineFlag{false};
     bool local_viewer_flag = false;
+    bool pure_localization_mode = false;
+    int n_key_frames = 0;
+    int curr_map_id = 0;
 
    private:
     void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM);
