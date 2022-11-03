@@ -495,10 +495,10 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
     return;
 }
 
-// UpdateMapAndPose updates the copy of the current map and pose when a change 
+// UpdateMapAndPose updates the copy of the current map and pose when a change
 // in keyframes occurs
 void SLAMServiceImpl::UpdateMapAndPose(ORB_SLAM3::System *SLAM,
-                                           Sophus::SE3f tmpPose) {
+                                       Sophus::SE3f tmpPose) {
     ORB_SLAM3::Map *currMap = SLAM->GetAtlas()->GetCurrentMap();
     std::vector<ORB_SLAM3::KeyFrame *> keyframes = currMap->GetAllKeyFrames();
     {
@@ -741,13 +741,13 @@ void ParseAndValidateArguments(const vector<string> &args,
 
     const auto data_rate_msec = ArgParser(args, "-data_rate_ms=");
     if (data_rate_msec.empty()) {
-        throw runtime_error("No camera data rate specified");
+        throw runtime_error("a data_rate_ms value is required");
     }
     slamService.frame_delay_msec = chrono::milliseconds(stoi(data_rate_msec));
 
     auto map_rate_sec = ArgParser(args, "-map_rate_sec=");
     if (map_rate_sec.empty()) {
-        throw runtime_error("No map data rate specified");
+        throw runtime_error("a map_rate_sec value is required");
     }
     slamService.map_rate_sec = chrono::seconds(stoi(map_rate_sec));
     if (slamService.map_rate_sec == chrono::seconds(0)) {
