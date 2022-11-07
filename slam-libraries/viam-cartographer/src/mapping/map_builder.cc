@@ -57,8 +57,8 @@ void MapBuilder::BuildMapBuilder() {
         cartographer::mapping::CreateMapBuilder(map_builder_options_);
 }
 
-void MapBuilder::LoadFromFile(std::string map_filename,
-                              bool load_frozen_trajectory, bool optimize) {
+void MapBuilder::LoadMapFromFile(std::string map_filename,
+                                 bool load_frozen_trajectory, bool optimize) {
     std::map<int, int> trajectory_ids_map =
         map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
 
@@ -66,8 +66,9 @@ void MapBuilder::LoadFromFile(std::string map_filename,
         map_builder_->pose_graph()->RunFinalOptimization();
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
-        LOG(INFO) << "Trajectory ids mapping: " << trajectory_ids_pair.first
-                  << " " << trajectory_ids_pair.second;
+        LOG(INFO) << "Trajectory ids mapping from apriori map: "
+                  << trajectory_ids_pair.first << " "
+                  << trajectory_ids_pair.second;
 }
 
 int MapBuilder::SetTrajectoryBuilder(

@@ -73,8 +73,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // empty string if stop has been signaled.
     std::string GetNextDataFileOnline();
 
-    // RunSLAM runs SLAM in the SLAMServiceActionMode mode: Either mapping from
-    // scratch, updating an apriori map, or localizing on an apriori map.
+    // RunSLAM runs SLAM in the SLAMServiceActionMode mode: Either creating
+    // a new map, updating an apriori map, or localizing on an apriori map.
     void RunSLAM();
 
     // DetermineActionMode determines the action mode the slam service runs in,

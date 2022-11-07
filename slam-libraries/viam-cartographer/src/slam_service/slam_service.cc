@@ -132,7 +132,6 @@ void SLAMServiceImpl::DetermineActionMode() {
 SLAMServiceActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
 
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
-    SLAMServiceActionMode slam_action_mode = GetActionMode();
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.OverwriteOptimizeEveryNNodes(optimize_every_n_nodes);
@@ -140,10 +139,10 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
         map_builder.OverwriteMissingDataRayLength(missing_data_ray_length);
         map_builder.OverwriteMaxRange(max_range);
         map_builder.OverwriteMinRange(min_range);
-        if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
+        if (action_mode == SLAMServiceActionMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(max_submaps_to_keep);
         }
-        if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+        if (action_mode == SLAMServiceActionMode::UPDATING) {
             map_builder.OverwriteFreshSubmapsCount(fresh_submaps_count);
             map_builder.OverwriteMinCoveredArea(min_covered_area);
             map_builder.OverwriteMinAddedSubmapsCount(min_added_submaps_count);
@@ -155,7 +154,6 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
 }
 
 void SLAMServiceImpl::SetUpMapBuilder() {
-    auto action_mode = GetActionMode();
     if (action_mode == SLAMServiceActionMode::MAPPING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(configuration_directory,
@@ -350,15 +348,18 @@ void SLAMServiceImpl::ProcessData() {
             throw std::runtime_error(
                 "cannot find maps but they should be present");
         }
+        // TODO: The optimize flag will become a flag that can be set by the
+        // user. Will be implemented here:
+        // https://viam.atlassian.net/browse/DATA-117
         bool optimize = true;
-        bool load_frozen_trajectory = true;  // true for LOCALIZING action mode
-        if (action_mode == SLAMServiceActionMode::UPDATING) {
-            load_frozen_trajectory = false;
-        }
+        // load_frozen_trajectory has to be true for LOCALIZING action mode,
+        // and false for UPDATING action mode.
+        bool load_frozen_trajectory =
+            action_mode == SLAMServiceActionMode::LOCALIZING;
         // Load apriori map
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.LoadFromFile(latest_map_filename, load_frozen_trajectory,
-                                 optimize);
+        map_builder.LoadMapFromFile(latest_map_filename, load_frozen_trajectory,
+                                    optimize);
     }
 
     RunSLAM();

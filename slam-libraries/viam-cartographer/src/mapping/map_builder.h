@@ -26,8 +26,8 @@ class MapBuilder {
                std::string configuration_basename);
 
     void BuildMapBuilder();
-    void LoadFromFile(std::string map_filename, bool load_frozen_trajectory,
-                      bool optimize);
+    void LoadMapFromFile(std::string map_filename, bool load_frozen_trajectory,
+                         bool optimize);
     int SetTrajectoryBuilder(
         cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
         std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>
