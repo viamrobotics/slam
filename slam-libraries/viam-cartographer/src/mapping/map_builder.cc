@@ -2,7 +2,7 @@
 // integrated into RDK.
 #include "cartographer/mapping/map_builder.h"
 
-#include "../io/read_PCD_file.h"
+#include "../io/file_handler.h"
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
 #include "cartographer/io/proto_stream.h"
@@ -55,6 +55,31 @@ void MapBuilder::SetUp(std::string configuration_directory,
 void MapBuilder::BuildMapBuilder() {
     map_builder_ =
         cartographer::mapping::CreateMapBuilder(map_builder_options_);
+}
+
+void MapBuilder::LoadMapFromFile(std::string map_filename,
+                                 bool load_frozen_trajectory, bool optimize) {
+    std::map<int, int> trajectory_ids_map =
+        map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
+
+    if (optimize) {
+        map_builder_->pose_graph()->RunFinalOptimization();
+    }
+    for (auto&& trajectory_ids_pair : trajectory_ids_map)
+        LOG(INFO) << "Trajectory ids mapping from apriori map: "
+                  << trajectory_ids_pair.first << " "
+                  << trajectory_ids_pair.second;
+}
+
+int MapBuilder::SetTrajectoryBuilder(
+    cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
+    std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>
+        sensorIdSet) {
+    int trajectory_id = map_builder_->AddTrajectoryBuilder(
+        sensorIdSet, trajectory_builder_options_, GetLocalSlamResultCallback());
+
+    *trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
+    return trajectory_id;
 }
 
 cartographer::mapping::MapBuilderInterface::LocalSlamResultCallback

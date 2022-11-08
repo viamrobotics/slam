@@ -105,24 +105,33 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-SLAMServiceActionMode SLAMServiceImpl::GetActionMode() {
-    // TODO: Add a case for updating. Requires that an apriori
-    // map is detected and loaded. Will be implemented in this ticket:
-    // https://viam.atlassian.net/browse/DATA-114
+void SLAMServiceImpl::DetermineActionMode() {
+    // Check if there is an apriori map in the path_to_map directory
+    std::vector<std::string> map_filenames =
+        viam::io::ListSortedFilesInDirectory(path_to_map);
 
-    // TODO: Change this depending on the outcome of this scope
-    // doc:
-    // https://docs.google.com/document/d/1RsT-c0QOtkMKa-rwUGY0-emUmKIRSaO3mzT1v6MtFjk/edit#heading=h.tcicyojyqi6c
-    if (map_rate_sec.count() == -1) {
-        LOG(INFO) << "Running in localization only mode";
-        return SLAMServiceActionMode::LOCALIZING;
+    // Check if there is a *.pbstream map in the path_to_map directory
+    for (auto filename : map_filenames) {
+        if (filename.find(".pbstream") != std::string::npos) {
+            // There is an apriori map present, so we're running either in
+            // updating or localization mode.
+            if (map_rate_sec.count() == 0) {
+                LOG(INFO) << "Running in localization only mode";
+                action_mode = SLAMServiceActionMode::LOCALIZING;
+                return;
+            }
+            LOG(INFO) << "Running in updating mode";
+            action_mode = SLAMServiceActionMode::UPDATING;
+            return;
+        }
     }
     LOG(INFO) << "Running in mapping mode";
-    return SLAMServiceActionMode::MAPPING;
+    action_mode = SLAMServiceActionMode::MAPPING;
 }
 
+SLAMServiceActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
+
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
-    SLAMServiceActionMode slam_action_mode = GetActionMode();
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.OverwriteOptimizeEveryNNodes(optimize_every_n_nodes);
@@ -130,10 +139,10 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
         map_builder.OverwriteMissingDataRayLength(missing_data_ray_length);
         map_builder.OverwriteMaxRange(max_range);
         map_builder.OverwriteMinRange(min_range);
-        if (slam_action_mode == SLAMServiceActionMode::LOCALIZING) {
+        if (action_mode == SLAMServiceActionMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(max_submaps_to_keep);
         }
-        if (slam_action_mode == SLAMServiceActionMode::UPDATING) {
+        if (action_mode == SLAMServiceActionMode::UPDATING) {
             map_builder.OverwriteFreshSubmapsCount(fresh_submaps_count);
             map_builder.OverwriteMinCoveredArea(min_covered_area);
             map_builder.OverwriteMinAddedSubmapsCount(min_added_submaps_count);
@@ -145,7 +154,6 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
 }
 
 void SLAMServiceImpl::SetUpMapBuilder() {
-    auto action_mode = GetActionMode();
     if (action_mode == SLAMServiceActionMode::MAPPING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(configuration_directory,
@@ -319,20 +327,42 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
 void SLAMServiceImpl::ProcessData() {
     // Set up and build the MapBuilder
     SetUpMapBuilder();
+    DetermineActionMode();
 
-    // TODO: Check whether or not we're running localization and/or
-    // updating a map. Create a function to run those modes.
-    // Implemented with these tickets:
-    // https://viam.atlassian.net/browse/DATA-114
-    // https://viam.atlassian.net/browse/DATA-631
+    if (action_mode == SLAMServiceActionMode::UPDATING ||
+        action_mode == SLAMServiceActionMode::LOCALIZING) {
+        // Check if there is an apriori map in the path_to_map directory
+        std::vector<std::string> map_filenames =
+            viam::io::ListSortedFilesInDirectory(path_to_map);
 
-    // TODO: Call localization only mode function, if localization only
-    // action mode
+        bool found_map = false;
+        std::string latest_map_filename;
+        for (size_t i = map_filenames.size() - 1; i == 0; i--) {
+            if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
+                latest_map_filename = map_filenames.at(i);
+                found_map = true;
+                break;
+            }
+        }
+        if (!found_map) {
+            throw std::runtime_error(
+                "cannot find maps but they should be present");
+        }
+        // TODO: The optimize flag will become a flag that can be set by the
+        // user. Will be implemented here:
+        // https://viam.atlassian.net/browse/DATA-117
+        bool optimize = true;
+        // load_frozen_trajectory has to be true for LOCALIZING action mode,
+        // and false for UPDATING action mode.
+        bool load_frozen_trajectory =
+            action_mode == SLAMServiceActionMode::LOCALIZING;
+        // Load apriori map
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.LoadMapFromFile(latest_map_filename, load_frozen_trajectory,
+                                    optimize);
+    }
 
-    // TODO: Call updating map function, if apriori map was loaded
-
-    // Mapping a new map:
-    CreateMap();
+    RunSLAM();
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
@@ -340,7 +370,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         return "";
     }
     if (file_list_offline.size() == 0) {
-        file_list_offline = viam::io::ListFilesInDirectory(path_to_data);
+        file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
     if (file_list_offline.size() == 0) {
         throw std::runtime_error("no data in data directory");
@@ -358,7 +388,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
     while (b_continue_session) {
         const auto file_list_online =
-            viam::io::ListFilesInDirectory(path_to_data);
+            viam::io::ListSortedFilesInDirectory(path_to_data);
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
@@ -382,20 +412,15 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     return GetNextDataFileOnline();
 }
 
-void SLAMServiceImpl::CreateMap() {
+void SLAMServiceImpl::RunSLAM() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        // Build TrajectoryBuilder
-        trajectory_id = map_builder.map_builder_->AddTrajectoryBuilder(
-            {kRangeSensorId}, map_builder.trajectory_builder_options_,
-            map_builder.GetLocalSlamResultCallback());
-
-        LOG(INFO) << "Trajectory ID: " << trajectory_id;
-
-        trajectory_builder =
-            map_builder.map_builder_->GetTrajectoryBuilder(trajectory_id);
+        // Set TrajectoryBuilder
+        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
+                                                         {kRangeSensorId});
+        LOG(INFO) << "Using trajectory ID: " << trajectory_id;
     }
 
     LOG(INFO) << "Beginning to add data...";
@@ -407,6 +432,10 @@ void SLAMServiceImpl::CreateMap() {
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
+        if (file.find(".pcd") == std::string::npos) {
+            file = GetNextDataFile();
+            continue;
+        }
         if (!set_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetStartTime(file);
@@ -419,7 +448,6 @@ void SLAMServiceImpl::CreateMap() {
             if (measurement.ranges.size() > 0) {
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
-
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
                     tmp_global_pose = map_builder.GetGlobalPose(

@@ -1,7 +1,7 @@
 // This is an Experimental variation of cartographer. It has not yet been
 // integrated into RDK.
-#ifndef VIAM_READ_FROM_FILE_H_
-#define VIAM_READ_FROM_FILE_H_
+#ifndef FILE_HANDLER_H_
+#define FILE_HANDLER_H_
 
 #include <inttypes.h>
 
@@ -16,7 +16,7 @@ namespace viam {
 namespace io {
 static const int filenamePrefixLength = 6;
 
-std::vector<std::string> ListFilesInDirectory(std::string data_directory);
+std::vector<std::string> ListSortedFilesInDirectory(std::string data_directory);
 
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time);
@@ -29,4 +29,4 @@ double ReadTimeFromFilename(std::string filename);
 }  // namespace io
 }  // namespace viam
 
-#endif  // VIAM_READ_FROM_FILE_H_
+#endif  // FILE_HANDLER_H_
