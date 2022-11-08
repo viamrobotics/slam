@@ -77,7 +77,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
 namespace utils {
 
-static const string time_format = "%Y-%m-%dT%H:%M:%SZ";
+static const string time_format = "%Y-%m-%dT%H:%M:%S.0000Z";
 enum class FileParserMethod { Recent, Closest };
 // find a specific input argument from rdk and write the value to a string.
 // Returns empty if the argument is not found.
