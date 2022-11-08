@@ -60,7 +60,7 @@
 /*! Macro to activate main() function. This is only used for testing. Comment
  * it out (#undef) if you link this file to your own program.
  */
-//#define CAIRO_JPEG_MAIN
+// #define CAIRO_JPEG_MAIN
 //
 /*! Define this to use an alternate implementation of
  * cairo_image_surface_create_from_jpeg() which fstat(3)s the file before
