@@ -94,7 +94,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void OverwriteMapBuilderParameters();
 
     // PaintMap paints the map in jpeg format
-    std::string PaintMap(bool marker_flag);
+    std::string PaintMap(bool pose_marker_flag);
 
     // ExtractPointCloud extracts the pointcloud from the map_builder
     // and saves it in a buffer

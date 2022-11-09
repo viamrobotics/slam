@@ -61,13 +61,10 @@ std::atomic<bool> b_continue_session{true};
     response->set_mime_type(mime_type);
 
     if (mime_type == "image/jpeg") {
-        // TODO: Check for request->include_robot_marker() and
-        // paint map accordingly with or without the marker
-        // included. Ticket: https://viam.atlassian.net/browse/DATA-657
         std::string jpeg_img = "";
-        bool marker_flag = request->include_robot_marker();
+        bool pose_marker_flag = request->include_robot_marker();
         try {
-            jpeg_img = PaintMap(marker_flag);
+            jpeg_img = PaintMap(pose_marker_flag);
             if (jpeg_img == "") {
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                     "currently no map exists yet");
@@ -175,7 +172,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     map_builder.BuildMapBuilder();
 }
 
-std::string SLAMServiceImpl::PaintMap(bool marker_flag) {
+std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
@@ -186,11 +183,7 @@ std::string SLAMServiceImpl::PaintMap(bool marker_flag) {
         submap_poses =
             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
     }
-    cartographer::transform::Rigid3d global_pose;
-    {
-        std::lock_guard<std::mutex> lk(viam_response_mutex);
-        global_pose = latest_global_pose;
-    }
+    
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
 
@@ -262,9 +255,16 @@ std::string SLAMServiceImpl::PaintMap(bool marker_flag) {
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-    if (marker_flag)
+    if (pose_marker_flag){
+        cartographer::transform::Rigid3d global_pose;
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            global_pose = latest_global_pose;
+        }
         viam::io::DrawPositionOnSurface(&painted_slices, global_pose,
-                                        kPixelSize);
+                                            kPixelSize);
+    }
+        
 
     auto image = viam::io::Image(std::move(painted_slices.surface));
     std::string jpeg_img = image.WriteJpegToString(50);
@@ -488,10 +488,8 @@ void SLAMServiceImpl::RunSLAM() {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
         auto local_poses = map_builder.GetLocalSlamResultPoses();
-        if (local_poses.size() > 0) {
-            tmp_global_pose =
-                map_builder.GetGlobalPose(trajectory_id, local_poses.back());
-        }
+        tmp_global_pose =
+            map_builder.GetGlobalPose(trajectory_id, local_poses.back());
     }
 
     {

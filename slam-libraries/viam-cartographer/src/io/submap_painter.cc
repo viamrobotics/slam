@@ -113,8 +113,8 @@ cartographer::io::PaintSubmapSlicesResult PaintSubmapSlices(
                                                      origin);
 }
 
-// Draw a position on the current map
-void DrawPositionOnSurface(
+// Draw a marker for the current pose within the map
+void DrawPoseOnSurface(
     cartographer::io::PaintSubmapSlicesResult* painted_slices,
     cartographer::transform::Rigid3d global_pose, float resolution) {
     float marker_size = .3;

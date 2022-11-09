@@ -21,7 +21,7 @@ cartographer::io::PaintSubmapSlicesResult PaintSubmapSlices(
                    cartographer::io::SubmapSlice>& submaps,
     double resolution);
 
-void DrawPositionOnSurface(
+void DrawPoseOnSurface(
     cartographer::io::PaintSubmapSlicesResult* painted_slices,
     cartographer::transform::Rigid3d global_pose, float resolution);
 
