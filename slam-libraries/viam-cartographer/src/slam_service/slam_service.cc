@@ -61,12 +61,10 @@ std::atomic<bool> b_continue_session{true};
     response->set_mime_type(mime_type);
 
     if (mime_type == "image/jpeg") {
-        // TODO: Check for request->include_robot_marker() and
-        // paint map accordingly with or without the marker
-        // included. Ticket: https://viam.atlassian.net/browse/DATA-657
         std::string jpeg_img = "";
+        bool pose_marker_flag = request->include_robot_marker();
         try {
-            jpeg_img = PaintMap();
+            jpeg_img = PaintMap(pose_marker_flag);
             if (jpeg_img == "") {
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                     "currently no map exists yet");
@@ -174,7 +172,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     map_builder.BuildMapBuilder();
 }
 
-std::string SLAMServiceImpl::PaintMap() {
+std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
@@ -185,6 +183,7 @@ std::string SLAMServiceImpl::PaintMap() {
         submap_poses =
             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
     }
+
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
 
@@ -256,6 +255,15 @@ std::string SLAMServiceImpl::PaintMap() {
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
+    if (pose_marker_flag) {
+        cartographer::transform::Rigid3d global_pose;
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            global_pose = latest_global_pose;
+        }
+        viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
+    }
+
     auto image = viam::io::Image(std::move(painted_slices.surface));
     std::string jpeg_img = image.WriteJpegToString(50);
     return jpeg_img;
@@ -477,6 +485,14 @@ void SLAMServiceImpl::RunSLAM() {
 
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
+        auto local_poses = map_builder.GetLocalSlamResultPoses();
+        tmp_global_pose =
+            map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        latest_global_pose = tmp_global_pose;
     }
 
     LOG(INFO) << "Finished optimizing final map";
