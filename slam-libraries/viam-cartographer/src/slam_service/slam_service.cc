@@ -5,6 +5,7 @@
 
 #include "../io/image.h"
 #include "../mapping/map_builder.h"
+#include "utils.h"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
 #include "cartographer/io/submap_painter.h"
@@ -337,7 +338,8 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     return has_points;
 }
 
-void SLAMServiceImpl::ProcessData() {
+void SLAMServiceImpl::RunSLAM() {
+    LOG(INFO) << "Setting up cartographer";
     // Set up and build the MapBuilder
     SetUpMapBuilder();
     DetermineActionMode();
@@ -375,7 +377,11 @@ void SLAMServiceImpl::ProcessData() {
                                     optimize);
     }
 
-    RunSLAM();
+    LOG(INFO) << "Starting to run cartographer";
+    StartSaveMap();
+    ProcessData();
+    StopSaveMap();
+    LOG(INFO) << "Done running cartographer";
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
@@ -425,7 +431,75 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     return GetNextDataFileOnline();
 }
 
-void SLAMServiceImpl::RunSLAM() {
+
+void SLAMServiceImpl::StartSaveMap() {
+    if (map_rate_sec == chrono::seconds(0)) {
+        return;
+    }
+    thread_save_map_with_timestamp = new thread(
+        [&]() {
+            this->SaveMapWithTimestamp();
+        }
+    );
+}
+
+void SLAMServiceImpl::StopSaveMap() {
+    if (map_rate_sec == chrono::seconds(0)) {
+        return;
+    }
+    thread_save_map_with_timestamp->join();
+}
+
+void SLAMServiceImpl::SaveMapWithTimestamp() {
+    auto check_for_shutdown_interval_usec =
+        chrono::microseconds(checkForShutdownIntervalMicroseconds);
+    while (b_continue_session) {
+        auto start = std::chrono::high_resolution_clock::now();
+        const std::string filename_with_timestamp =
+            utils::MakeFilenameWithTimestamp(path_to_map);
+
+        if (offlineFlag && finished_processing_offline) {
+            {
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
+                // Save the map in a pbstream file
+                bool ok = map_builder.map_builder_->SerializeStateToFile(true, filename_with_timestamp);
+                if (!ok) {
+                    LOG(WARNING) << "Serializing the map to pbstream failed.";
+                }
+            }
+            LOG(INFO) << "Finished saving final optimized map";
+            return;
+        }
+
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            // Save the map in a pbstream file
+            bool ok = map_builder.map_builder_->SerializeStateToFile(true, filename_with_timestamp);
+            if (!ok) {
+                LOG(WARNING) << "Serializing the map to pbstream failed.";
+            }
+        }
+        // Sleep for map_rate_sec duration, but check frequently for
+        // shutdown
+        while (b_continue_session) {
+            std::chrono::duration<double, std::milli> time_elapsed_msec =
+                std::chrono::high_resolution_clock::now() - start;
+            if ((time_elapsed_msec >= map_rate_sec) ||
+                (finished_processing_offline)) {
+                break;
+            }
+            if (map_rate_sec - time_elapsed_msec >=
+                check_for_shutdown_interval_usec) {
+                this_thread::sleep_for(check_for_shutdown_interval_usec);
+            } else {
+                this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
+                break;
+            }
+        }
+    }
+}
+
+void SLAMServiceImpl::ProcessData() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
@@ -481,26 +555,29 @@ void SLAMServiceImpl::RunSLAM() {
 
     if (!set_start_time) return;
 
-    // Save the map in a pbstream file
-    const std::string map_file = path_to_map + "/map.pbstream";
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.map_builder_->pose_graph()->RunFinalOptimization();
-        map_builder.map_builder_->SerializeStateToFile(true, map_file);
+    if (offlineFlag) {
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.map_builder_->FinishTrajectory(trajectory_id);
+            map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
-        map_builder.map_builder_->FinishTrajectory(trajectory_id);
-        map_builder.map_builder_->pose_graph()->RunFinalOptimization();
-        auto local_poses = map_builder.GetLocalSlamResultPoses();
-        tmp_global_pose =
-            map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+            auto local_poses = map_builder.GetLocalSlamResultPoses();
+            tmp_global_pose =
+                map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+        }
+
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
+        }
+        LOG(INFO) << "Finished optimizing final map";
+
+        while (viam::b_continue_session) {
+            LOG(INFO) << "Standing by to continue serving requests\n";
+            std::this_thread::sleep_for(std::chrono::microseconds(
+                viam::checkForShutdownIntervalMicroseconds));
+        }
     }
-
-    {
-        std::lock_guard<std::mutex> lk(viam_response_mutex);
-        latest_global_pose = tmp_global_pose;
-    }
-
-    LOG(INFO) << "Finished optimizing final map";
     return;
 }
 
