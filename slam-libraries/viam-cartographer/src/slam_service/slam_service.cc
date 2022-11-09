@@ -261,8 +261,7 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             global_pose = latest_global_pose;
         }
-        viam::io::DrawPoseOnSurface(&painted_slices, global_pose,
-                                        kPixelSize);
+        viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
     }
 
     auto image = viam::io::Image(std::move(painted_slices.surface));
