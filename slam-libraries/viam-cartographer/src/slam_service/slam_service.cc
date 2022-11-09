@@ -178,10 +178,21 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
         cartographer::mapping::SubmapId,
         cartographer::mapping::PoseGraphInterface::SubmapPose>
         submap_poses;
+    std::map<cartographer::mapping::SubmapId, cartographer::mapping::proto::SubmapQuery::Response> response_protos;
+
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         submap_poses =
             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
+        
+        for (const auto &submap_id_pose : submap_poses) {
+            cartographer::mapping::proto::SubmapQuery::Response &response_proto = response_protos[submap_id_pose.id];
+            const std::string error = map_builder.map_builder_->SubmapToProto(
+                submap_id_pose.id, &response_proto);
+            if (error != "") {
+                throw std::runtime_error(error);
+            }
+        }
     }
 
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
@@ -192,21 +203,11 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
     }
 
     for (const auto &submap_id_pose : submap_poses) {
-        cartographer::mapping::proto::SubmapQuery::Response response_proto;
-
-        {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            const std::string error = map_builder.map_builder_->SubmapToProto(
-                submap_id_pose.id, &response_proto);
-            if (error != "") {
-                throw std::runtime_error(error);
-            }
-        }
 
         auto submap_textures =
             absl::make_unique<::cartographer::io::SubmapTextures>();
-        submap_textures->version = response_proto.submap_version();
-        for (const auto &texture_proto : response_proto.textures()) {
+        submap_textures->version = response_protos[submap_id_pose.id].submap_version();
+        for (const auto &texture_proto : response_protos[submap_id_pose.id].textures()) {
             const std::string compressed_cells(texture_proto.cells().begin(),
                                                texture_proto.cells().end());
             submap_textures->textures.emplace_back(
@@ -235,22 +236,6 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
             fetched_texture->pixels.intensity, fetched_texture->pixels.alpha,
             fetched_texture->width, fetched_texture->height,
             &submap_slice.cairo_data);
-
-        if (submap_id_pose.id.submap_index == 0 &&
-            submap_id_pose.id.trajectory_id == 0) {
-            cartographer::mapping::MapById<
-                cartographer::mapping::NodeId,
-                cartographer::mapping::TrajectoryNode>
-                trajectory_nodes;
-            {
-                std::lock_guard<std::mutex> lk(map_builder_mutex);
-                trajectory_nodes = map_builder.map_builder_->pose_graph()
-                                       ->GetTrajectoryNodes();
-            }
-            submap_slice.surface = viam::io::DrawTrajectoryNodes(
-                trajectory_nodes, submap_slice.resolution,
-                submap_slice.slice_pose, submap_slice.surface.get());
-        }
     }
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
