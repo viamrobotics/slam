@@ -178,15 +178,18 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
         cartographer::mapping::SubmapId,
         cartographer::mapping::PoseGraphInterface::SubmapPose>
         submap_poses;
-    std::map<cartographer::mapping::SubmapId, cartographer::mapping::proto::SubmapQuery::Response> response_protos;
+    std::map<cartographer::mapping::SubmapId,
+             cartographer::mapping::proto::SubmapQuery::Response>
+        response_protos;
 
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         submap_poses =
             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
-        
+
         for (const auto &submap_id_pose : submap_poses) {
-            cartographer::mapping::proto::SubmapQuery::Response &response_proto = response_protos[submap_id_pose.id];
+            cartographer::mapping::proto::SubmapQuery::Response
+                &response_proto = response_protos[submap_id_pose.id];
             const std::string error = map_builder.map_builder_->SubmapToProto(
                 submap_id_pose.id, &response_proto);
             if (error != "") {
@@ -203,11 +206,12 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
     }
 
     for (const auto &submap_id_pose : submap_poses) {
-
         auto submap_textures =
             absl::make_unique<::cartographer::io::SubmapTextures>();
-        submap_textures->version = response_protos[submap_id_pose.id].submap_version();
-        for (const auto &texture_proto : response_protos[submap_id_pose.id].textures()) {
+        submap_textures->version =
+            response_protos[submap_id_pose.id].submap_version();
+        for (const auto &texture_proto :
+             response_protos[submap_id_pose.id].textures()) {
             const std::string compressed_cells(texture_proto.cells().begin(),
                                                texture_proto.cells().end());
             submap_textures->textures.emplace_back(
