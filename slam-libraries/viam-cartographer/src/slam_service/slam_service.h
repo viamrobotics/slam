@@ -59,14 +59,36 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // received.
     void ProcessData();
 
+    // GetNextDataFile returns the next data file to be processed, determined
+    // by whether cartographer is running in offline or online mode.
+    std::string GetNextDataFile();
+
+    // GetNextDataFileOffline returns the next data file in the directory.
+    // Returns an empty string if done processing files or if stop has been
+    // signaled.
+    std::string GetNextDataFileOffline();
+
+    // GetNextDataFileOnline returns the most recently generated data that has
+    // not been been processed, blocking if no new file is found. Returns an
+    // empty string if stop has been signaled.
+    std::string GetNextDataFileOnline();
+
     // RunSLAM sets up and runs cartographer. It runs cartogapher in
     // the SLAMServiceActionMode mode: Either creating
     // a new map, updating an apriori map, or localizing on an apriori map.
     void RunSLAM();
 
+    // DetermineActionMode determines the action mode the slam service runs in,
+    // which is either mapping, updating, or localizing.
+    void DetermineActionMode();
+
     // GetActionMode returns the slam action mode from the provided
     // parameters.
     SLAMServiceActionMode GetActionMode();
+
+    // SetUpMapBuilder loads the lua file with default cartographer config
+    // parameters depending on the action mode.
+    void SetUpMapBuilder();
 
     // OverwriteMapBuilderParameters overwrites cartographer specific
     // MapBuilder parameters.
@@ -125,28 +147,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
-    // GetNextDataFile returns the next data file to be processed, determined
-    // by whether cartographer is running in offline or online mode.
-    std::string GetNextDataFile();
-
-    // GetNextDataFileOffline returns the next data file in the directory.
-    // Returns an empty string if done processing files or if stop has been
-    // signaled.
-    std::string GetNextDataFileOffline();
-
-    // GetNextDataFileOnline returns the most recently generated data that has
-    // not been been processed, blocking if no new file is found. Returns an
-    // empty string if stop has been signaled.
-    std::string GetNextDataFileOnline();
-
-    // DetermineActionMode determines the action mode the slam service runs in,
-    // which is either mapping, updating, or localizing.
-    void DetermineActionMode();
-
-    // SetUpMapBuilder loads the lua file with default cartographer config
-    // parameters depending on the action mode.
-    void SetUpMapBuilder();
-    
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
@@ -166,7 +166,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     size_t current_file_offline = 0;
     std::string current_file_online;
 
-    // TODO: Set this to true once processing offline is finished
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
 
