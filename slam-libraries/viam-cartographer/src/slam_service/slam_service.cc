@@ -515,7 +515,7 @@ void SLAMServiceImpl::ProcessData() {
     bool set_start_time = false;
     auto file = GetNextDataFile();
 
-    // define tmp_global_pose here so it always has the previous pose
+    // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
