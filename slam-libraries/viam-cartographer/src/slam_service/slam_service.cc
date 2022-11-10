@@ -433,10 +433,10 @@ std::string SLAMServiceImpl::GetNextDataFile() {
 
 
 void SLAMServiceImpl::StartSaveMap() {
-    if (map_rate_sec == chrono::seconds(0)) {
+    if (map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
-    thread_save_map_with_timestamp = new thread(
+    thread_save_map_with_timestamp = new std::thread(
         [&]() {
             this->SaveMapWithTimestamp();
         }
@@ -444,7 +444,7 @@ void SLAMServiceImpl::StartSaveMap() {
 }
 
 void SLAMServiceImpl::StopSaveMap() {
-    if (map_rate_sec == chrono::seconds(0)) {
+    if (map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
     thread_save_map_with_timestamp->join();
@@ -452,7 +452,7 @@ void SLAMServiceImpl::StopSaveMap() {
 
 void SLAMServiceImpl::SaveMapWithTimestamp() {
     auto check_for_shutdown_interval_usec =
-        chrono::microseconds(checkForShutdownIntervalMicroseconds);
+        std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
         const std::string filename_with_timestamp =
@@ -464,7 +464,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
                 // Save the map in a pbstream file
                 bool ok = map_builder.map_builder_->SerializeStateToFile(true, filename_with_timestamp);
                 if (!ok) {
-                    LOG(WARNING) << "Serializing the map to pbstream failed.";
+                    LOG(WARNING) << "Saving the map to pbstream failed.";
                 }
             }
             LOG(INFO) << "Finished saving final optimized map";
@@ -476,7 +476,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             // Save the map in a pbstream file
             bool ok = map_builder.map_builder_->SerializeStateToFile(true, filename_with_timestamp);
             if (!ok) {
-                LOG(WARNING) << "Serializing the map to pbstream failed.";
+                LOG(WARNING) << "Saving the map to pbstream failed.";
             }
         }
         // Sleep for map_rate_sec duration, but check frequently for
@@ -490,9 +490,9 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             }
             if (map_rate_sec - time_elapsed_msec >=
                 check_for_shutdown_interval_usec) {
-                this_thread::sleep_for(check_for_shutdown_interval_usec);
+                std::this_thread::sleep_for(check_for_shutdown_interval_usec);
             } else {
-                this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
+                std::this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
                 break;
             }
         }
@@ -570,6 +570,7 @@ void SLAMServiceImpl::ProcessData() {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
+        finished_processing_offline = true;
         LOG(INFO) << "Finished optimizing final map";
 
         while (viam::b_continue_session) {
