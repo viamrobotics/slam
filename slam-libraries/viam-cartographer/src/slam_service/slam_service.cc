@@ -352,7 +352,7 @@ void SLAMServiceImpl::RunSLAM() {
 
         bool found_map = false;
         std::string latest_map_filename;
-        for (size_t i = map_filenames.size() - 1; i == 0; i--) {
+        for (int i = map_filenames.size() - 1; i >= 0; i--) {
             if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
                 latest_map_filename = map_filenames.at(i);
                 found_map = true;
@@ -378,9 +378,7 @@ void SLAMServiceImpl::RunSLAM() {
     }
 
     LOG(INFO) << "Starting to run cartographer";
-    StartSaveMap();
-    ProcessData();
-    StopSaveMap();
+    ProcessDataAndStartSavingMaps();
     LOG(INFO) << "Done running cartographer";
 }
 
@@ -391,8 +389,8 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     if (file_list_offline.size() == 0) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
-    if (file_list_offline.size() == 0) {
-        throw std::runtime_error("no data in data directory");
+    if (file_list_offline.size() <= 2) {
+        throw std::runtime_error("not enough data in data directory");
     }
     if (current_file_offline == file_list_offline.size()) {
         // This log line is needed by rdk integration tests.
@@ -499,7 +497,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     }
 }
 
-void SLAMServiceImpl::ProcessData() {
+void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
@@ -514,6 +512,9 @@ void SLAMServiceImpl::ProcessData() {
 
     bool set_start_time = false;
     auto file = GetNextDataFile();
+
+    LOG(INFO) << "Starting to save maps...";
+    StartSaveMap();
 
     // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
@@ -562,8 +563,10 @@ void SLAMServiceImpl::ProcessData() {
             map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();
-            tmp_global_pose =
-                map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+            if (local_poses.size() > 0) {
+                tmp_global_pose =
+                    map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+            }
         }
 
         {
@@ -579,6 +582,8 @@ void SLAMServiceImpl::ProcessData() {
                 viam::checkForShutdownIntervalMicroseconds));
         }
     }
+    StopSaveMap();
+    LOG(INFO) << "Stopped saving maps";
     return;
 }
 
