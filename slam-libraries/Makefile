@@ -82,6 +82,6 @@ endif
 testcarto:
 	cd viam-cartographer/scripts && ./test_cartographer.sh
 
-carto-all: buf setupcarto buildcarto testcarto
+carto-all: bufinstall buf setupcarto buildcarto testcarto
 
 include *.make
