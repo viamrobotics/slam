@@ -28,7 +28,7 @@ find_package(Lua 5.2 REQUIRED)
 # https://viam.atlassian.net/browse/DATA-124
 include_directories(${PROJECT_SOURCE_DIR}/cartographer)
 include_directories(${PROJECT_SOURCE_DIR}/cartographer/build)
-# link_libraries(${PROJECT_SOURCE_DIR}/cartographer/build/libcartographer${CMAKE_SHARED_LIBRARY_SUFFIX})
+link_libraries(${PROJECT_SOURCE_DIR}/cartographer/build/libcartographer.a)
 
 # include_directories(/usr/local/include/cartographer)
 # link_libraries(/usr/local/lib/libcartographer${CMAKE_SHARED_LIBRARY_SUFFIX})
