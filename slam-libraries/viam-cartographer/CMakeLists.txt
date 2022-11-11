@@ -14,33 +14,10 @@ find_package(absl REQUIRED)
 find_package(Ceres REQUIRED COMPONENTS SuiteSparse)
 find_package(Lua 5.2 REQUIRED)
 
-# WARNING: PR Review comment:
-# Absolute paths are generally not a good idea. If at all possible,
-# just use the library name itself (cartographer) for linking.
-# `/usr/local/lib` should be in the LD path on most linux systems already,
-# so that should "just work."
-# The include is a similar thing, though the files would need to be reference
-# as <cartographer/file.h> instead of just <file.h> if they're in their own folder.
-
-# TODO[kat]: First attempts showed that in order to fix this, a cmake module has to be written.
-# This task is postponed until I start working on these two tickets (the last two tickets to be tackled):
-# https://viam.atlassian.net/browse/DATA-123
-# https://viam.atlassian.net/browse/DATA-124
+# include files/library from cartographer submodule
 include_directories(${PROJECT_SOURCE_DIR}/cartographer)
 include_directories(${PROJECT_SOURCE_DIR}/cartographer/build)
 link_libraries(${PROJECT_SOURCE_DIR}/cartographer/build/libcartographer.a)
-
-# include_directories(/usr/local/include/cartographer)
-# link_libraries(/usr/local/lib/libcartographer${CMAKE_SHARED_LIBRARY_SUFFIX})
-# find_package(cartographer)
-# if(NOT cartographer_FOUND)
-#   message(FATAL_ERROR "CANNOT FIND CARTO")
-# else()
-#   message(STATUS "APPARENTLY FOUND CARTO")
-# endif()
-include_directories(${cartographer_INCLUDE_DIRS})
-link_directories(${cartographer_LIBRARY_DIRS})
-add_definitions(${cartographer_DEFINITIONS})
 
 find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
@@ -128,29 +105,12 @@ if(EXISTS ${SRCDIR})
       ${ALL_VIAM_TEST_SRCS}
   )
 
-  # WARNING: PR Review comment:
-  # Absolute paths are generally not a good idea. If at all possible,
-  # just use the library name itself (cartographer) for linking.
-  # `/usr/local/lib` should be in the LD path on most linux systems already,
-  # so that should "just work."
-  # The include is a similar thing, though the files would need to be reference
-  # as <cartographer/file.h> instead of just <file.h> if they're in their own folder.
-
-  # TODO[kat]: First attempts showed that in order to fix this, a cmake module has to be written.
-  # This task is postponed until I start working on these two tickets (the last two tickets to be tackled):
-  # https://viam.atlassian.net/browse/DATA-123
-  # https://viam.atlassian.net/browse/DATA-124
   target_link_libraries(carto_grpc_server PUBLIC
-    # /usr/local/lib/libcartographer.a 
-    # ${PROJECT_SOURCE_DIR}/cartographer/build/libcartographer.a
-    # -ldl
-    # OpenSSL::SSL
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES}
     ${JPEG_LIBRARIES})
   target_include_directories(carto_grpc_server SYSTEM PUBLIC
-    # /usr/local/include/
     ${SRCDIR}
     ${GRPC_INCLUDE_DIRS}
     ${GRPCPP_INCLUDE_DIRS}
@@ -163,14 +123,11 @@ if(EXISTS ${SRCDIR})
     ${JPEG_CFLAGS_OTHER})
 
   target_link_libraries(unit_tests PUBLIC
-    # /usr/local/lib/libcartographer.a
-    # ${PROJECT_SOURCE_DIR}/cartographer/build/libcartographer.a
     ${GRPC_LIBRARIES}
     ${GRPCPP_LIBRARIES}
     ${PROTOBUF_LIBRARIES}
     ${JPEG_LIBRARIES})
   target_include_directories(unit_tests SYSTEM PUBLIC
-    # /usr/local/include/
     ${SRCDIR}
     ${GRPC_INCLUDE_DIRS}
     ${GRPCPP_INCLUDE_DIRS}
