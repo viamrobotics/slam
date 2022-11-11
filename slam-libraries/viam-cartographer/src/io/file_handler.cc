@@ -19,6 +19,14 @@ namespace io {
 
 namespace fs = boost::filesystem;
 
+const std::string MakeFilenameWithTimestamp(std::string path_to_dir) {
+    std::time_t t = std::time(nullptr);
+    char timestamp[100];
+    std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
+                  std::gmtime(&t));
+    return path_to_dir + "/" + "map_data_" + timestamp + ".pbstream";
+}
+
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time) {
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
@@ -86,8 +94,6 @@ int RemoveFile(std::string file_path) {
 
 // Converts UTC time string to a double value.
 double ReadTimeFromFilename(std::string filename) {
-    std::string time_format = "%Y-%m-%dT%H:%M:%SZ";
-
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
     std::istringstream ss(filename);

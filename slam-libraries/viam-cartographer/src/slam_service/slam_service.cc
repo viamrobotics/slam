@@ -4,8 +4,8 @@
 #include <string>
 
 #include "../io/image.h"
+#include "../io/file_handler.h"
 #include "../mapping/map_builder.h"
-#include "utils.h"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
 #include "cartographer/io/submap_painter.h"
@@ -454,7 +454,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
         const std::string filename_with_timestamp =
-            utils::MakeFilenameWithTimestamp(path_to_map);
+            viam::io::MakeFilenameWithTimestamp(path_to_map);
 
         if (offlineFlag && finished_processing_offline) {
             {
