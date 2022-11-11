@@ -378,8 +378,10 @@ void SLAMServiceImpl::RunSLAM() {
             map_builder.LoadMapFromFile(latest_map_filename,
                                         load_frozen_trajectory, optimize);
         }
-        data_cutoff_time = viam::io::ReadTimeFromFilename(latest_map_filename.substr(
-                latest_map_filename.find(io::filenamePrefix) + io::filenamePrefix.length(),
+        data_cutoff_time =
+            viam::io::ReadTimeFromFilename(latest_map_filename.substr(
+                latest_map_filename.find(io::filenamePrefix) +
+                    io::filenamePrefix.length(),
                 latest_map_filename.find(".pbstream")));
     }
 
@@ -529,7 +531,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_cutoff_time) {
         }
         // Go past files that are not supposed to be included in this run
         if (!set_start_time &&
-             viam::io::ReadTimeFromFilename(file.substr(
+            viam::io::ReadTimeFromFilename(file.substr(
                 file.find(io::filenamePrefix) + io::filenamePrefix.length(),
                 file.find(".pcd"))) < data_cutoff_time) {
             file = GetNextDataFile();

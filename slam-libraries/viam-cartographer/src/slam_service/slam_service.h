@@ -54,7 +54,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
                           GetMapResponse *response) override;
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory
-    // that is newer than the provided data_cutoff_time 
+    // that is newer than the provided data_cutoff_time
     // and starts the process to save maps in parallel. In offline mode,
     // all data in the directory is processed. In online mode, the most
     // recently generated data is processed until a shutdown signal is
