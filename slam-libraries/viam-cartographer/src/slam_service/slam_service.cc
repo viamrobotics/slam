@@ -123,6 +123,10 @@ void SLAMServiceImpl::DetermineActionMode() {
             return;
         }
     }
+    if (map_rate_sec.count() == 0) {
+        throw std::runtime_error(
+            "In localization mode but couldn't find a map to localize on");
+    }
     LOG(INFO) << "Running in mapping mode";
     action_mode = SLAMServiceActionMode::MAPPING;
 }
