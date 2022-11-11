@@ -3,8 +3,8 @@
 #include <iostream>
 #include <string>
 
-#include "../io/image.h"
 #include "../io/file_handler.h"
+#include "../io/image.h"
 #include "../mapping/map_builder.h"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
@@ -344,6 +344,7 @@ void SLAMServiceImpl::RunSLAM() {
     SetUpMapBuilder();
     DetermineActionMode();
 
+    double data_cutoff_time = 0;
     if (action_mode == SLAMServiceActionMode::UPDATING ||
         action_mode == SLAMServiceActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
@@ -371,14 +372,19 @@ void SLAMServiceImpl::RunSLAM() {
         // and false for UPDATING action mode.
         bool load_frozen_trajectory =
             action_mode == SLAMServiceActionMode::LOCALIZING;
-        // Load apriori map
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.LoadMapFromFile(latest_map_filename, load_frozen_trajectory,
-                                    optimize);
+        {
+            // Load apriori map
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.LoadMapFromFile(latest_map_filename,
+                                        load_frozen_trajectory, optimize);
+        }
+        data_cutoff_time = viam::io::ReadTimeFromFilename(latest_map_filename.substr(
+                latest_map_filename.find(io::filenamePrefix) + io::filenamePrefix.length(),
+                latest_map_filename.find(".pbstream")));
     }
 
     LOG(INFO) << "Starting to run cartographer";
-    ProcessDataAndStartSavingMaps();
+    ProcessDataAndStartSavingMaps(data_cutoff_time);
     LOG(INFO) << "Done running cartographer";
 }
 
@@ -429,16 +435,12 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     return GetNextDataFileOnline();
 }
 
-
 void SLAMServiceImpl::StartSaveMap() {
     if (map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
-    thread_save_map_with_timestamp = new std::thread(
-        [&]() {
-            this->SaveMapWithTimestamp();
-        }
-    );
+    thread_save_map_with_timestamp =
+        new std::thread([&]() { this->SaveMapWithTimestamp(); });
 }
 
 void SLAMServiceImpl::StopSaveMap() {
@@ -460,7 +462,8 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             {
                 std::lock_guard<std::mutex> lk(map_builder_mutex);
                 // Save the map in a pbstream file
-                bool ok = map_builder.map_builder_->SerializeStateToFile(true, filename_with_timestamp);
+                bool ok = map_builder.map_builder_->SerializeStateToFile(
+                    true, filename_with_timestamp);
                 if (!ok) {
                     LOG(WARNING) << "Saving the map to pbstream failed.";
                 }
@@ -472,7 +475,8 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             // Save the map in a pbstream file
-            bool ok = map_builder.map_builder_->SerializeStateToFile(true, filename_with_timestamp);
+            bool ok = map_builder.map_builder_->SerializeStateToFile(
+                true, filename_with_timestamp);
             if (!ok) {
                 LOG(WARNING) << "Saving the map to pbstream failed.";
             }
@@ -497,7 +501,8 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     }
 }
 
-void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
+void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_cutoff_time) {
+    // Prepare the trajectory builder and grab the active trajectory_id
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
@@ -513,23 +518,33 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
     bool set_start_time = false;
     auto file = GetNextDataFile();
 
-    LOG(INFO) << "Starting to save maps...";
-    StartSaveMap();
-
     // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
+        // Ignore files that are not *.pcd files
         if (file.find(".pcd") == std::string::npos) {
             file = GetNextDataFile();
             continue;
         }
+        // Go past files that are not supposed to be included in this run
+        if (!set_start_time &&
+             viam::io::ReadTimeFromFilename(file.substr(
+                file.find(io::filenamePrefix) + io::filenamePrefix.length(),
+                file.find(".pcd"))) < data_cutoff_time) {
+            file = GetNextDataFile();
+            continue;
+        }
+        // Set the start time if it has not yet been set and
+        // start saving maps
         if (!set_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.SetStartTime(file);
             set_start_time = true;
+            LOG(INFO) << "Starting to save maps...";
+            StartSaveMap();
         }
-
+        // Add data to the map_builder to add to the map
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
@@ -543,6 +558,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
                 }
             }
         }
+        // Save a copy of the global pose
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
@@ -554,7 +570,9 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
         file = GetNextDataFile();
     }
 
-    if (!set_start_time) return;
+    if (!set_start_time) {
+        throw std::runtime_error("did not find valid data for the given setup");
+    }
 
     if (offlineFlag) {
         {
@@ -564,8 +582,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();
             if (local_poses.size() > 0) {
-                tmp_global_pose =
-                    map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+                tmp_global_pose = map_builder.GetGlobalPose(trajectory_id,
+                                                            local_poses.back());
             }
         }
 

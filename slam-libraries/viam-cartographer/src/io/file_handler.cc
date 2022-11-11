@@ -44,7 +44,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     }
 
     double current_time = ReadTimeFromFilename(file_path.substr(
-        file_path.find("_data_") + viam::io::filenamePrefixLength,
+        file_path.find(filenamePrefix) + filenamePrefix.length(),
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
 

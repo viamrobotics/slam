@@ -53,12 +53,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // ProcessDataAndStartSavingMaps processes the data in the data directory 
+    // ProcessDataAndStartSavingMaps processes the data in the data directory
+    // that is newer than the provided data_cutoff_time 
     // and starts the process to save maps in parallel. In offline mode,
     // all data in the directory is processed. In online mode, the most
     // recently generated data is processed until a shutdown signal is
     // received.
-    void ProcessDataAndStartSavingMaps();
+    void ProcessDataAndStartSavingMaps(double data_cutoff_time);
 
     // GetNextDataFile returns the next data file to be processed, determined
     // by whether cartographer is running in offline or online mode.
@@ -151,7 +152,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
-    // StopSaveMap stops the map saving process that is running in a separate thread.
+    // StopSaveMap stops the map saving process that is running in a separate
+    // thread.
     void StopSaveMap();
 
     // SaveMapWithTimestamp saves maps with a filename that includes the
