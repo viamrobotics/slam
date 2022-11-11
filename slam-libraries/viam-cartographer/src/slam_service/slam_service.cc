@@ -576,7 +576,10 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_cutoff_time) {
         throw std::runtime_error("did not find valid data for the given setup");
     }
 
-    map_builder.map_builder_->FinishTrajectory(trajectory_id);
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.map_builder_->FinishTrajectory(trajectory_id);
+    }
     if (offlineFlag) {
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
