@@ -125,7 +125,8 @@ void SLAMServiceImpl::DetermineActionMode() {
     }
     if (map_rate_sec.count() == 0) {
         throw std::runtime_error(
-            "In localization mode but couldn't find a map to localize on");
+            "set to localization mode (map_rate_sec = 0) but couldn't find "
+            "apriori map to localize on");
     }
     LOG(INFO) << "Running in mapping mode";
     action_mode = SLAMServiceActionMode::MAPPING;
