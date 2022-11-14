@@ -528,7 +528,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         }
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
-            file_time = viam::io::ReadTimeFromFilename(file.substr(
+            double file_time = viam::io::ReadTimeFromFilename(file.substr(
                 file.find(io::filenamePrefix) + io::filenamePrefix.length(),
                 file.find(".pcd")));
             if (file_time < data_start_time) {
