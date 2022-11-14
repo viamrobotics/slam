@@ -397,6 +397,14 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     if (file_list_offline.size() == 0) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
+    // We're setting the minimum required files to be two for the following
+    // reasons:
+    // 1. Cartographer needs at least two PCD files to work properly.
+    // 2. A .DS_Store file is frequently added to the data directory when
+    // a user opens the directory on osx.
+    // Expecting a minimum of 3 files solves both problems without having to
+    // loop over and count the number of actual data files in the data
+    // directory.
     if (file_list_offline.size() <= 2) {
         throw std::runtime_error("not enough data in data directory");
     }
@@ -518,20 +526,23 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             file = GetNextDataFile();
             continue;
         }
-        // Go past files that are not supposed to be included in this run
-        if (!set_start_time &&
-            viam::io::ReadTimeFromFilename(file.substr(
-                file.find(io::filenamePrefix) + io::filenamePrefix.length(),
-                file.find(".pcd"))) < data_start_time) {
-            file = GetNextDataFile();
-            continue;
-        }
-        // Set the start time if it has not yet been set and
-        // start saving maps
         if (!set_start_time) {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.SetStartTime(file);
-            set_start_time = true;
+            // Go past files that are not supposed to be included in this run
+            file_time = viam::io::ReadTimeFromFilename(file.substr(
+                file.find(io::filenamePrefix) + io::filenamePrefix.length(),
+                file.find(".pcd")));
+            if (file_time < data_start_time) {
+                file = GetNextDataFile();
+                continue;
+            }
+
+            // Set the start time if it has not yet been set and
+            // start saving maps
+            {
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
+                map_builder.SetStartTime(file);
+                set_start_time = true;
+            }
             LOG(INFO) << "Starting to save maps...";
             StartSaveMap();
         }
