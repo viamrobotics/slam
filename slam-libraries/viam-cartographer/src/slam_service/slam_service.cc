@@ -187,7 +187,7 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
         submap_poses =
             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
 
-        for (const auto &submap_id_pose : submap_poses) {
+        for (const auto &&submap_id_pose : submap_poses) {
             cartographer::mapping::proto::SubmapQuery::Response
                 &response_proto = response_protos[submap_id_pose.id];
             const std::string error = map_builder.map_builder_->SubmapToProto(
@@ -205,12 +205,12 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
         return "";
     }
 
-    for (const auto &submap_id_pose : submap_poses) {
+    for (const auto &&submap_id_pose : submap_poses) {
         auto submap_textures =
             absl::make_unique<::cartographer::io::SubmapTextures>();
         submap_textures->version =
             response_protos[submap_id_pose.id].submap_version();
-        for (const auto &texture_proto :
+        for (const auto &&texture_proto :
              response_protos[submap_id_pose.id].textures()) {
             const std::string compressed_cells(texture_proto.cells().begin(),
                                                texture_proto.cells().end());
