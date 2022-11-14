@@ -18,7 +18,8 @@ If you happened to use `git clone` only, you won't see the libraries in the `sla
 
 `git submodule update --init`
 
-* [slam-libraries](./slam-libraries) contains all slam implementations we currently support.
+## Getting started
+[slam-libraries](./slam-libraries) contains all slam implementations we currently support. To get started with setting up and running the slam libraries, follow the instructions on the [slam-libraries README](./slam-libraries/README.md).
 
 ## Linting
 

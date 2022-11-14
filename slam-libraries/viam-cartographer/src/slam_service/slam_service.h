@@ -49,15 +49,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                GetPositionResponse *response) override;
 
     // GetMap returns either an image or a pointcloud, depending on the MIME
-    // type requested
+    // type requested.
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // ProcessData process the data in the data directory. In offline mode,
+    // ProcessDataAndStartSavingMaps processes the data in the data directory
+    // that is newer than the provided data_cutoff_time
+    // and starts the process to save maps in parallel. In offline mode,
     // all data in the directory is processed. In online mode, the most
     // recently generated data is processed until a shutdown signal is
     // received.
-    void ProcessData();
+    void ProcessDataAndStartSavingMaps(double data_cutoff_time);
 
     // GetNextDataFile returns the next data file to be processed, determined
     // by whether cartographer is running in offline or online mode.
@@ -73,12 +75,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // empty string if stop has been signaled.
     std::string GetNextDataFileOnline();
 
-    // RunSLAM runs SLAM in the SLAMServiceActionMode mode: Either creating
+    // RunSLAM sets up and runs cartographer. It runs cartogapher in
+    // the SLAMServiceActionMode mode: Either creating
     // a new map, updating an apriori map, or localizing on an apriori map.
     void RunSLAM();
 
     // DetermineActionMode determines the action mode the slam service runs in,
-    // which is either mapping, updating, or localizing
+    // which is either mapping, updating, or localizing.
     void DetermineActionMode();
 
     // GetActionMode returns the slam action mode from the provided
@@ -93,11 +96,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // MapBuilder parameters.
     void OverwriteMapBuilderParameters();
 
-    // PaintMap paints the map in jpeg format
+    // PaintMap paints the map in jpeg format.
     std::string PaintMap(bool pose_marker_flag);
 
-    // ExtractPointCloud extracts the pointcloud from the map_builder
-    // and saves it in a buffer
+    // ExtractPointCloudToBuffer extracts the pointcloud from the map_builder
+    // and saves it in a buffer.
     bool ExtractPointCloudToBuffer(std::stringbuf &buffer);
 
     // Getter functions for map_builder parameters (called: options)
@@ -146,6 +149,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
+    // StartSaveMap starts the map saving process in a separate thread.
+    void StartSaveMap();
+
+    // StopSaveMap stops the map saving process that is running in a separate
+    // thread.
+    void StopSaveMap();
+
+    // SaveMapWithTimestamp saves maps with a filename that includes the
+    // timestamp of the time when the map is saved.
+    void SaveMapWithTimestamp();
+
     SLAMServiceActionMode action_mode = SLAMServiceActionMode::MAPPING;
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
     const std::string configuration_localization_basename =
@@ -154,6 +168,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
+
+    std::atomic<bool> finished_processing_offline{false};
+    std::thread *thread_save_map_with_timestamp;
 
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;

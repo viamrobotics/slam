@@ -22,33 +22,55 @@ namespace mapping {
 
 class MapBuilder {
    public:
+    // SetUp reads in the cartographer parameters via reading in the lua files.
     void SetUp(std::string configuration_directory,
                std::string configuration_basename);
 
+    // BuildMapBuilder creates the internal map_builder_ using the read in
+    // cartographer parameters.
     void BuildMapBuilder();
+
+    // LoadMapFromFile sets the state of the internal map_builder_ based on
+    // the provided apriori map. It does also set cartographer to either run
+    // in updating or localizing mode, depending on the load_frozen_trajectory
+    // value.
     void LoadMapFromFile(std::string map_filename, bool load_frozen_trajectory,
                          bool optimize);
+
+    // SaveMapToFile saves the current map_builder_ state to a pbstream file at
+    // the provided path.
+    void SaveMapToFile(bool include_unfinished_submaps,
+                       const std::string filename_with_timestamp);
+
+    // SetTrajectoryBuilder sets the trajectory builder options and returns the
+    // active trajectory_id.
     int SetTrajectoryBuilder(
         cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
         std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>
             sensorId);
 
+    // SetStartTime sets the start_time to the time stamp from the first sensor
+    // file that is being read in.
+    void SetStartTime(std::string initial_filename);
+
+    // GetDataFromFile creates a TimedPointCloudData object from reading in
+    // a PCD file.
+    cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
+
+    // GetLocalSlamResultPoses returns the local slam result poses.
+    std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
+
+    // GetGlobalPose returns the local pose based on the provided trajectory_id
+    // and local pose.
+    cartographer::transform::Rigid3d GetGlobalPose(
+        int trajectory_id, cartographer::transform::Rigid3d& local_pose);
+
+    // GetLocalSlamResultCallback saves the local pose in the
+    // local_slam_result_poses array.
     cartographer::mapping::MapBuilderInterface::LocalSlamResultCallback
     GetLocalSlamResultCallback();
 
-    void SetStartTime(std::string initial_filename);
-    cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
-
-    std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder_;
-    cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
-    cartographer::mapping::proto::TrajectoryBuilderOptions
-        trajectory_builder_options_;
-    std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
-
-    cartographer::transform::Rigid3d GetGlobalPose(
-        int trajectory_id,
-        cartographer::transform::Rigid3d& latest_local_pose_);
-
+    // Overwrite functions to overwrite the exposed cartographer parameters.
     void OverwriteOptimizeEveryNNodes(int value);
     void OverwriteNumRangeData(int value);
     void OverwriteMissingDataRayLength(float value);
@@ -62,6 +84,7 @@ class MapBuilder {
     void OverwriteTranslationWeight(double value);
     void OverwriteRotationWeight(double value);
 
+    // Getter functions to return the exposed cartographer parameters.
     int GetOptimizeEveryNNodes();
     int GetNumRangeData();
     float GetMissingDataRayLength();
@@ -74,6 +97,11 @@ class MapBuilder {
     double GetOccupiedSpaceWeight();
     double GetTranslationWeight();
     double GetRotationWeight();
+
+    std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder_;
+    cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
+    cartographer::mapping::proto::TrajectoryBuilderOptions
+        trajectory_builder_options_;
 
    private:
     std::vector<::cartographer::transform::Rigid3d> local_slam_result_poses_;
