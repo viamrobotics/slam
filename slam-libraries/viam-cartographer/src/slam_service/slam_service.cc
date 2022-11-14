@@ -210,7 +210,7 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
             absl::make_unique<::cartographer::io::SubmapTextures>();
         submap_textures->version =
             response_protos[submap_id_pose.id].submap_version();
-        for (const auto &&texture_proto :
+        for (const auto &texture_proto :
              response_protos[submap_id_pose.id].textures()) {
             const std::string compressed_cells(texture_proto.cells().begin(),
                                                texture_proto.cells().end());
