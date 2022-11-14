@@ -161,10 +161,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
-    cartographer::mapping::MapById<
-        cartographer::mapping::SubmapId,
-        cartographer::mapping::PoseGraphInterface::SubmapPose>
-        latest_submap_poses;
 };
 
 }  // namespace viam
