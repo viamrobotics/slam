@@ -71,6 +71,15 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
                   << trajectory_ids_pair.second;
 }
 
+void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
+                               const std::string filename_with_timestamp) {
+    bool ok = map_builder_->SerializeStateToFile(include_unfinished_submaps,
+                                                 filename_with_timestamp);
+    if (!ok) {
+        LOG(WARNING) << "Saving the map to pbstream failed.";
+    }
+}
+
 int MapBuilder::SetTrajectoryBuilder(
     cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
     std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>

@@ -344,7 +344,7 @@ void SLAMServiceImpl::RunSLAM() {
     SetUpMapBuilder();
     DetermineActionMode();
 
-    double data_cutoff_time = 0;
+    double data_start_time = 0;
     if (action_mode == SLAMServiceActionMode::UPDATING ||
         action_mode == SLAMServiceActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
@@ -378,7 +378,7 @@ void SLAMServiceImpl::RunSLAM() {
             map_builder.LoadMapFromFile(latest_map_filename,
                                         load_frozen_trajectory, optimize);
         }
-        data_cutoff_time =
+        data_start_time =
             viam::io::ReadTimeFromFilename(latest_map_filename.substr(
                 latest_map_filename.find(io::filenamePrefix) +
                     io::filenamePrefix.length(),
@@ -386,7 +386,7 @@ void SLAMServiceImpl::RunSLAM() {
     }
 
     LOG(INFO) << "Starting to run cartographer";
-    ProcessDataAndStartSavingMaps(data_cutoff_time);
+    ProcessDataAndStartSavingMaps(data_start_time);
     LOG(INFO) << "Done running cartographer";
 }
 
@@ -457,39 +457,13 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
     while (b_continue_session) {
         auto start = std::chrono::high_resolution_clock::now();
-        const std::string filename_with_timestamp =
-            viam::io::MakeFilenameWithTimestamp(path_to_map);
-
-        if (offlineFlag && finished_processing_offline) {
-            {
-                std::lock_guard<std::mutex> lk(map_builder_mutex);
-                // Save the map in a pbstream file
-                bool ok = map_builder.map_builder_->SerializeStateToFile(
-                    true, filename_with_timestamp);
-                if (!ok) {
-                    LOG(WARNING) << "Saving the map to pbstream failed.";
-                }
-            }
-            LOG(INFO) << "Finished saving final optimized map";
-            return;
-        }
-
-        {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            // Save the map in a pbstream file
-            bool ok = map_builder.map_builder_->SerializeStateToFile(
-                true, filename_with_timestamp);
-            if (!ok) {
-                LOG(WARNING) << "Saving the map to pbstream failed.";
-            }
-        }
         // Sleep for map_rate_sec duration, but check frequently for
         // shutdown
         while (b_continue_session) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if ((time_elapsed_msec >= map_rate_sec) ||
-                (finished_processing_offline)) {
+                (offlineFlag && finished_processing_offline)) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
@@ -500,10 +474,25 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
                 break;
             }
         }
+
+        const std::string filename_with_timestamp =
+            viam::io::MakeFilenameWithTimestamp(path_to_map);
+
+        if (offlineFlag && finished_processing_offline) {
+            {
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
+                map_builder.SaveMapToFile(true, filename_with_timestamp);
+            }
+            LOG(INFO) << "Finished saving final optimized map";
+            return;
+        }
+
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SaveMapToFile(true, filename_with_timestamp);
     }
 }
 
-void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_cutoff_time) {
+void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     // Prepare the trajectory builder and grab the active trajectory_id
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
@@ -533,7 +522,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_cutoff_time) {
         if (!set_start_time &&
             viam::io::ReadTimeFromFilename(file.substr(
                 file.find(io::filenamePrefix) + io::filenamePrefix.length(),
-                file.find(".pcd"))) < data_cutoff_time) {
+                file.find(".pcd"))) < data_start_time) {
             file = GetNextDataFile();
             continue;
         }
@@ -583,6 +572,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_cutoff_time) {
     if (offlineFlag) {
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
+            LOG(INFO)
+                << "Starting to optimize final map. Can take a little while...";
             map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();
