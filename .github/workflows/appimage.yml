@@ -62,7 +62,9 @@ jobs:
         max_attempts: 3
         retry_on: timeout
         shell: bash
-        command: cd slam/slam-libraries && make bufinstall buf
+        command: |
+          chown -R testbot .
+          sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
     - name: make setuporb
       run: |
