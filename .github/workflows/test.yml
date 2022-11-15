@@ -64,8 +64,11 @@ jobs:
         path: slam
 
     - name: make bufinstall buf
-      timeout-minutes: 30
-      run: |
+      uses: nick-fields/retry@v2
+      timeout-minutes: 5
+      max_attempts: 3
+      retry_on: timeout
+      command: |
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
@@ -130,8 +133,11 @@ jobs:
         path: slam
 
     - name: make bufinstall buf
-      timeout-minutes: 30
-      run: |
+      uses: nick-fields/retry@v2
+      timeout-minutes: 5
+      max_attempts: 3
+      retry_on: timeout
+      command: |
         chown -R testbot .
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
