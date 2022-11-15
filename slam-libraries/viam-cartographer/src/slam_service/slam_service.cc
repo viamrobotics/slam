@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+#include "../io/file_handler.h"
 #include "../io/image.h"
 #include "../mapping/map_builder.h"
 #include "cartographer/io/file_writer.h"
@@ -122,6 +123,11 @@ void SLAMServiceImpl::DetermineActionMode() {
             action_mode = SLAMServiceActionMode::UPDATING;
             return;
         }
+    }
+    if (map_rate_sec.count() == 0) {
+        throw std::runtime_error(
+            "set to localization mode (map_rate_sec = 0) but couldn't find "
+            "apriori map to localize on");
     }
     LOG(INFO) << "Running in mapping mode";
     action_mode = SLAMServiceActionMode::MAPPING;
@@ -321,11 +327,13 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
     return has_points;
 }
 
-void SLAMServiceImpl::ProcessData() {
+void SLAMServiceImpl::RunSLAM() {
+    LOG(INFO) << "Setting up cartographer";
     // Set up and build the MapBuilder
     SetUpMapBuilder();
     DetermineActionMode();
 
+    double data_start_time = 0;
     if (action_mode == SLAMServiceActionMode::UPDATING ||
         action_mode == SLAMServiceActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
@@ -334,7 +342,7 @@ void SLAMServiceImpl::ProcessData() {
 
         bool found_map = false;
         std::string latest_map_filename;
-        for (size_t i = map_filenames.size() - 1; i == 0; i--) {
+        for (int i = map_filenames.size() - 1; i >= 0; i--) {
             if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
                 latest_map_filename = map_filenames.at(i);
                 found_map = true;
@@ -353,13 +361,22 @@ void SLAMServiceImpl::ProcessData() {
         // and false for UPDATING action mode.
         bool load_frozen_trajectory =
             action_mode == SLAMServiceActionMode::LOCALIZING;
-        // Load apriori map
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.LoadMapFromFile(latest_map_filename, load_frozen_trajectory,
-                                    optimize);
+        {
+            // Load apriori map
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.LoadMapFromFile(latest_map_filename,
+                                        load_frozen_trajectory, optimize);
+        }
+        data_start_time =
+            viam::io::ReadTimeFromFilename(latest_map_filename.substr(
+                latest_map_filename.find(io::filenamePrefix) +
+                    io::filenamePrefix.length(),
+                latest_map_filename.find(".pbstream")));
     }
 
-    RunSLAM();
+    LOG(INFO) << "Starting to run cartographer";
+    ProcessDataAndStartSavingMaps(data_start_time);
+    LOG(INFO) << "Done running cartographer";
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
@@ -369,8 +386,16 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     if (file_list_offline.size() == 0) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
-    if (file_list_offline.size() == 0) {
-        throw std::runtime_error("no data in data directory");
+    // We're setting the minimum required files to be two for the following
+    // reasons:
+    // 1. Cartographer needs at least two PCD files to work properly.
+    // 2. A .DS_Store file is frequently added to the data directory when
+    // a user opens the directory on osx.
+    // Expecting a minimum of 3 files solves both problems without having to
+    // loop over and count the number of actual data files in the data
+    // directory.
+    if (file_list_offline.size() <= 2) {
+        throw std::runtime_error("not enough data in data directory");
     }
     if (current_file_offline == file_list_offline.size()) {
         // This log line is needed by rdk integration tests.
@@ -409,7 +434,63 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     return GetNextDataFileOnline();
 }
 
-void SLAMServiceImpl::RunSLAM() {
+void SLAMServiceImpl::StartSaveMap() {
+    if (map_rate_sec == std::chrono::seconds(0)) {
+        return;
+    }
+    thread_save_map_with_timestamp =
+        new std::thread([&]() { this->SaveMapWithTimestamp(); });
+}
+
+void SLAMServiceImpl::StopSaveMap() {
+    if (map_rate_sec == std::chrono::seconds(0)) {
+        return;
+    }
+    thread_save_map_with_timestamp->join();
+}
+
+void SLAMServiceImpl::SaveMapWithTimestamp() {
+    auto check_for_shutdown_interval_usec =
+        std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
+    while (b_continue_session) {
+        auto start = std::chrono::high_resolution_clock::now();
+        // Sleep for map_rate_sec duration, but check frequently for
+        // shutdown
+        while (b_continue_session) {
+            std::chrono::duration<double, std::milli> time_elapsed_msec =
+                std::chrono::high_resolution_clock::now() - start;
+            if ((time_elapsed_msec >= map_rate_sec) ||
+                (offlineFlag && finished_processing_offline)) {
+                break;
+            }
+            if (map_rate_sec - time_elapsed_msec >=
+                check_for_shutdown_interval_usec) {
+                std::this_thread::sleep_for(check_for_shutdown_interval_usec);
+            } else {
+                std::this_thread::sleep_for(map_rate_sec - time_elapsed_msec);
+                break;
+            }
+        }
+
+        const std::string filename_with_timestamp =
+            viam::io::MakeFilenameWithTimestamp(path_to_map);
+
+        if (offlineFlag && finished_processing_offline) {
+            {
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
+                map_builder.SaveMapToFile(true, filename_with_timestamp);
+            }
+            LOG(INFO) << "Finished saving final optimized map";
+            return;
+        }
+
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SaveMapToFile(true, filename_with_timestamp);
+    }
+}
+
+void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
+    // Prepare the trajectory builder and grab the active trajectory_id
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     {
@@ -425,20 +506,36 @@ void SLAMServiceImpl::RunSLAM() {
     bool set_start_time = false;
     auto file = GetNextDataFile();
 
-    // define tmp_global_pose here so it always has the previous pose
+    // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
+        // Ignore files that are not *.pcd files
         if (file.find(".pcd") == std::string::npos) {
             file = GetNextDataFile();
             continue;
         }
         if (!set_start_time) {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.SetStartTime(file);
-            set_start_time = true;
-        }
+            // Go past files that are not supposed to be included in this run
+            double file_time = viam::io::ReadTimeFromFilename(file.substr(
+                file.find(io::filenamePrefix) + io::filenamePrefix.length(),
+                file.find(".pcd")));
+            if (file_time < data_start_time) {
+                file = GetNextDataFile();
+                continue;
+            }
 
+            // Set the start time if it has not yet been set and
+            // start saving maps
+            {
+                std::lock_guard<std::mutex> lk(map_builder_mutex);
+                map_builder.SetStartTime(file);
+                set_start_time = true;
+            }
+            LOG(INFO) << "Starting to save maps...";
+            StartSaveMap();
+        }
+        // Add data to the map_builder to add to the map
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
@@ -452,6 +549,7 @@ void SLAMServiceImpl::RunSLAM() {
                 }
             }
         }
+        // Save a copy of the global pose
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
@@ -463,28 +561,43 @@ void SLAMServiceImpl::RunSLAM() {
         file = GetNextDataFile();
     }
 
-    if (!set_start_time) return;
+    if (!set_start_time) {
+        throw std::runtime_error("did not find valid data for the given setup");
+    }
 
-    // Save the map in a pbstream file
-    const std::string map_file = path_to_map + "/map.pbstream";
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.map_builder_->pose_graph()->RunFinalOptimization();
-        map_builder.map_builder_->SerializeStateToFile(true, map_file);
-
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
-        map_builder.map_builder_->pose_graph()->RunFinalOptimization();
-        auto local_poses = map_builder.GetLocalSlamResultPoses();
-        tmp_global_pose =
-            map_builder.GetGlobalPose(trajectory_id, local_poses.back());
     }
+    if (offlineFlag) {
+        {
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            LOG(INFO)
+                << "Starting to optimize final map. Can take a little while...";
+            map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
-    {
-        std::lock_guard<std::mutex> lk(viam_response_mutex);
-        latest_global_pose = tmp_global_pose;
+            auto local_poses = map_builder.GetLocalSlamResultPoses();
+            if (local_poses.size() > 0) {
+                tmp_global_pose = map_builder.GetGlobalPose(trajectory_id,
+                                                            local_poses.back());
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
+        }
+        finished_processing_offline = true;
+        LOG(INFO) << "Finished optimizing final map";
+
+        while (viam::b_continue_session) {
+            LOG(INFO) << "Standing by to continue serving requests\n";
+            std::this_thread::sleep_for(std::chrono::microseconds(
+                viam::checkForShutdownIntervalMicroseconds));
+        }
     }
-
-    LOG(INFO) << "Finished optimizing final map";
+    StopSaveMap();
+    LOG(INFO) << "Stopped saving maps";
     return;
 }
 

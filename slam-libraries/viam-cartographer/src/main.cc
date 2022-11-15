@@ -46,13 +46,7 @@ int main(int argc, char** argv) {
     // This log line is needed by rdk to get the port.
     LOG(INFO) << "Server listening on " << *selected_port << "\n";
 
-    LOG(INFO) << "Start mapping";
-    slamService.ProcessData();
-    LOG(INFO) << "Done mapping";
+    slamService.RunSLAM();
 
-    while (viam::b_continue_session) {
-        LOG(INFO) << "Cartographer is running\n";
-        std::this_thread::sleep_for(std::chrono::microseconds(
-            viam::checkForShutdownIntervalMicroseconds));
-    }
+    LOG(INFO) << "System shutdown";
 }
