@@ -17,9 +17,20 @@ configurations.
 Learn more at [the official Docs site](https://google-cartographer.readthedocs.io).
 
 ## Installation instructions
-Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
+Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup). 
 
-### Setup: OSx
+### Automatic Dependency Installation (x64, arm64, or macOS)
+To automatically install dependencies, use the target 
+```
+./setup_cartographer_linux.sh
+```
+or
+```
+./setup_cartographer_macos.sh
+```
+### Manual Dependency Installation (x64, arm64, or macOS)
+
+#### Setup: OSx
 
 **Install Xcode**
 1. Install/Update Xcode from App Store
@@ -36,21 +47,21 @@ brew upgrade
 # Install dependencies
 brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3
 brew link lua@5.3
+brew link protobuf
+brew install openssl eigen gflags glog suite-sparse sphinx-doc pcl
 
-# TODO[kat]: Make sure these are necessary:
-brew install openssl
-brew install eigen
-brew install gflags
-brew install glog
-brew install suite-sparse
-brew install sphinx-doc
 ```
 
 
-### Setup: Raspberry Pi OS Lite (64-bit)
+#### Setup: Raspberry Pi OS Lite (64-bit)
 
-Run: `./scripts/setup_cartographer.sh`
- 
+**Install dependencies**
+```bash
+sudo apt update
+# Install dependencies
+sudo apt install -y cmake ninja-build libgmock-dev libboost-iostreams-dev liblua5.3-dev libcairo2-dev python3-sphinx libabsl-dev libceres-dev libprotobuf-dev protobuf-compiler libpcl-dev
+ ```
+
  ### Building cartographer
 **Build cartographer**
 
@@ -60,7 +71,7 @@ Installation & building tested on:
 - [X] Raspberry Pi OS Lite (64-bit)
 - [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
 - [X] linux/amd64
-- [ ] M1
+- [X] M1
 
 This needs to be built only once.
 
@@ -72,13 +83,23 @@ Installation & building tested on:
 - [X] Raspberry Pi OS Lite (64-bit)
 - [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
 - [X] linux/amd64
-- [ ] M1
+- [X] M1
 
-This is run frequently, as this is where we're building our code.
-
-A second build script is therefore provided for local development: `./scripts/rebuild_viam_cartographer.sh`.
+This will build the binary and save it at `./build/carto_grpc_server`. Move this binary into `usr/local/bin` by running:
+```bash
+sudo cp build/carto_grpc_server /usr/local/bin/
+```
 
 ## Running cartographer
-Configure how to run cartographer in this file: [scripts/run_cartographer.sh](./scripts/run_cartographer.sh).
 
-Run cartographer by executing: `./scripts/run_cartographer.sh`
+In your desired data directory, move the configuration files from cartographer into your `~/config` folder:  
+```bash
+cp -r lua_files ~/YOUR_DATA_DIR/config/
+cp cartographer/configuration_files/* ~/YOUR_DATA_DIR/config/lua_files/
+```
+You only have to do this once per data directory. Note cartographer will fail if the configuration files cannot be found.
+
+To run tests, after building, run the following
+```bash
+./scripts/test_cartographer.sh
+```

@@ -13,7 +13,7 @@ buf: bufsetup
 	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf.grpc.gen.yaml buf.build/viamrobotics/api
 	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf.gen.yaml buf.build/googleapis/googleapis
 
-clean-all: cleanorb
+clean-all: cleanorb cleancarto
 	rm -rf grpc
 
 cleanorb:
@@ -23,6 +23,10 @@ cleanorb:
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/g2o/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/Sophus/build
 	rm -rf viam-orb-slam3/bin
+
+cleancarto:
+	rm -rf viam-cartographer/build
+	rm -rf viam-cartographer/cartographer/build
 
 format-setup:
 	sudo apt-get install -y clang-format
@@ -60,13 +64,23 @@ appimage: buildorb
 	chmod 755 packaging/appimages/deploy/*.AppImage
 
 setupcarto:
-	cd viam-cartographer/scripts && ./setup_cartographer.sh
+ifeq ("Darwin", "$(shell uname -s)")
+	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
+else
+	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
+endif
+	
 
 buildcarto:
-	cd viam-cartographer/scripts && ./build_cartographer.sh && ./build_viam_cartographer.sh
+ifneq ($(wildcard viam-cartographer/build/.),)
+	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
+else 
+	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
+endif
+
 
 testcarto:
-	cd viam-cartographer/scripts && ./test_cartographer.sh
+	cd viam-cartographer && ./scripts/test_cartographer.sh
 
 carto-all: bufinstall buf setupcarto buildcarto testcarto
 

@@ -20,6 +20,5 @@ pushd build
 
 cmake .. -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH=`brew --prefix`
 ninja
-sudo ninja install
 popd
 popd
