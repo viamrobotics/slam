@@ -71,7 +71,7 @@ Installation & building tested on:
 - [X] Raspberry Pi OS Lite (64-bit)
 - [X] 2.4 GHz 8-Core Intel Core i9; macOS Monterey
 - [X] linux/amd64
-- [ ] M1
+- [X] M1
 
 This needs to be built only once.
 
