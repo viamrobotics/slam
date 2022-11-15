@@ -22,7 +22,16 @@ configurations.
 Learn more at [the official Docs site](https://google-cartographer.readthedocs.io).
 
 ### Getting started
-Follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
+To automatically install dependencies run
+```
+make setupcarto
+```
+
+To build cartographer use
+```
+make buildcarto
+```
+Then, follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
 
 ## ORB_SLAM3
 ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and stereo camera setups.

@@ -67,13 +67,13 @@ setupcarto:
 ifeq ("Darwin", "$(shell uname -s)")
 	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
 else
-	cd viam-cartographer/scripts && ./setup_cartographer.sh
+	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
 endif
 	
 
 buildcarto:
 ifneq ($(wildcard viam-cartographer/build/.),)
-	cd viam-cartographer && ./scripts/rebuild_viam_cartographer.sh 
+	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
 else 
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
