@@ -56,7 +56,10 @@ jobs:
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make clean-all'
     
     - name: make bufinstall buf
-      timeout-minutes: 30
+      uses: nick-fields/retry@v2
+      timeout-minutes: 5
+      max_attempts: 3
+      retry_on: timeout
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
 
