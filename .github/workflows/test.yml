@@ -63,10 +63,6 @@ jobs:
         submodules: recursive
         path: slam
 
-    - name: make setuporb
-      run: |
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
-
     - name: make bufinstall buf
       uses: nick-fields/retry@v2
       with:
@@ -75,6 +71,10 @@ jobs:
         retry_on: timeout
         shell: bash
         command: cd slam/slam-libraries && make bufinstall buf
+
+    - name: make setuporb
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
 
     - name: make buildorb
       run: |
