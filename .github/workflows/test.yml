@@ -68,9 +68,8 @@ jobs:
       timeout-minutes: 5
       max_attempts: 3
       retry_on: timeout
-      command: |
-        chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
+      shell: bash
+      command: cd slam/slam-libraries && make bufinstall buf
 
     - name: make setuporb
       run: |
@@ -137,9 +136,8 @@ jobs:
       timeout-minutes: 5
       max_attempts: 3
       retry_on: timeout
-      command: |
-        chown -R testbot .
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make bufinstall buf'
+      shell: bash
+      command: cd slam/slam-libraries && make bufinstall buf
 
     - name: make setupcarto
       run: |
