@@ -64,8 +64,8 @@ jobs:
         path: slam
 
     - name: make setuporb
-          run: |
-            sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make setuporb'
 
     - name: make bufinstall buf
       uses: nick-fields/retry@v2
