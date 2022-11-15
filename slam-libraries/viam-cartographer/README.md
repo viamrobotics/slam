@@ -17,7 +17,7 @@ configurations.
 Learn more at [the official Docs site](https://google-cartographer.readthedocs.io).
 
 ## Installation instructions
-Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup).
+Make sure to follow all steps as outlined in [the setup section here](../../README.md#setup). 
 
 ### Automatic Dependency Installation (x64, arm64, or macOS)
 To automatically install dependencies, use the target 
@@ -28,8 +28,9 @@ or
 ```
 ./setup_cartographer_macos.sh
 ```
+### Manual Dependency Installation (x64, arm64, or macOS)
 
-### Setup: OSx
+#### Setup: OSx
 
 **Install Xcode**
 1. Install/Update Xcode from App Store
@@ -52,7 +53,7 @@ brew install openssl eigen gflags glog suite-sparse sphinx-doc pcl
 ```
 
 
-### Setup: Raspberry Pi OS Lite (64-bit)
+#### Setup: Raspberry Pi OS Lite (64-bit)
 
 **Install dependencies**
 ```bash
@@ -93,14 +94,12 @@ sudo cp build/carto_grpc_server /usr/local/bin/
 
 In your desired data directory, move the configuration files from cartographer into your `~/config` folder:  
 ```bash
-cd viam-cartographer
 cp -r lua_files ~/YOUR_DATA_DIR/config/
 cp cartographer/configuration_files/* ~/YOUR_DATA_DIR/config/lua_files/
 ```
-You only have to do this once per data directory. Note cartographer will fail if the configuration files cannot be found
+You only have to do this once per data directory. Note cartographer will fail if the configuration files cannot be found.
 
 To run tests, after building, run the following
 ```bash
-cd viam-cartographer
 ./scripts/test_cartographer.sh
 ```
