@@ -13,15 +13,15 @@ To setup, run:
 ```bash
 make bufinstall buf
 ```
-
-## Cartographer
+## Integrated Libraries
+### Cartographer
 [Cartographer](https://github.com/cartographer-project/cartographer) is a system that provides real-time simultaneous localization
 and mapping [SLAM](https://en.wikipedia.org/wiki/Simultaneous_localization_and_mapping) in 2D and 3D across multiple platforms and sensor
 configurations.
 
 Learn more at [the official Docs site](https://google-cartographer.readthedocs.io).
 
-### Getting started
+#### Getting started
 To automatically install dependencies run
 ```
 make setupcarto
@@ -33,12 +33,12 @@ make buildcarto
 ```
 Then, follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
 
-## ORB_SLAM3
+### ORB_SLAM3
 ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and stereo camera setups.
 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
-### Getting started
+#### Getting started
 
 To automatically install dependencies run
 ```
