@@ -85,7 +85,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         } else {
             LOG(ERROR) << "No lua files found, looked in "
                        << pathToLuasFromConfig << " and " << relativePathToLuas;
-            throw std::runtime_error("lua files not found");
         }
     }
 
