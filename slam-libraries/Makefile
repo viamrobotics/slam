@@ -63,6 +63,13 @@ appimage: buildorb
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
 
+appimagecarto: buildcarto
+	cd packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe carto_grpc_server-`uname -m`.yml
+	# cd packaging/appimages && ./package_release.sh
+	mkdir -p packaging/appimages/deploy/
+	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
+	chmod 755 packaging/appimages/deploy/*.AppImage
+
 setupcarto:
 ifeq ("Darwin", "$(shell uname -s)")
 	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
