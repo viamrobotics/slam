@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
         "-0.001000 0.002000 0.005000 16711938\n"
         "0.582000 0.012000 0.000000 16711938\n"
         "0.007000 0.006000 0.001000 16711938\n";
-    // Create a unique path in the temp directory and add the files
+    // Create a unique path in the temp directory and add the pcd file
     boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
                                      boost::filesystem::unique_path();
     bool ok = boost::filesystem::create_directory(tmpdir);
