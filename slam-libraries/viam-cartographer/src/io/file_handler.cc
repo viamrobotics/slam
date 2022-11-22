@@ -65,7 +65,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     }
 
     timed_pcd.time = cartographer::common::FromUniversal(123) +
-                    cartographer::common::FromSeconds(double(time_delta));
+                     cartographer::common::FromSeconds(double(time_delta));
     timed_pcd.origin = Eigen::Vector3f::Zero();
     timed_pcd.ranges = ranges;
 
