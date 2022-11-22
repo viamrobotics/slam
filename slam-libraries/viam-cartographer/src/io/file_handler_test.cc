@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
     std::vector<std::string> listedFiles =
         ListSortedFilesInDirectory(tmpdir.string());
     // Check to make sure that the files in the directory are what we added and
-    // in the same order
+    // that they are in the same order
     BOOST_TEST(files.size() == listedFiles.size());
     for (int i = 0; i < files.size(); i++) {
         BOOST_TEST(files.at(i).compare(listedFiles.at(i)));
