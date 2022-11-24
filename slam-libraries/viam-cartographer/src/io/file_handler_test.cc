@@ -20,10 +20,10 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
     std::time_t end_time =
         std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     // Check if the filename beginning is as expected
-    std::string path_appendix = "/map_data_";
+    std::string path_prefix = "/map_data_";
     std::string filename_start =
-        filename.substr(0, path_to_dir.length() + path_appendix.length());
-    BOOST_TEST(filename_start.compare(path_to_dir + path_appendix) == 0);
+        filename.substr(0, path_to_dir.length() + path_prefix.length());
+    BOOST_TEST(filename_start.compare(path_to_dir + path_prefix) == 0);
     // Extract timestamp
     double filename_time = ReadTimeFromFilename(filename.substr(
         filename.find(filename_prefix) + filename_prefix.length(),
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
 }
 
 BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
-    // Create a temp directory with a few files with timestamps
+    // Create a temp directory with a few sorted files with timestamps
     std::vector<std::string> files{
         "rplidar_data_2022-01-01T01:00:00.0000Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0001Z.pcd",
@@ -86,9 +86,10 @@ BOOST_AUTO_TEST_CASE(RemoveFile_success) {
         ofs.close();
     }
     // Remove a file
-    int success = RemoveFile(tmpdir.string() + "/" + files.at(1));
-    BOOST_TEST(success == 1);
-    files.erase(files.begin() + 1);
+    int file_num = 1;
+    int success = RemoveFile(tmpdir.string() + "/" + files.at(file_num));
+    BOOST_TEST(success == file_num);
+    files.erase(files.begin() + file_num);
     // List the files in the directory and check if the right number of files
     // and the right files are still in the directory
     std::vector<std::string> listedFiles =
@@ -104,6 +105,10 @@ BOOST_AUTO_TEST_CASE(RemoveFile_success) {
 BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
     // Create a mini PCD file and save it in a tmp directory
     std::string filename = "rplidar_data_2022-01-01T01:00:00.0001Z.pcd";
+    std::vector<std::vector<double>> points = {
+        {-0.001000, 0.002000, 0.005000, 16711938},
+        {0.582000, 0.012000, 0.000000, 16711938},
+        {0.007000, 0.006000, 0.001000, 16711938}};
     std::string pcd =
         "VERSION .7\n"
         "FIELDS x y z rgb\n"
@@ -114,10 +119,13 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
         "HEIGHT 1\n"
         "VIEWPOINT 0 0 0 1 0 0 0\n"
         "POINTS 3\n"
-        "DATA ascii\n"
-        "-0.001000 0.002000 0.005000 16711938\n"
-        "0.582000 0.012000 0.000000 16711938\n"
-        "0.007000 0.006000 0.001000 16711938\n";
+        "DATA ascii\n";
+    for (std::vector<double> point : points) {
+        for (int i = 0; i < 3; i++) {
+            pcd = pcd + std::to_string(point.at(i)) + " ";
+        }
+        pcd = pcd + std::to_string(point.at(3)) + "\n";
+    }
     // Create a unique path in the temp directory and add the PCD file
     boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
                                      boost::filesystem::unique_path();
@@ -134,26 +142,18 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
     cartographer::sensor::TimedPointCloudData timed_pcd =
         TimedPointCloudDataFromPCDBuilder(tmpdir.string() + "/" + filename, 0);
 
-    BOOST_TEST(timed_pcd.ranges.size() == 3);
-    cartographer::sensor::TimedRangefinderPoint point_1 =
-        timed_pcd.ranges.at(0);
-    cartographer::sensor::TimedRangefinderPoint point_2 =
-        timed_pcd.ranges.at(1);
-    cartographer::sensor::TimedRangefinderPoint point_3 =
-        timed_pcd.ranges.at(2);
-
     auto tolerance = boost::test_tools::tolerance(0.00001);
-    BOOST_TEST(point_1.position(0, 0) == -0.001, tolerance);
-    BOOST_TEST(point_1.position(1, 0) == 0.002, tolerance);
-    BOOST_TEST(point_1.position(2, 0) == 0.005, tolerance);
+    BOOST_TEST(timed_pcd.ranges.size() == points.size());
+    for (int i = 0; i < points.size(); i++) {
+        cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point =
+            timed_pcd.ranges.at(i);
+        for (int j = 0; j < 3; j++) {
+            BOOST_TEST(
+                timed_rangefinder_point.position(j, 0) == points.at(i).at(j),
+                tolerance);
+        }
+    }
 
-    BOOST_TEST(point_2.position(0, 0) == 0.582, tolerance);
-    BOOST_TEST(point_2.position(1, 0) == 0.012, tolerance);
-    BOOST_TEST(point_2.position(2, 0) == 0.000, tolerance);
-
-    BOOST_TEST(point_3.position(0, 0) == 0.007, tolerance);
-    BOOST_TEST(point_3.position(1, 0) == 0.006, tolerance);
-    BOOST_TEST(point_3.position(2, 0) == 0.001, tolerance);
     // Close the file and remove the temporary directory and its contents
     boost::filesystem::remove_all(tmpdir);
 }
@@ -165,15 +165,29 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_success) {
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
     std::string filename_prefix = "rplidar_data_";
-    std::string filename = filename_prefix + std::string(timestamp) + ".pcd";
+    std::string filename_type = ".pcd";
+    std::string filename =
+        filename_prefix + std::string(timestamp) + filename_type;
     // Read the time
-    double filename_time = ReadTimeFromFilename(filename.substr(
+    std::string timestamp_str = filename.substr(
         filename.find(filename_prefix) + filename_prefix.length(),
-        filename.find(".pcd")));
+        filename.find(filename_type));
+    double filename_time = ReadTimeFromFilename(timestamp_str);
     auto tolerance = boost::test_tools::tolerance(0.0001);
     // Make sure the time read from the filename equals what we put into the
     // filename
     BOOST_TEST((double)t == filename_time, tolerance);
+}
+
+BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_missing_timestamp) {
+    // Provide a filename with a missing timestamp
+    std::string filename = "no-timestamp.pcd";
+    const std::string message = "stof: no conversion";
+    BOOST_CHECK_EXCEPTION(ReadTimeFromFilename(filename), std::invalid_argument,
+                          [&message](const std::invalid_argument& ex) {
+                              BOOST_CHECK_EQUAL(ex.what(), message);
+                              return true;
+                          });
 }
 
 BOOST_AUTO_TEST_SUITE_END()
