@@ -107,7 +107,13 @@ double ReadTimeFromFilename(std::string filename) {
     time_t filename_time = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
     if ((sub_sec_index != std::string::npos)) {
-        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        double sub_sec = 0;
+        try {
+            sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        } catch (std::exception &e) {
+            LOG(ERROR) << e.what();
+            throw std::runtime_error("could not extract sub seconds from filename: " + filename);
+        }
         double filename_time_w_sub_sec = (double)filename_time + sub_sec;
         return filename_time_w_sub_sec;
     } else {
