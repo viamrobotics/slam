@@ -369,8 +369,8 @@ void SLAMServiceImpl::RunSLAM() {
         }
         data_start_time =
             viam::io::ReadTimeFromFilename(latest_map_filename.substr(
-                latest_map_filename.find(io::filenamePrefix) +
-                    io::filenamePrefix.length(),
+                latest_map_filename.find(io::filename_prefix) +
+                    io::filename_prefix.length(),
                 latest_map_filename.find(".pbstream")));
     }
 
@@ -518,7 +518,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
             double file_time = viam::io::ReadTimeFromFilename(file.substr(
-                file.find(io::filenamePrefix) + io::filenamePrefix.length(),
+                file.find(io::filename_prefix) + io::filename_prefix.length(),
                 file.find(".pcd")));
             if (file_time < data_start_time) {
                 file = GetNextDataFile();

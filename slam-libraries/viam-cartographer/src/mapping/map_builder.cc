@@ -104,9 +104,10 @@ MapBuilder::GetLocalSlamResultCallback() {
 }
 
 void MapBuilder::SetStartTime(std::string initial_filename) {
-    start_time = viam::io::ReadTimeFromFilename(initial_filename.substr(
-        initial_filename.find(io::filenamePrefix) + io::filenamePrefix.length(),
-        initial_filename.find(".pcd")));
+    start_time = viam::io::ReadTimeFromFilename(
+        initial_filename.substr(initial_filename.find(io::filename_prefix) +
+                                    io::filename_prefix.length(),
+                                initial_filename.find(".pcd")));
 }
 
 cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(

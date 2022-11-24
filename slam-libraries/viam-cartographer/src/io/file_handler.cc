@@ -31,7 +31,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time) {
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-    cartographer::sensor::TimedPointCloudData timedPCD;
+    cartographer::sensor::TimedPointCloudData timed_pcd;
     cartographer::sensor::TimedPointCloud ranges;
 
     // Open the point cloud file
@@ -40,11 +40,11 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     auto err = pcl::io::loadPCDFile<pcl::PointXYZRGB>(file_path, *cloud);
 
     if (err == -1) {
-        return timedPCD;
+        return timed_pcd;
     }
 
     double current_time = ReadTimeFromFilename(file_path.substr(
-        file_path.find(filenamePrefix) + filenamePrefix.length(),
+        file_path.find(filename_prefix) + filename_prefix.length(),
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
 
@@ -56,20 +56,20 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     LOG(INFO) << "------------------------------------\n";
 
     for (size_t i = 0; i < cloud->points.size(); ++i) {
-        cartographer::sensor::TimedRangefinderPoint TimedRP;
-        TimedRP.position = Eigen::Vector3f(
+        cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;
+        timed_rangefinder_point.position = Eigen::Vector3f(
             cloud->points[i].x, cloud->points[i].y, cloud->points[i].z);
-        TimedRP.time = 0 - i * 0.0001;
+        timed_rangefinder_point.time = 0 - i * 0.0001;
 
-        ranges.push_back(TimedRP);
+        ranges.push_back(timed_rangefinder_point);
     }
 
-    timedPCD.time = cartographer::common::FromUniversal(123) +
-                    cartographer::common::FromSeconds(double(time_delta));
-    timedPCD.origin = Eigen::Vector3f::Zero();
-    timedPCD.ranges = ranges;
+    timed_pcd.time = cartographer::common::FromUniversal(123) +
+                     cartographer::common::FromSeconds(double(time_delta));
+    timed_pcd.origin = Eigen::Vector3f::Zero();
+    timed_pcd.ranges = ranges;
 
-    return timedPCD;
+    return timed_pcd;
 }
 
 std::vector<std::string> ListSortedFilesInDirectory(
@@ -104,14 +104,21 @@ double ReadTimeFromFilename(std::string filename) {
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
     ss >> std::get_time(&dt, time_format.c_str());
-    time_t thisTime = std::mktime(&dt);
+    time_t filename_time = std::mktime(&dt);
     auto sub_sec_index = filename.find(".");
     if ((sub_sec_index != std::string::npos)) {
-        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
-        double myTime = (double)thisTime + sub_sec;
-        return myTime;
+        double sub_sec = 0;
+        try {
+            sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+        } catch (std::exception& e) {
+            LOG(ERROR) << e.what();
+            throw std::runtime_error(
+                "could not extract sub seconds from filename: " + filename);
+        }
+        double filename_time_w_sub_sec = (double)filename_time + sub_sec;
+        return filename_time_w_sub_sec;
     } else {
-        return (double)thisTime;
+        return (double)filename_time;
     }
 }
 
