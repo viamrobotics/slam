@@ -182,7 +182,8 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_success) {
 BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_missing_timestamp) {
     // Provide a filename with a missing timestamp
     std::string filename = "no-timestamp.pcd";
-    const std::string message = "could not extract sub seconds from filename: " + filename;
+    const std::string message =
+        "could not extract sub seconds from filename: " + filename;
     BOOST_CHECK_EXCEPTION(ReadTimeFromFilename(filename), std::runtime_error,
                           [&message](const std::runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
