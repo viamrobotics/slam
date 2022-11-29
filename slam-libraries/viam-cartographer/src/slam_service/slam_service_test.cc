@@ -1,5 +1,6 @@
 #include "slam_service.h"
 #include "../utils/test_helpers.h"
+#include "../io/file_handler.h"
 
 #include <boost/test/unit_test.hpp>
 #include <exception>
@@ -291,26 +292,71 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
 
 }
 
+BOOST_AUTO_TEST_CASE(GetNextDataFileOffline_not_enough_data) {
+    SLAMServiceImpl slamService;
 
-// ProcessDataAndStartSavingMaps
+    // Create a temp directory that does not contain enough data files for mapping
+    std::vector<std::string> data_files{
+        "rplidar_data_2022-02-11T01:45:47.0764Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.4989Z.pcd"};
+    std::vector<std::string> map_files{};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_data = tmpdir.string() + "/data";
 
-// GetNextDataFile
+    const std::string message = 
+            "not enough data in data directory";
+    BOOST_CHECK_EXCEPTION(slamService.GetNextDataFileOffline(),
+                          std::runtime_error,
+                          [&message](const std::runtime_error& ex) {
+                              BOOST_CHECK_EQUAL(ex.what(), message);
+                              return true;
+                          });
 
-// GetNextDataFileOffline
+}
 
-// GetNextDataFileOnline
+BOOST_AUTO_TEST_CASE(GetNextDataFileOffline) {
+    SLAMServiceImpl slamService;
 
-// RunSLAM
+    // Create a temp directory with some data files in it
+    std::vector<std::string> data_files{
+        "rplidar_data_2022-02-11T01:45:47.0764Z.pcd",
+        "rplidar_data_2022-02-11T01:45:47.2439Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.4989Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.5808Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.6631Z.pcd"
+    };
+    std::vector<std::string> map_files{};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_data = tmpdir.string() + "/data";
 
-// GetActionMode
+    for (int i = 0; i < data_files.size(); i++) {
+        BOOST_TEST(slamService.GetNextDataFileOffline() == (slamService.path_to_data + "/" + data_files[i]));
+    }
+}
 
-// SetUpMapBuilder
+BOOST_AUTO_TEST_CASE(GetNextDataFileOnline) {
+    SLAMServiceImpl slamService;
 
-// OverwriteMapBuilderParameters with different values for action mode
+    // Create a temp directory with some data files in it
+    std::vector<std::string> data_files{
+        "rplidar_data_2022-02-11T01:45:47.0764Z.pcd",
+        "rplidar_data_2022-02-11T01:45:47.2439Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.4989Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.5808Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.6631Z.pcd"
+    };
+    std::vector<std::string> map_files{};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_data = tmpdir.string() + "/data";
 
-// PaintMap
-
-// ExtractPointCloudToBuffer
+    for (int i = data_files.size() - 1; i > 0; i--) {
+        BOOST_TEST(slamService.GetNextDataFileOnline() == (slamService.path_to_data + "/" + data_files[i-1]));
+        io::RemoveFile(slamService.path_to_data + "/" + data_files[i]);
+    }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
