@@ -12,6 +12,65 @@ namespace {
 
 BOOST_AUTO_TEST_SUITE(file_handler)
 
+// NOTE: When using this function, make sure to remove the temporary directory
+// and its contents once done processing the files by calling the function
+// removeTmpDirectory(tmpdir).
+boost::filesystem::path createTmpDirectoryAndAddFiles(std::vector<std::string> data_files,
+                                                std::vector<std::string> map_files) {
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
+                                     boost::filesystem::unique_path();
+    bool ok = boost::filesystem::create_directory(tmpdir);
+    if (!ok) {
+        throw std::runtime_error("could not create directory: " +
+                                 tmpdir.string());
+    }
+    // Create the "config" subdirectory
+    boost::filesystem::path tmpdir_config = tmpdir / "config";
+    ok = boost::filesystem::create_directory(tmpdir_config);
+    if (!ok) {
+        boost::filesystem::remove_all(tmpdir);
+        throw std::runtime_error("could not create directory: " +
+                                 tmpdir_config.string());
+    }
+
+    // Create the "data" subdirectory
+    boost::filesystem::path tmpdir_data = tmpdir / "data";
+    ok = boost::filesystem::create_directory(tmpdir_data);
+    if (!ok) {
+        boost::filesystem::remove_all(tmpdir);
+        throw std::runtime_error("could not create directory: " +
+                                 tmpdir_data.string());
+    }
+
+    // Create the "map" subdirectory
+    boost::filesystem::path tmpdir_map = tmpdir / "map";
+    ok = boost::filesystem::create_directory(tmpdir_map);
+    if (!ok) {
+        boost::filesystem::remove_all(tmpdir);
+        throw std::runtime_error("could not create directory: " +
+                                 tmpdir_map.string());
+    }
+
+    // Add data files to "data" subdirectory
+    for (std::string file : data_files) {
+        boost::filesystem::ofstream ofs(tmpdir_data / file);
+        ofs.close();
+    }
+
+    // Add map files to "map" subdirectory
+    for (std::string file : map_files) {
+        boost::filesystem::ofstream ofs(tmpdir_map / file);
+        ofs.close();
+    }
+
+    return tmpdir;
+}
+
+void removeTmpDirectory(boost::filesystem::path tmpdir) {
+    boost::filesystem::remove_all(tmpdir);
+}
+
 BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
     std::string path_to_dir = "path_to_dir";
     std::time_t start_time =
@@ -35,71 +94,55 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
 
 BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
     // Create a temp directory with a few sorted files with timestamps
-    std::vector<std::string> files{
+    std::vector<std::string> data_files{
         "rplidar_data_2022-01-01T01:00:00.0000Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0001Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0002Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0003Z.pcd"};
+    std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
-                                     boost::filesystem::unique_path();
-    bool ok = boost::filesystem::create_directory(tmpdir);
-    if (!ok) {
-        throw std::runtime_error("could not create directory: " +
-                                 tmpdir.string());
-    }
-    for (std::string file : files) {
-        boost::filesystem::ofstream ofs(tmpdir / file);
-        ofs.close();
-    }
+    boost::filesystem::path tmpdir = createTmpDirectoryAndAddFiles(data_files, map_files);
+    
     // List the sorted files in the directory
-    std::vector<std::string> listedFiles =
-        ListSortedFilesInDirectory(tmpdir.string());
+    std::vector<std::string> listed_data_files =
+        ListSortedFilesInDirectory(tmpdir.string() + "/data");
     // Check to make sure that the files in the directory are what we added and
     // that they are in the same order
-    BOOST_TEST(files.size() == listedFiles.size());
-    for (int i = 0; i < files.size(); i++) {
-        BOOST_TEST(files.at(i).compare(listedFiles.at(i)));
+    BOOST_TEST(data_files.size() == listed_data_files.size());
+    for (int i = 0; i < data_files.size(); i++) {
+        BOOST_TEST(data_files.at(i).compare(listed_data_files.at(i)));
     }
-    // Close the file and remove the temporary directory and its contents
-    boost::filesystem::remove_all(tmpdir);
+    // Remove the temporary directory and its contents
+    removeTmpDirectory(tmpdir);
 }
 
 // test RemoveFile
 BOOST_AUTO_TEST_CASE(RemoveFile_success) {
     // Create a temp directory with a few files with timestamps
-    std::vector<std::string> files{
+    std::vector<std::string> data_files{
         "rplidar_data_2022-01-01T01:00:00.0000Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0001Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0002Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0003Z.pcd"};
+    std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
-                                     boost::filesystem::unique_path();
-    bool ok = boost::filesystem::create_directory(tmpdir);
-    if (!ok) {
-        throw std::runtime_error("could not create directory: " +
-                                 tmpdir.string());
-    }
-    for (std::string file : files) {
-        boost::filesystem::ofstream ofs(tmpdir / file);
-        ofs.close();
-    }
+    boost::filesystem::path tmpdir = createTmpDirectoryAndAddFiles(data_files, map_files);
+
     // Remove a file
     int file_num = 1;
-    int success = RemoveFile(tmpdir.string() + "/" + files.at(file_num));
+    int success = RemoveFile(tmpdir.string() + "/data/" + data_files.at(file_num));
     BOOST_TEST(success == file_num);
-    files.erase(files.begin() + file_num);
+    data_files.erase(data_files.begin() + file_num);
     // List the files in the directory and check if the right number of files
     // and the right files are still in the directory
-    std::vector<std::string> listedFiles =
+    std::vector<std::string> listed_data_files =
         ListSortedFilesInDirectory(tmpdir.string());
-    BOOST_TEST(files.size() == listedFiles.size());
-    for (int i = 0; i < files.size(); i++) {
-        BOOST_TEST(files.at(i).compare(listedFiles.at(i)));
+    BOOST_TEST(data_files.size() == listed_data_files.size());
+    for (int i = 0; i < data_files.size(); i++) {
+        BOOST_TEST(data_files.at(i).compare(listed_data_files.at(i)));
     }
-    // Close the file and remove the temporary directory and its contents
-    boost::filesystem::remove_all(tmpdir);
+    // Remove the temporary directory and its contents
+    removeTmpDirectory(tmpdir);
 }
 
 BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
@@ -154,7 +197,7 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
         }
     }
 
-    // Close the file and remove the temporary directory and its contents
+    // Remove the temporary directory and its contents
     boost::filesystem::remove_all(tmpdir);
 }
 
