@@ -217,7 +217,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config) {
     BOOST_TEST(slamService.map_rate_sec.count() ==
                std::chrono::seconds(60).count());
     BOOST_TEST(slamService.camera_name == "lidar");
-    BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.optimize_on_start == false);
     delete argv;
 }
 
@@ -226,6 +227,7 @@ BOOST_AUTO_TEST_CASE(
     ResetFlagsForTesting();
     std::string config_param =
         "{mode=2d,"
+        "optimize_on_start=true,"
         "optimize_every_n_nodes=9000,num_range_data=9001,"
         "missing_data_ray_length=9002.2,max_range=9003.3,"
         "min_range=9004.4,max_submaps_to_keep=9005,"
@@ -266,7 +268,8 @@ BOOST_AUTO_TEST_CASE(
     BOOST_TEST(slamService.map_rate_sec.count() ==
                std::chrono::seconds(60).count());
     BOOST_TEST(slamService.camera_name == "lidar");
-    BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.optimize_on_start == true);
     delete argv;
 }
 
@@ -327,7 +330,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config_no_camera) {
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.camera_name == "");
-    BOOST_TEST(slamService.offlineFlag == true);
+    BOOST_TEST(slamService.offline_flag == true);
     delete argv;
 }
 

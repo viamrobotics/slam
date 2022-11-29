@@ -353,10 +353,6 @@ void SLAMServiceImpl::RunSLAM() {
             throw std::runtime_error(
                 "cannot find maps but they should be present");
         }
-        // TODO: The optimize flag will become a flag that can be set by the
-        // user. Will be implemented here:
-        // https://viam.atlassian.net/browse/DATA-117
-        bool optimize = true;
         // load_frozen_trajectory has to be true for LOCALIZING action mode,
         // and false for UPDATING action mode.
         bool load_frozen_trajectory =
@@ -365,7 +361,7 @@ void SLAMServiceImpl::RunSLAM() {
             // Load apriori map
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.LoadMapFromFile(latest_map_filename,
-                                        load_frozen_trajectory, optimize);
+                                        load_frozen_trajectory, optimize_on_start);
         }
         data_start_time =
             viam::io::ReadTimeFromFilename(latest_map_filename.substr(
@@ -428,7 +424,7 @@ std::string SLAMServiceImpl::GetNextDataFileOnline() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFile() {
-    if (offlineFlag) {
+    if (offline_flag) {
         return GetNextDataFileOffline();
     }
     return GetNextDataFileOnline();
@@ -460,7 +456,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if ((time_elapsed_msec >= map_rate_sec) ||
-                (offlineFlag && finished_processing_offline)) {
+                (offline_flag && finished_processing_offline)) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
@@ -475,7 +471,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         const std::string filename_with_timestamp =
             viam::io::MakeFilenameWithTimestamp(path_to_map);
 
-        if (offlineFlag && finished_processing_offline) {
+        if (offline_flag && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lk(map_builder_mutex);
                 map_builder.SaveMapToFile(true, filename_with_timestamp);
@@ -569,7 +565,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
     }
-    if (offlineFlag) {
+    if (offline_flag) {
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             LOG(INFO)
