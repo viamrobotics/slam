@@ -1,11 +1,12 @@
 #include "file_handler.h"
-#include "../utils/test_helpers.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/test/unit_test.hpp>
 #include <ctime>
 #include <exception>
+
+#include "../utils/test_helpers.h"
 
 namespace viam {
 namespace io {
@@ -43,8 +44,9 @@ BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
         "rplidar_data_2022-01-01T01:00:00.0003Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
-    
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+
     // List the sorted files in the directory
     std::vector<std::string> listed_data_files =
         ListSortedFilesInDirectory(tmpdir.string() + "/data");
@@ -68,11 +70,13 @@ BOOST_AUTO_TEST_CASE(RemoveFile_success) {
         "rplidar_data_2022-01-01T01:00:00.0003Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
 
     // Remove a file
     int file_num = 1;
-    int success = RemoveFile(tmpdir.string() + "/data/" + data_files.at(file_num));
+    int success =
+        RemoveFile(tmpdir.string() + "/data/" + data_files.at(file_num));
     BOOST_TEST(success == file_num);
     data_files.erase(data_files.begin() + file_num);
     // List the files in the directory and check if the right number of files

@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
@@ -8,8 +9,8 @@ namespace utils {
 // NOTE: When using this function, make sure to remove the temporary directory
 // and its contents once done processing the files by calling the function
 // removeTmpDirectory(tmpdir).
-boost::filesystem::path createTmpDirectoryAndAddFiles(std::vector<std::string> data_files,
-                                                std::vector<std::string> map_files) {
+boost::filesystem::path createTmpDirectoryAndAddFiles(
+    std::vector<std::string> data_files, std::vector<std::string> map_files) {
     // Create a unique path in the temp directory and add the files
     boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
                                      boost::filesystem::unique_path();

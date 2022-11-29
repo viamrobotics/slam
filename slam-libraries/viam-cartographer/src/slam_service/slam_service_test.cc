@@ -1,9 +1,10 @@
 #include "slam_service.h"
-#include "../utils/test_helpers.h"
-#include "../io/file_handler.h"
 
 #include <boost/test/unit_test.hpp>
 #include <exception>
+
+#include "../io/file_handler.h"
+#include "../utils/test_helpers.h"
 
 namespace viam {
 namespace {
@@ -72,8 +73,7 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_mapping) {
     slamService.translation_weight = 9989.89;
     slamService.rotation_weight = 9988.88;
 
-    BOOST_TEST(slamService.GetActionMode() ==
-                   SLAMServiceActionMode::MAPPING);
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 }
@@ -83,8 +83,7 @@ BOOST_AUTO_TEST_CASE(
     // Mapping is the default action_mode when slamService is created
     SLAMServiceImpl slamService;
 
-    BOOST_TEST(slamService.GetActionMode() ==
-                   SLAMServiceActionMode::MAPPING);
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 }
@@ -110,14 +109,15 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_updating) {
 
     // Create a temp directory with a few files with timestamps
     std::vector<std::string> data_files{};
-    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    std::vector<std::string> map_files{
+        "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() ==
-                   SLAMServiceActionMode::UPDATING);
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::UPDATING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -134,14 +134,15 @@ BOOST_AUTO_TEST_CASE(
 
     // Create a temp directory with a few files with timestamps
     std::vector<std::string> data_files{};
-    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    std::vector<std::string> map_files{
+        "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() ==
-                   SLAMServiceActionMode::UPDATING);
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::UPDATING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -170,14 +171,16 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_localizing) {
 
     // Create a temp directory with a few files with timestamps
     std::vector<std::string> data_files{};
-    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    std::vector<std::string> map_files{
+        "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
     BOOST_TEST(slamService.GetActionMode() ==
-                   SLAMServiceActionMode::LOCALIZING);
+               SLAMServiceActionMode::LOCALIZING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -195,14 +198,16 @@ BOOST_AUTO_TEST_CASE(
 
     // Create a temp directory with a few files with timestamps
     std::vector<std::string> data_files{};
-    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    std::vector<std::string> map_files{
+        "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
     BOOST_TEST(slamService.GetActionMode() ==
-                   SLAMServiceActionMode::LOCALIZING);
+               SLAMServiceActionMode::LOCALIZING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -223,7 +228,8 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_mapping) {
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
@@ -239,9 +245,11 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_updating) {
 
     // Create a temp directory that does not contain a map
     std::vector<std::string> data_files{};
-    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    std::vector<std::string> map_files{
+        "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
@@ -257,13 +265,16 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_localizing) {
 
     // Create a temp directory that does not contain a map
     std::vector<std::string> data_files{};
-    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    std::vector<std::string> map_files{
+        "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
     slamService.DetermineActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::LOCALIZING);
+    BOOST_TEST(slamService.GetActionMode() ==
+               SLAMServiceActionMode::LOCALIZING);
 }
 
 BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
@@ -277,42 +288,41 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmpdir.string() + "/map";
 
-    const std::string message = 
-            "set to localization mode (map_rate_sec = 0) but couldn't find "
-            "apriori map to localize on";
-    BOOST_CHECK_EXCEPTION(slamService.DetermineActionMode(),
-                          std::runtime_error,
+    const std::string message =
+        "set to localization mode (map_rate_sec = 0) but couldn't find "
+        "apriori map to localize on";
+    BOOST_CHECK_EXCEPTION(slamService.DetermineActionMode(), std::runtime_error,
                           [&message](const std::runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
                               return true;
                           });
-
 }
 
 BOOST_AUTO_TEST_CASE(GetNextDataFileOffline_not_enough_data) {
     SLAMServiceImpl slamService;
 
-    // Create a temp directory that does not contain enough data files for mapping
+    // Create a temp directory that does not contain enough data files for
+    // mapping
     std::vector<std::string> data_files{
         "rplidar_data_2022-02-11T01:45:47.0764Z.pcd",
         "rplidar_data_2022-02-11T01:46:41.4989Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_data = tmpdir.string() + "/data";
 
-    const std::string message = 
-            "not enough data in data directory";
+    const std::string message = "not enough data in data directory";
     BOOST_CHECK_EXCEPTION(slamService.GetNextDataFileOffline(),
                           std::runtime_error,
                           [&message](const std::runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
                               return true;
                           });
-
 }
 
 BOOST_AUTO_TEST_CASE(GetNextDataFileOffline) {
@@ -324,15 +334,16 @@ BOOST_AUTO_TEST_CASE(GetNextDataFileOffline) {
         "rplidar_data_2022-02-11T01:45:47.2439Z.pcd",
         "rplidar_data_2022-02-11T01:46:41.4989Z.pcd",
         "rplidar_data_2022-02-11T01:46:41.5808Z.pcd",
-        "rplidar_data_2022-02-11T01:46:41.6631Z.pcd"
-    };
+        "rplidar_data_2022-02-11T01:46:41.6631Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_data = tmpdir.string() + "/data";
 
     for (int i = 0; i < data_files.size(); i++) {
-        BOOST_TEST(slamService.GetNextDataFileOffline() == (slamService.path_to_data + "/" + data_files[i]));
+        BOOST_TEST(slamService.GetNextDataFileOffline() ==
+                   (slamService.path_to_data + "/" + data_files[i]));
     }
 }
 
@@ -345,15 +356,16 @@ BOOST_AUTO_TEST_CASE(GetNextDataFileOnline) {
         "rplidar_data_2022-02-11T01:45:47.2439Z.pcd",
         "rplidar_data_2022-02-11T01:46:41.4989Z.pcd",
         "rplidar_data_2022-02-11T01:46:41.5808Z.pcd",
-        "rplidar_data_2022-02-11T01:46:41.6631Z.pcd"
-    };
+        "rplidar_data_2022-02-11T01:46:41.6631Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    boost::filesystem::path tmpdir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_data = tmpdir.string() + "/data";
 
     for (int i = data_files.size() - 1; i > 0; i--) {
-        BOOST_TEST(slamService.GetNextDataFileOnline() == (slamService.path_to_data + "/" + data_files[i-1]));
+        BOOST_TEST(slamService.GetNextDataFileOnline() ==
+                   (slamService.path_to_data + "/" + data_files[i - 1]));
         io::RemoveFile(slamService.path_to_data + "/" + data_files[i]);
     }
 }
