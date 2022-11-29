@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an Experimental integration of cartographer into RDK.
 #include "file_handler.h"
 
 #include <pcl/io/pcd_io.h>

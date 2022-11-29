@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an Experimental integration of cartographer into RDK.
 #ifndef VIAM_CARTOGRAPHER_IO_DRAW_TRAJECTORIES_H_
 #define VIAM_CARTOGRAPHER_IO_DRAW_TRAJECTORIES_H_
 
