@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_updating) {
     // and by setting map_rate_sec != 0
     slamService.map_rate_sec = std::chrono::seconds(60);
 
-    // Create a temp directory with a few files with timestamps
+    // Create a temp directory with a map file in it
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{
         "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(
     // and by setting map_rate_sec != 0
     slamService.map_rate_sec = std::chrono::seconds(60);
 
-    // Create a temp directory with a few files with timestamps
+    // Create a temp directory with a map file in it
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{
         "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_localizing) {
     // and by setting map_rate_sec == 0
     slamService.map_rate_sec = std::chrono::seconds(0);
 
-    // Create a temp directory with a few files with timestamps
+    // Create a temp directory with a map file in it
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{
         "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(
     // and by setting map_rate_sec == 0
     slamService.map_rate_sec = std::chrono::seconds(0);
 
-    // Create a temp directory with a few files with timestamps
+    // Create a temp directory with a map file in it
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{
         "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
@@ -221,7 +221,8 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_mapping) {
     BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
 
     // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be mapping
+    // action_mode has to be mapping by setting map_rate_sec != 0 and by
+    // ensuring that there is no map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(60);
 
     // Create a temp directory that does not contain a map
@@ -240,10 +241,11 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_updating) {
     SLAMServiceImpl slamService;
 
     // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be updating
+    // action_mode has to be updating by setting map_rate_sec != 0 and by
+    // ensuring that there is a map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(60);
 
-    // Create a temp directory that does not contain a map
+    // Create a temp directory with a map file in it
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{
         "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
@@ -260,10 +262,11 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_localizing) {
     SLAMServiceImpl slamService;
 
     // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be localizing
+    // action_mode has to be localizing by setting map_rate_sec == 0 and by
+    // ensuring that there is a map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(0);
 
-    // Create a temp directory that does not contain a map
+    // Create a temp directory with a map file in it
     std::vector<std::string> data_files{};
     std::vector<std::string> map_files{
         "map_data_2022-02-11T01:44:53.1903Z.pbstream"};
@@ -280,8 +283,10 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_localizing) {
 BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
     SLAMServiceImpl slamService;
 
-    // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be localizing
+    // Set up the environment such that DetermineActionMode throws
+    // an error indicating that this is an invalid case. Do this by
+    // setting map_rate_sec == 0 and by ensuring that there is no
+    // map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(0);
 
     // Create a temp directory that does not contain a map
