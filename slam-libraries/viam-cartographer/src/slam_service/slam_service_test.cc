@@ -209,34 +209,87 @@ BOOST_AUTO_TEST_CASE(
     utils::removeTmpDirectory(tmpdir);
 }
 
-// TODO: Fix this test
-BOOST_AUTO_TEST_CASE(GetActionMode_mapping) {
+BOOST_AUTO_TEST_CASE(DetermineActionMode_mapping) {
     SLAMServiceImpl slamService;
+    // Mapping is the default action_mode when slamService is created
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
+
+    // Set up the environment such that DetermineActionMode determines that the
+    // action_mode has to be mapping
     slamService.map_rate_sec = std::chrono::seconds(60);
+
+    // Create a temp directory that does not contain a map
+    std::vector<std::string> data_files{};
+    std::vector<std::string> map_files{};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_map = tmpdir.string() + "/map";
+    slamService.DetermineActionMode();
+
     BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
 }
 
-/*
-BOOST_AUTO_TEST_CASE(GetActionMode_updating) {
-    // TODO: Add a test case GetActionMode for updating.Requires that an apriori
-    // map is detected and loaded. Will be implemented in this ticket:
-    // https://viam.atlassian.net/browse/DATA-114
-    BOOST_TEST((slamService.GetActionMode() ==
-SLAMServiceActionMode::UPDATING));
-}
-*/
-
-/*
-BOOST_AUTO_TEST_CASE(GetActionMode_localizing) {
-    // TODO: Once this scope doc is approved:
-    //
-https://docs.google.com/document/d/1RsT-c0QOtkMKa-rwUGY0-emUmKIRSaO3mzT1v6MtFjk/edit#
+BOOST_AUTO_TEST_CASE(DetermineActionMode_updating) {
     SLAMServiceImpl slamService;
-    slamService.map_rate_sec = -1; // Would need refactoring
-    BOOST_TEST((slamService.GetActionMode() ==
-SLAMServiceActionMode::LOCALIZING));
+
+    // Set up the environment such that DetermineActionMode determines that the
+    // action_mode has to be updating
+    slamService.map_rate_sec = std::chrono::seconds(60);
+
+    // Create a temp directory that does not contain a map
+    std::vector<std::string> data_files{};
+    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_map = tmpdir.string() + "/map";
+    slamService.DetermineActionMode();
+
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::UPDATING);
 }
-*/
+
+BOOST_AUTO_TEST_CASE(DetermineActionMode_localizing) {
+    SLAMServiceImpl slamService;
+
+    // Set up the environment such that DetermineActionMode determines that the
+    // action_mode has to be localizing
+    slamService.map_rate_sec = std::chrono::seconds(0);
+
+    // Create a temp directory that does not contain a map
+    std::vector<std::string> data_files{};
+    std::vector<std::string> map_files{"map_data_2022-02-11T01:44:53.1903Z.pbstream"};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_map = tmpdir.string() + "/map";
+    slamService.DetermineActionMode();
+
+    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::LOCALIZING);
+}
+
+BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
+    SLAMServiceImpl slamService;
+
+    // Set up the environment such that DetermineActionMode determines that the
+    // action_mode has to be localizing
+    slamService.map_rate_sec = std::chrono::seconds(0);
+
+    // Create a temp directory that does not contain a map
+    std::vector<std::string> data_files{};
+    std::vector<std::string> map_files{};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmpdir = utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_map = tmpdir.string() + "/map";
+
+    const std::string message = 
+            "set to localization mode (map_rate_sec = 0) but couldn't find "
+            "apriori map to localize on";
+    BOOST_CHECK_EXCEPTION(slamService.DetermineActionMode(),
+                          std::runtime_error,
+                          [&message](const std::runtime_error& ex) {
+                              BOOST_CHECK_EQUAL(ex.what(), message);
+                              return true;
+                          });
+
+}
 
 
 // ProcessDataAndStartSavingMaps
@@ -248,16 +301,6 @@ SLAMServiceActionMode::LOCALIZING));
 // GetNextDataFileOnline
 
 // RunSLAM
-
-// DetermineActionMode
-// How to create different action modes:
-// Create a slamService object --> Mapping: Default.
-// Provide a path (path_to_map) that contains a map (.pbstream) --> Updating or Localizing
-// --> Set map_rate_sec == 0 --> Localizing
-// --> Set map_rate_sec != 0 --> Updating
-// Test for the error: Set map_rate_sec == 0 but don't provide a map
-
-
 
 // GetActionMode
 
