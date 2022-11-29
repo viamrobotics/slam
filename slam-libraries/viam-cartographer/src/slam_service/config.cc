@@ -45,7 +45,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (!v.empty()) {
         FLAGS_v = std::stoi(v);
     }
-    const auto optimize_on_start = ConfigParamParser(FLAGS_config_param, "optimize_on_start=");
+    const auto optimize_on_start =
+        ConfigParamParser(FLAGS_config_param, "optimize_on_start=");
     if (optimize_on_start == "true") {
         slamService.optimize_on_start = true;
         LOG(INFO) << "Optimizing map on start";

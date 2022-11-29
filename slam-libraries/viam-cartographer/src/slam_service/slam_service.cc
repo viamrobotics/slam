@@ -360,8 +360,8 @@ void SLAMServiceImpl::RunSLAM() {
         {
             // Load apriori map
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.LoadMapFromFile(latest_map_filename,
-                                        load_frozen_trajectory, optimize_on_start);
+            map_builder.LoadMapFromFile(
+                latest_map_filename, load_frozen_trajectory, optimize_on_start);
         }
         data_start_time =
             viam::io::ReadTimeFromFilename(latest_map_filename.substr(
