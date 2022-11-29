@@ -179,6 +179,17 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_success) {
     BOOST_TEST((double)t == filename_time, tolerance);
 }
 
+BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_comparison) {
+    const std::string filename_1 = "2022-01-01T01:00:00.0000Z";
+    const std::string filename_2 = "2022-01-01T01:00:00.0001Z";
+    const std::string filename_3 = "2022-01-01T01:00:01.0000Z";
+    const auto time_1 = ReadTimeFromFilename(filename_1);
+    const auto time_2 = ReadTimeFromFilename(filename_2);
+    const auto time_3 = ReadTimeFromFilename(filename_3);
+    BOOST_TEST(time_1 < time_2);
+    BOOST_TEST(time_2 < time_3);
+}
+
 BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_missing_timestamp) {
     // Provide a filename with a missing timestamp
     std::string filename = "no-timestamp.pcd";
