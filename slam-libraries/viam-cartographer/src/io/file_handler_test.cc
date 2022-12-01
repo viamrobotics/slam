@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include <ctime>
 #include <exception>
+#include <iostream>
 
 #include "../utils/test_helpers.h"
 
@@ -27,7 +28,7 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
         filename.substr(0, path_to_dir.length() + path_prefix.length());
     BOOST_TEST(filename_start.compare(path_to_dir + path_prefix) == 0);
     // Extract timestamp
-    double filename_time = ReadTimeFromFilename(filename.substr(
+    double filename_time = ReadTimeFromTimestamp(filename.substr(
         filename.find(filename_prefix) + filename_prefix.length(),
         filename.find(".pcd")));
     // Check if timestamp is between start_time and end_time
@@ -40,24 +41,24 @@ BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
     std::vector<std::string> data_files{
         "rplidar_data_2022-01-01T01:00:00.0000Z.pcd",
         "rplidar_data_2022-01-01T01:00:00.0001Z.pcd",
-        "rplidar_data_2022-01-01T01:00:00.0002Z.pcd",
-        "rplidar_data_2022-01-01T01:00:00.0003Z.pcd"};
+        "rplidar_data_2022-01-01T01:00:00.0003Z.pcd",
+        "rplidar_data_2022-01-01T01:00:00.0002Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir =
+    boost::filesystem::path tmp_dir =
         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
 
     // List the sorted files in the directory
     std::vector<std::string> listed_data_files =
-        ListSortedFilesInDirectory(tmpdir.string() + "/data");
-    // Check to make sure that the files in the directory are what we added and
-    // that they are in the same order
+        ListSortedFilesInDirectory(tmp_dir.string() + "/data");
+    // Check that the files in the directory are correct and properly ordered
     BOOST_TEST(data_files.size() == listed_data_files.size());
-    for (int i = 0; i < data_files.size(); i++) {
-        BOOST_TEST(data_files.at(i).compare(listed_data_files.at(i)));
-    }
+    BOOST_TEST(data_files.at(0).compare(listed_data_files.at(0)));
+    BOOST_TEST(data_files.at(1).compare(listed_data_files.at(1)));
+    BOOST_TEST(data_files.at(3).compare(listed_data_files.at(2)));
+    BOOST_TEST(data_files.at(2).compare(listed_data_files.at(3)));
     // Remove the temporary directory and its contents
-    utils::removeTmpDirectory(tmpdir);
+    utils::removeTmpDirectory(tmp_dir);
 }
 
 // test RemoveFile
@@ -70,25 +71,25 @@ BOOST_AUTO_TEST_CASE(RemoveFile_success) {
         "rplidar_data_2022-01-01T01:00:00.0003Z.pcd"};
     std::vector<std::string> map_files{};
     // Create a unique path in the temp directory and add the files
-    boost::filesystem::path tmpdir =
+    boost::filesystem::path tmp_dir =
         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
 
     // Remove a file
     int file_num = 1;
     int success =
-        RemoveFile(tmpdir.string() + "/data/" + data_files.at(file_num));
+        RemoveFile(tmp_dir.string() + "/data/" + data_files.at(file_num));
     BOOST_TEST(success == file_num);
     data_files.erase(data_files.begin() + file_num);
     // List the files in the directory and check if the right number of files
     // and the right files are still in the directory
     std::vector<std::string> listed_data_files =
-        ListSortedFilesInDirectory(tmpdir.string());
+        ListSortedFilesInDirectory(tmp_dir.string());
     BOOST_TEST(data_files.size() == listed_data_files.size());
     for (int i = 0; i < data_files.size(); i++) {
         BOOST_TEST(data_files.at(i).compare(listed_data_files.at(i)));
     }
     // Remove the temporary directory and its contents
-    utils::removeTmpDirectory(tmpdir);
+    utils::removeTmpDirectory(tmp_dir);
 }
 
 BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
@@ -116,20 +117,20 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
         pcd = pcd + std::to_string(point.at(3)) + "\n";
     }
     // Create a unique path in the temp directory and add the PCD file
-    boost::filesystem::path tmpdir = boost::filesystem::temp_directory_path() /
+    boost::filesystem::path tmp_dir = boost::filesystem::temp_directory_path() /
                                      boost::filesystem::unique_path();
-    bool ok = boost::filesystem::create_directory(tmpdir);
+    bool ok = boost::filesystem::create_directory(tmp_dir);
     if (!ok) {
         throw std::runtime_error("could not create directory: " +
-                                 tmpdir.string());
+                                 tmp_dir.string());
     }
-    boost::filesystem::ofstream ofs(tmpdir / filename);
+    boost::filesystem::ofstream ofs(tmp_dir / filename);
     ofs << pcd;
     ofs.close();
     // Read it in and check if the data in the TimedPointCloudData is equivalent
     // to what we had in the pcd file
     cartographer::sensor::TimedPointCloudData timed_pcd =
-        TimedPointCloudDataFromPCDBuilder(tmpdir.string() + "/" + filename, 0);
+        TimedPointCloudDataFromPCDBuilder(tmp_dir.string() + "/" + filename, 0);
 
     auto tolerance = boost::test_tools::tolerance(0.00001);
     BOOST_TEST(timed_pcd.ranges.size() == points.size());
@@ -144,10 +145,10 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
     }
 
     // Remove the temporary directory and its contents
-    utils::removeTmpDirectory(tmpdir);
+    utils::removeTmpDirectory(tmp_dir);
 }
 
-BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_success) {
+BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_success) {
     // Provide a filename with a timestamp
     std::time_t t = std::time(nullptr);
     char timestamp[100];
@@ -161,30 +162,30 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_success) {
     std::string timestamp_str = filename.substr(
         filename.find(filename_prefix) + filename_prefix.length(),
         filename.find(filename_type));
-    double filename_time = ReadTimeFromFilename(timestamp_str);
+    double filename_time = ReadTimeFromTimestamp(timestamp_str);
     auto tolerance = boost::test_tools::tolerance(0.0001);
     // Make sure the time read from the filename equals what we put into the
     // filename
     BOOST_TEST((double)t == filename_time, tolerance);
 }
 
-BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_comparison) {
-    const std::string filename_1 = "2022-01-01T01:00:00.0000Z";
-    const std::string filename_2 = "2022-01-01T01:00:00.0001Z";
-    const std::string filename_3 = "2022-01-01T01:00:01.0000Z";
-    const auto time_1 = ReadTimeFromFilename(filename_1);
-    const auto time_2 = ReadTimeFromFilename(filename_2);
-    const auto time_3 = ReadTimeFromFilename(filename_3);
+BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_comparison) {
+    const std::string timestamp_1 = "2022-01-01T01:00:00.0000Z";
+    const std::string timestamp_2 = "2022-01-01T01:00:00.0001Z";
+    const std::string timestamp_3 = "2022-01-01T01:00:01.0000Z";
+    const auto time_1 = ReadTimeFromTimestamp(timestamp_1);
+    const auto time_2 = ReadTimeFromTimestamp(timestamp_2);
+    const auto time_3 = ReadTimeFromTimestamp(timestamp_3);
     BOOST_TEST(time_1 < time_2);
     BOOST_TEST(time_2 < time_3);
 }
 
-BOOST_AUTO_TEST_CASE(ReadTimeFromFilename_missing_timestamp) {
+BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
     // Provide a filename with a missing timestamp
-    std::string filename = "no-timestamp.pcd";
+    std::string timestamp = "no-timestamp";
     const std::string message =
-        "could not extract sub seconds from filename: " + filename;
-    BOOST_CHECK_EXCEPTION(ReadTimeFromFilename(filename), std::runtime_error,
+        "timestamp cannot be represented as a std::time_t object: " + timestamp;
+    BOOST_CHECK_EXCEPTION(ReadTimeFromTimestamp(timestamp), std::runtime_error,
                           [&message](const std::runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
                               return true;

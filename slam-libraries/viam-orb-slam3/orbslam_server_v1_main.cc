@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     }
 
     // Grab timestamp from yaml
-    slamService.yamlTime = viam::utils::ReadTimeFromFilename(
+    slamService.yamlTime = viam::utils::ReadTimeFromTimestamp(
         myYAML.substr(myYAML.find("_data_") + viam::filenamePrefixLength));
     BOOST_LOG_TRIVIAL(debug)
         << "The time from our config is: " << slamService.yamlTime

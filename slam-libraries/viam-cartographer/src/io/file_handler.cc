@@ -43,7 +43,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
         return timed_pcd;
     }
 
-    double current_time = ReadTimeFromFilename(file_path.substr(
+    double current_time = ReadTimeFromTimestamp(file_path.substr(
         file_path.find(filename_prefix) + filename_prefix.length(),
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
@@ -92,11 +92,10 @@ int RemoveFile(std::string file_path) {
     return 1;
 }
 
-// Converts UTC time string to a double value.
-double ReadTimeFromFilename(std::string filename) {
+double ReadTimeFromTimestamp(std::string timestamp) {
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
-    std::istringstream ss(filename);
+    std::istringstream ss(timestamp);
 
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
@@ -104,21 +103,25 @@ double ReadTimeFromFilename(std::string filename) {
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
     ss >> std::get_time(&dt, time_format.c_str());
-    time_t filename_time = std::mktime(&dt);
-    auto sub_sec_index = filename.find(".");
+    double timestamp_time = (double)std::mktime(&dt);
+    if (timestamp_time == -1) {
+        throw std::runtime_error(
+            "timestamp cannot be represented as a std::time_t object: " + timestamp);
+    }
+    auto sub_sec_index = timestamp.find(".");
     if ((sub_sec_index != std::string::npos)) {
         double sub_sec = 0;
         try {
-            sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
+            sub_sec = (double)std::stof(timestamp.substr(sub_sec_index), &sz);
         } catch (std::exception& e) {
             LOG(ERROR) << e.what();
             throw std::runtime_error(
-                "could not extract sub seconds from filename: " + filename);
+                "could not extract sub seconds from timestamp: " + timestamp);
         }
-        double filename_time_w_sub_sec = (double)filename_time + sub_sec;
-        return filename_time_w_sub_sec;
+        double timestamp_time_w_sub_sec = timestamp_time + sub_sec;
+        return timestamp_time_w_sub_sec;
     } else {
-        return (double)filename_time;
+        return timestamp_time;
     }
 }
 

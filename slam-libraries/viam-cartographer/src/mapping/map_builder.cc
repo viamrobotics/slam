@@ -106,7 +106,7 @@ MapBuilder::GetLocalSlamResultCallback() {
 }
 
 void MapBuilder::SetStartTime(std::string initial_filename) {
-    start_time = viam::io::ReadTimeFromFilename(
+    start_time = viam::io::ReadTimeFromTimestamp(
         initial_filename.substr(initial_filename.find(io::filename_prefix) +
                                     io::filename_prefix.length(),
                                 initial_filename.find(".pcd")));
