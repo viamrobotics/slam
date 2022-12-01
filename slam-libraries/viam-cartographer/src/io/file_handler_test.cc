@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
     }
     // Create a unique path in the temp directory and add the PCD file
     boost::filesystem::path tmp_dir = boost::filesystem::temp_directory_path() /
-                                     boost::filesystem::unique_path();
+                                      boost::filesystem::unique_path();
     bool ok = boost::filesystem::create_directory(tmp_dir);
     if (!ok) {
         throw std::runtime_error("could not create directory: " +

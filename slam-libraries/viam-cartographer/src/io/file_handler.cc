@@ -106,7 +106,8 @@ double ReadTimeFromTimestamp(std::string timestamp) {
     double timestamp_time = (double)std::mktime(&dt);
     if (timestamp_time == -1) {
         throw std::runtime_error(
-            "timestamp cannot be represented as a std::time_t object: " + timestamp);
+            "timestamp cannot be represented as a std::time_t object: " +
+            timestamp);
     }
     auto sub_sec_index = timestamp.find(".");
     if ((sub_sec_index != std::string::npos)) {

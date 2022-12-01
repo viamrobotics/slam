@@ -789,11 +789,13 @@ double ReadTimeFromTimestamp(string timestamp) {
     double timestamp_time = (double)std::mktime(&dt);
     if (timestamp_time == -1) {
         throw std::runtime_error(
-            "timestamp cannot be represented as a std::time_t object: " + timestamp);
+            "timestamp cannot be represented as a std::time_t object: " +
+            timestamp);
     }
     auto sub_sec_index = timestamp.find(".");
     if (sub_sec_index != string::npos) {
-        double sub_sec = (double)std::stof(timestamp.substr(sub_sec_index), &sz);
+        double sub_sec =
+            (double)std::stof(timestamp.substr(sub_sec_index), &sz);
         double myTime = timestamp_time + sub_sec;
         return myTime;
     } else {
