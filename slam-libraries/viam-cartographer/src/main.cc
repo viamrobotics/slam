@@ -1,4 +1,4 @@
-// This is an Experimental integration of cartographer into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
 #include <signal.h>

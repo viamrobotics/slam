@@ -1,4 +1,4 @@
-// This is an Experimental integration of cartographer into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "../src/io/draw_trajectories.h"
 
 #include "cartographer/io/image.h"

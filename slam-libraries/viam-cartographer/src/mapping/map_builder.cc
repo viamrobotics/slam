@@ -1,4 +1,4 @@
-// This is an Experimental integration of cartographer into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "cartographer/mapping/map_builder.h"
 
 #include "../io/file_handler.h"

@@ -1,4 +1,4 @@
-// This is an Experimental integration of cartographer into RDK.
+// This is an experimental integration of cartographer into RDK.
 #ifndef CONFIG_H_
 #define CONFIG_H_
 

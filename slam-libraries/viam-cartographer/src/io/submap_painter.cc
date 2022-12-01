@@ -1,4 +1,4 @@
-// This is an Experimental integration of cartographer into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "../src/io/submap_painter.h"
 
 #include "cartographer/mapping/2d/submap_2d.h"

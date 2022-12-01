@@ -1,4 +1,4 @@
-// This is an Experimental integration of cartographer into RDK.
+// This is an experimental integration of cartographer into RDK.
 #ifndef VIAM_CARTOGRAPHER_MAP_BUILDER_H_
 #define VIAM_CARTOGRAPHER_MAP_BUILDER_H_
 

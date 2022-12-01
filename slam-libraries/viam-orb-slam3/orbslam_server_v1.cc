@@ -1,4 +1,4 @@
-// This is an Experimental integration of orbslam into RDK.
+// This is an experimental integration of orbslam into RDK.
 #include "orbslam_server_v1.h"
 
 #include <algorithm>
