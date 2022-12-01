@@ -45,12 +45,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (!v.empty()) {
         FLAGS_v = std::stoi(v);
     }
-    const auto optimize_on_start =
-        ConfigParamParser(FLAGS_config_param, "optimize_on_start=");
-    if (optimize_on_start == "true") {
-        slamService.optimize_on_start = true;
-        LOG(INFO) << "Optimizing map on start";
-    }
 
     if (FLAGS_data_dir.empty()) {
         throw std::runtime_error("-data_dir is missing");
@@ -88,6 +82,13 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     boost::algorithm::to_lower(slamService.slam_mode);
     if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
         throw std::runtime_error("Invalid slam_mode=" + slamService.slam_mode);
+    }
+
+    const auto optimize_on_start =
+        ConfigParamParser(FLAGS_config_param, "optimize_on_start=");
+    if (optimize_on_start == "true") {
+        slamService.optimize_on_start = true;
+        LOG(INFO) << "Optimizing map on start, this may take a few minutes";
     }
 
     std::vector<std::string> carto_params = {"optimize_every_n_nodes",

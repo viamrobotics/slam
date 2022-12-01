@@ -58,11 +58,12 @@ void MapBuilder::BuildMapBuilder() {
 }
 
 void MapBuilder::LoadMapFromFile(std::string map_filename,
-                                 bool load_frozen_trajectory, bool optimize) {
+                                 bool load_frozen_trajectory,
+                                 bool optimize_on_start) {
     std::map<int, int> trajectory_ids_map =
         map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
 
-    if (optimize) {
+    if (optimize_on_start) {
         map_builder_->pose_graph()->RunFinalOptimization();
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
