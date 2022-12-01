@@ -243,31 +243,31 @@ BOOST_AUTO_TEST_CASE(FindFrameIndex_Recent_found_time_rgbd) {
                          "color_data_2022-01-01T01:00:00.0003Z"};
     double timeInterest;
     // Create a unique path in the temp directory
-    fs::path tmpdir = fs::temp_directory_path() / fs::unique_path();
-    bool ok = fs::create_directory(tmpdir);
+    fs::path tmp_dir = fs::temp_directory_path() / fs::unique_path();
+    bool ok = fs::create_directory(tmp_dir);
     if (!ok) {
         throw std::runtime_error("could not create directory: " +
-                                 tmpdir.string());
+                                 tmp_dir.string());
     }
     // Create the "depth" subdirectory
-    fs::path tmpdirDepth = tmpdir / "depth";
-    ok = fs::create_directory(tmpdirDepth);
+    fs::path tmp_dir_depth = tmp_dir / "depth";
+    ok = fs::create_directory(tmp_dir_depth);
     if (!ok) {
-        fs::remove_all(tmpdir);
+        fs::remove_all(tmp_dir);
         throw std::runtime_error("could not create directory: " +
-                                 tmpdirDepth.string());
+                                 tmp_dir_depth.string());
     }
 
     // Create the file in the temporary directory
-    fs::ofstream ofs(tmpdirDepth / "color_data_2022-01-01T01:00:00.0001Z.png");
+    fs::ofstream ofs(tmp_dir_depth / "color_data_2022-01-01T01:00:00.0001Z.png");
     ofs.close();
-    BOOST_TEST(utils::FindFrameIndex(files, "rgbd", tmpdir.string(),
+    BOOST_TEST(utils::FindFrameIndex(files, "rgbd", tmp_dir.string(),
                                      utils::FileParserMethod::Recent,
                                      configTime, &timeInterest) == 1);
     BOOST_TEST(timeInterest ==
                utils::ReadTimeFromTimestamp("2022-01-01T01:00:00.0001Z"));
     // Close the file and remove the temporary directory and its contents.
-    fs::remove_all(tmpdir);
+    fs::remove_all(tmp_dir);
 }
 
 }  // namespace
