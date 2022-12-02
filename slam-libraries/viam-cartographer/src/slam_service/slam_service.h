@@ -1,3 +1,4 @@
+// This is an experimental integration of cartographer into RDK.
 #ifndef SLAM_SERVICE_H_
 #define SLAM_SERVICE_H_
 

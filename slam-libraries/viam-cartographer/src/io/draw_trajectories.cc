@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "../src/io/draw_trajectories.h"
 
 #include "cartographer/io/image.h"
