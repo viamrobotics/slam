@@ -64,6 +64,7 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
         map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
 
     if (optimize_on_start) {
+        LOG(INFO) << "Optimizing map on start, this may take a few minutes";
         map_builder_->pose_graph()->RunFinalOptimization();
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
