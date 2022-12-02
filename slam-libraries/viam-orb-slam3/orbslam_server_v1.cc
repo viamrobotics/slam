@@ -453,7 +453,7 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
     // iterate over all remaining files in directory
     for (int i = locClosest; i < filesRGB.size(); i++) {
         //  record timestamp
-        timeStamp = utils::ReadTimeFromFilename(filesRGB[i].substr(
+        timeStamp = utils::ReadTimeFromTimestamp(filesRGB[i].substr(
                         filesRGB[i].find("_data_") + filenamePrefixLength)) -
                     fileTimeStart;
         // decode images
@@ -775,10 +775,10 @@ void ParseAndValidateArguments(const vector<string> &args,
 }
 
 // Converts UTC time string to a double value.
-double ReadTimeFromFilename(string filename) {
+double ReadTimeFromTimestamp(string timestamp) {
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
-    std::istringstream ss(filename);
+    std::istringstream ss(timestamp);
 
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
@@ -786,14 +786,20 @@ double ReadTimeFromFilename(string filename) {
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
     ss >> std::get_time(&dt, time_format.c_str());
-    time_t thisTime = std::mktime(&dt);
-    auto sub_sec_index = filename.find(".");
+    double timestamp_time = (double)std::mktime(&dt);
+    if (timestamp_time == -1) {
+        throw std::runtime_error(
+            "timestamp cannot be represented as a std::time_t object: " +
+            timestamp);
+    }
+    auto sub_sec_index = timestamp.find(".");
     if (sub_sec_index != string::npos) {
-        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
-        double myTime = (double)thisTime + sub_sec;
+        double sub_sec =
+            (double)std::stof(timestamp.substr(sub_sec_index), &sz);
+        double myTime = timestamp_time + sub_sec;
         return myTime;
     } else {
-        return (double)thisTime;
+        return timestamp_time;
     }
 }
 
@@ -824,7 +830,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
         // for closest file, just parse the rgb directory. as LoadRGBD will
         // filter any MONOCULAR frames
         for (int i = 0; i < (int)filesRGB.size() - 1; i++) {
-            fileTime = ReadTimeFromFilename(filesRGB[i].substr(
+            fileTime = ReadTimeFromTimestamp(filesRGB[i].substr(
                 filesRGB[i].find("_data_") + filenamePrefixLength));
             if (fileTime > configTime) {
                 *timeInterest = fileTime;
@@ -840,7 +846,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
         if (i < 0) return -1;
 
         if (slam_mode == "mono") {
-            fileTime = ReadTimeFromFilename(filesRGB[i].substr(
+            fileTime = ReadTimeFromTimestamp(filesRGB[i].substr(
                 filesRGB[i].find("_data_") + filenamePrefixLength));
 
             // if the latest file is older than our config time, return -1 as an
@@ -856,7 +862,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
             // corresponding depth image is found
             std::string depthPath = path_to_data + strDepth + "/";
             for (i = (int)filesRGB.size() - 2; i >= 0; i--) {
-                fileTime = ReadTimeFromFilename(filesRGB[i].substr(
+                fileTime = ReadTimeFromTimestamp(filesRGB[i].substr(
                     filesRGB[i].find("_data_") + filenamePrefixLength));
 
                 // if we found no new files return -1 as an error

@@ -35,7 +35,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
 int RemoveFile(std::string);
 
 // Converts UTC time string to a double value.
-double ReadTimeFromFilename(std::string filename);
+double ReadTimeFromTimestamp(std::string timestamp);
 
 }  // namespace io
 }  // namespace viam
