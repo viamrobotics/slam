@@ -180,18 +180,6 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_comparison) {
     BOOST_TEST(time_2 < time_3);
 }
 
-BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
-    // Provide a filename with a missing timestamp
-    std::string timestamp = "no-timestamp";
-    const std::string message =
-        "timestamp cannot be represented as a std::time_t object: " + timestamp;
-    BOOST_CHECK_EXCEPTION(ReadTimeFromTimestamp(timestamp), std::runtime_error,
-                          [&message](const std::runtime_error& ex) {
-                              BOOST_CHECK_EQUAL(ex.what(), message);
-                              return true;
-                          });
-}
-
 BOOST_AUTO_TEST_SUITE_END()
 
 }  // namespace
