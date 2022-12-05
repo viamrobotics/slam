@@ -98,7 +98,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void OverwriteMapBuilderParameters();
 
     // PaintMap paints the map in jpeg format.
-    std::string PaintMap(bool pose_marker_flag);
+    void PaintMap(bool pose_marker_flag);
 
     // ExtractPointCloudToBuffer extracts the pointcloud from the map_builder
     // and saves it in a buffer.
@@ -174,7 +174,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::atomic<bool> optimizing{false};
     std::string jpeg_img = "";
     std::atomic<bool> has_points{false};
-    std::stringbuf buffer;
+    std::stringbuf pointcloud_buffer;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;

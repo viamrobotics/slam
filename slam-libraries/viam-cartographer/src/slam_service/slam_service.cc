@@ -66,7 +66,7 @@ std::atomic<bool> b_continue_session{true};
         bool pose_marker_flag = request->include_robot_marker();
         try {
             if (!optimizing) {
-                jpeg_img = PaintMap(pose_marker_flag);
+                PaintMap(pose_marker_flag);
             }
             if (jpeg_img == "") {
                 return grpc::Status(grpc::StatusCode::UNAVAILABLE,
@@ -92,7 +92,7 @@ std::atomic<bool> b_continue_session{true};
         }
         if (has_points) {
             common::v1::PointCloudObject *pco = response->mutable_point_cloud();
-            pco->set_point_cloud(buffer.str());
+            pco->set_point_cloud(pointcloud_buffer.str());
         } else {
             LOG(ERROR) << "map pointcloud does not have points yet";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
@@ -181,7 +181,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     map_builder.BuildMapBuilder();
 }
 
-std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
+void SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
     const double kPixelSize = 0.01;
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
@@ -263,13 +263,12 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
     }
 
     auto image = viam::io::Image(std::move(painted_slices.surface));
-    std::string jpeg_img = image.WriteJpegToString(50);
-    return jpeg_img;
+    jpeg_img = image.WriteJpegToString(50);
 }
 
 void SLAMServiceImpl::ExtractPointCloudToBuffer() {
-    buffer = std::stringbuf();
-    std::ostream oss(&buffer);
+    pointcloud_buffer = std::stringbuf();
+    std::ostream oss(&pointcloud_buffer);
     has_points = false;
 
     cartographer::mapping::MapById<cartographer::mapping::NodeId,
@@ -321,10 +320,10 @@ void SLAMServiceImpl::ExtractPointCloudToBuffer() {
 
         for (auto &&point : global_point_cloud) {
             int rgb = 0;
-            buffer.sputn((const char *)&point.position[1], 4);
-            buffer.sputn((const char *)&point.position[2], 4);
-            buffer.sputn((const char *)&point.position[0], 4);
-            buffer.sputn((const char *)&rgb, 4);
+            pointcloud_buffer.sputn((const char *)&point.position[1], 4);
+            pointcloud_buffer.sputn((const char *)&point.position[2], 4);
+            pointcloud_buffer.sputn((const char *)&point.position[0], 4);
+            pointcloud_buffer.sputn((const char *)&rgb, 4);
             has_points = true;
         }
     }
