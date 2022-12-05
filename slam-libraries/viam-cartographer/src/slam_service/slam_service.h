@@ -102,7 +102,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // ExtractPointCloudToBuffer extracts the pointcloud from the map_builder
     // and saves it in a buffer.
-    bool ExtractPointCloudToBuffer(std::stringbuf &buffer);
+    void ExtractPointCloudToBuffer();
 
     // Getter functions for map_builder parameters (called: options)
     int GetOptimizeEveryNNodesFromMapBuilder();
@@ -170,6 +170,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
+
+    std::atomic<bool> optimizing{false};
+    std::string jpeg_img = "";
+    std::atomic<bool> has_points{false};
+    std::stringbuf buffer;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
