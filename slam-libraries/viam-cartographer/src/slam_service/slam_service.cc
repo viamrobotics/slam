@@ -211,7 +211,8 @@ void SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
         submap_slices;
 
     if (submap_poses.size() == 0) {
-        return "";
+        jpeg_img = "";
+        return;
     }
 
     for (const auto &&submap_id_pose : submap_poses) {
