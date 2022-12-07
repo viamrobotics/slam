@@ -194,20 +194,23 @@ class SLAMServiceImpl final : public SLAMService::Service {
     size_t current_file_offline = 0;
     std::string current_file_online;
 
-    std::atomic<bool> optimizing{false};
-    std::atomic<bool> has_submap_slices{false};
-    std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
-        latest_submap_slices;
-    std::atomic<bool> pointcloud_has_points{false};
-    std::stringbuf pointcloud_buffer;
+    std::mutex map_builder_mutex;
+    mapping::MapBuilder map_builder;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
 
-    std::mutex map_builder_mutex;
-    mapping::MapBuilder map_builder;
+    std::atomic<bool> optimizing{false};
 
-    std::mutex viam_response_mutex;
+    std::mutex latest_submap_slices_mutex;
+    std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
+        latest_submap_slices;
+
+    std::mutex latest_pointcloud_mutex;
+    std::atomic<bool> latest_pointcloud_has_points{false};
+    std::stringbuf latest_pointcloud_buffer;
+
+    std::mutex latest_global_pose_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
 };
