@@ -8,7 +8,6 @@
 #include "slam_service.h"
 
 namespace viam {
-
 namespace config {
 
 // Parses and validates the command line arguments. Sets the log level. Throws

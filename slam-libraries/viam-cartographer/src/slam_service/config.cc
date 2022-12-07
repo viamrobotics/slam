@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 
+#include "../utils/slam_service_helpers.h"
 #include "glog/logging.h"
 
 using namespace boost::filesystem;
@@ -131,7 +132,7 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
     std::string new_parameter =
         ConfigParamParser(slamService.config_params, parameter + "=");
 
-    SLAMServiceActionMode slam_action_mode = slamService.GetActionMode();
+    ActionMode slam_action_mode = slamService.GetActionMode();
     if (!new_parameter.empty()) {
         LOG(INFO) << parameter << " is overwritten to: " << new_parameter;
 
@@ -146,25 +147,25 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "min_range") {
             slamService.min_range = std::stof(new_parameter);
         } else if (parameter == "max_submaps_to_keep") {
-            if (slam_action_mode != SLAMServiceActionMode::LOCALIZING) {
+            if (slam_action_mode != ActionMode::LOCALIZING) {
                 LOG(WARNING) << "Not in localizing action mode: Setting "
                                 "max_submaps_to_keep has no effect\n";
             }
             slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
-            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+            if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
                                 "fresh_submaps_count has no effect\n";
             }
             slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
-            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+            if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
                                 "min_covered_area has no effect\n";
             }
             slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
-            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+            if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
                                 "min_added_submaps_count has no effect\n";
             }

@@ -4,6 +4,7 @@
 #include <exception>
 
 #include "../io/file_handler.h"
+#include "../utils/slam_service_helpers.h"
 #include "../utils/test_helpers.h"
 
 namespace viam {
@@ -25,14 +26,14 @@ void checkCartoMapBuilderParameters(SLAMServiceImpl& slamService) {
                tolerance);
     BOOST_TEST(slamService.GetMinRangeFromMapBuilder() == slamService.min_range,
                tolerance);
-    if (slamService.GetActionMode() == SLAMServiceActionMode::LOCALIZING) {
+    if (slamService.GetActionMode() == ActionMode::LOCALIZING) {
         BOOST_TEST(slamService.GetMaxSubmapsToKeepFromMapBuilder() ==
                    slamService.max_submaps_to_keep);
     } else {
         BOOST_TEST(slamService.GetMaxSubmapsToKeepFromMapBuilder() == 0);
     }
 
-    if (slamService.GetActionMode() == SLAMServiceActionMode::UPDATING) {
+    if (slamService.GetActionMode() == ActionMode::UPDATING) {
         BOOST_TEST(slamService.GetFreshSubmapsCountFromMapBuilder() ==
                    slamService.fresh_submaps_count);
         BOOST_TEST(slamService.GetMinCoveredAreaFromMapBuilder() ==
@@ -73,7 +74,7 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_mapping) {
     slamService.rotation_weight = 9988.88;
 
     // Mapping is the default action_mode when slamService is created
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::MAPPING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 }
@@ -83,7 +84,7 @@ BOOST_AUTO_TEST_CASE(
     SLAMServiceImpl slamService;
 
     // Mapping is the default action_mode when slamService is created
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::MAPPING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 }
@@ -115,9 +116,9 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_updating) {
     // and by setting map_rate_sec != 0
     slamService.map_rate_sec = std::chrono::seconds(60);
 
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::UPDATING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::UPDATING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -141,9 +142,9 @@ BOOST_AUTO_TEST_CASE(
     // and by setting map_rate_sec != 0
     slamService.map_rate_sec = std::chrono::seconds(60);
 
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::UPDATING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::UPDATING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -178,10 +179,9 @@ BOOST_AUTO_TEST_CASE(OverwriteMapBuilderParameters_set_values_localizing) {
     // and by setting map_rate_sec == 0
     slamService.map_rate_sec = std::chrono::seconds(0);
 
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() ==
-               SLAMServiceActionMode::LOCALIZING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::LOCALIZING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -205,10 +205,9 @@ BOOST_AUTO_TEST_CASE(
     // and by setting map_rate_sec == 0
     slamService.map_rate_sec = std::chrono::seconds(0);
 
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() ==
-               SLAMServiceActionMode::LOCALIZING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::LOCALIZING);
     slamService.OverwriteMapBuilderParameters();
     checkCartoMapBuilderParameters(slamService);
 
@@ -216,13 +215,13 @@ BOOST_AUTO_TEST_CASE(
     utils::removeTmpDirectory(tmp_dir);
 }
 
-BOOST_AUTO_TEST_CASE(DetermineActionMode_mapping) {
+BOOST_AUTO_TEST_CASE(SetActionMode_mapping) {
     SLAMServiceImpl slamService;
     // Mapping is the default action_mode when slamService is created
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::MAPPING);
 
-    // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be mapping by setting map_rate_sec != 0 and by
+    // Set up the environment such that SetActionMode sets the
+    // action_mode to "mapping" by setting map_rate_sec != 0 and by
     // ensuring that there is no map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(60);
 
@@ -233,19 +232,19 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_mapping) {
     boost::filesystem::path tmp_dir =
         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmp_dir.string() + "/map";
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::MAPPING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::MAPPING);
 
     // Remove the temporary directory and its contents
     utils::removeTmpDirectory(tmp_dir);
 }
 
-BOOST_AUTO_TEST_CASE(DetermineActionMode_updating) {
+BOOST_AUTO_TEST_CASE(SetActionMode_updating) {
     SLAMServiceImpl slamService;
 
-    // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be updating by setting map_rate_sec != 0 and by
+    // Set up the environment such that SetActionMode sets the
+    // action_mode to "updating" by setting map_rate_sec != 0 and by
     // ensuring that there is a map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(60);
 
@@ -257,19 +256,19 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_updating) {
     boost::filesystem::path tmp_dir =
         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmp_dir.string() + "/map";
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() == SLAMServiceActionMode::UPDATING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::UPDATING);
 
     // Remove the temporary directory and its contents
     utils::removeTmpDirectory(tmp_dir);
 }
 
-BOOST_AUTO_TEST_CASE(DetermineActionMode_localizing) {
+BOOST_AUTO_TEST_CASE(SetActionMode_localizing) {
     SLAMServiceImpl slamService;
 
-    // Set up the environment such that DetermineActionMode determines that the
-    // action_mode has to be localizing by setting map_rate_sec == 0 and by
+    // Set up the environment such that SetActionMode sets the
+    // action_mode to "localizing" by setting map_rate_sec == 0 and by
     // ensuring that there is a map in the map directory
     slamService.map_rate_sec = std::chrono::seconds(0);
 
@@ -281,19 +280,18 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_localizing) {
     boost::filesystem::path tmp_dir =
         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
     slamService.path_to_map = tmp_dir.string() + "/map";
-    slamService.DetermineActionMode();
+    slamService.SetActionMode();
 
-    BOOST_TEST(slamService.GetActionMode() ==
-               SLAMServiceActionMode::LOCALIZING);
+    BOOST_TEST(slamService.GetActionMode() == ActionMode::LOCALIZING);
 
     // Remove the temporary directory and its contents
     utils::removeTmpDirectory(tmp_dir);
 }
 
-BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
+BOOST_AUTO_TEST_CASE(SetActionMode_invalid_case) {
     SLAMServiceImpl slamService;
 
-    // Set up the environment such that DetermineActionMode throws
+    // Set up the environment such that SetActionMode throws
     // an error indicating that this is an invalid case. Do this by
     // setting map_rate_sec == 0 and by ensuring that there is no
     // map in the map directory
@@ -310,7 +308,7 @@ BOOST_AUTO_TEST_CASE(DetermineActionMode_invalid_case) {
     const std::string message =
         "set to localization mode (map_rate_sec = 0) but couldn't find "
         "apriori map to localize on";
-    BOOST_CHECK_EXCEPTION(slamService.DetermineActionMode(), std::runtime_error,
+    BOOST_CHECK_EXCEPTION(slamService.SetActionMode(), std::runtime_error,
                           [&message](const std::runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
                               return true;

@@ -3,6 +3,7 @@
 
 #include "cartographer/mapping/2d/submap_2d.h"
 #include "cartographer/mapping/3d/submap_3d.h"
+#include "image.h"
 
 namespace viam {
 namespace io {
@@ -132,6 +133,12 @@ void DrawPoseOnSurface(
               marker_size / resolution, 0, 2 * M_PI);
     cairo_fill(cr.get());
     cairo_surface_flush(painted_slices->surface.get());
+}
+
+std::string WritePaintedSlicesToJpegString(
+    cartographer::io::PaintSubmapSlicesResult& painted_slices) {
+    auto image = Image(std::move(painted_slices.surface));
+    return image.WriteJpegToString(50);
 }
 
 }  // namespace io
