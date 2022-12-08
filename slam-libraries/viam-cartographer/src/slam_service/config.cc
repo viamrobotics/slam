@@ -3,11 +3,14 @@
 #include "config.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
 #include <iostream>
 #include <string>
 
 #include "glog/logging.h"
 
+using namespace boost::filesystem;
 namespace viam {
 namespace config {
 
@@ -66,6 +69,24 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.configuration_directory = FLAGS_data_dir + "/config/lua_files";
+
+    // Find the lua files.
+    path pathToLuasFromConfig(slamService.configuration_directory);
+    if (exists(pathToLuasFromConfig)) {
+        LOG(INFO) << "Using lua files in config folder";
+    } else {
+        auto programLocation = boost::dll::program_location();
+        auto relativePathToLuas = programLocation.parent_path().parent_path();
+        relativePathToLuas.append("share/cartographer/lua_files");
+        if (exists(relativePathToLuas)) {
+            LOG(INFO) << "Using lua files from relative path";
+            slamService.configuration_directory = relativePathToLuas.string();
+        } else {
+            LOG(ERROR) << "No lua files found, looked in "
+                       << pathToLuasFromConfig << " and " << relativePathToLuas;
+        }
+    }
+
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
     slamService.camera_name = FLAGS_sensors;
