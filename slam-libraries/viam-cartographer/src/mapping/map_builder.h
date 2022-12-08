@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #ifndef VIAM_CARTOGRAPHER_MAP_BUILDER_H_
 #define VIAM_CARTOGRAPHER_MAP_BUILDER_H_
 
@@ -35,7 +34,7 @@ class MapBuilder {
     // in updating or localizing mode, depending on the load_frozen_trajectory
     // value.
     void LoadMapFromFile(std::string map_filename, bool load_frozen_trajectory,
-                         bool optimize);
+                         bool optimize_on_start);
 
     // SaveMapToFile saves the current map_builder_ state to a pbstream file at
     // the provided path.

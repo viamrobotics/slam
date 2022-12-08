@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "file_handler.h"
 
 #include <pcl/io/pcd_io.h>
@@ -31,7 +30,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time) {
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-    cartographer::sensor::TimedPointCloudData timedPCD;
+    cartographer::sensor::TimedPointCloudData timed_pcd;
     cartographer::sensor::TimedPointCloud ranges;
 
     // Open the point cloud file
@@ -40,11 +39,11 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     auto err = pcl::io::loadPCDFile<pcl::PointXYZRGB>(file_path, *cloud);
 
     if (err == -1) {
-        return timedPCD;
+        return timed_pcd;
     }
 
-    double current_time = ReadTimeFromFilename(file_path.substr(
-        file_path.find(filenamePrefix) + filenamePrefix.length(),
+    double current_time = ReadTimeFromTimestamp(file_path.substr(
+        file_path.find(filename_prefix) + filename_prefix.length(),
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
 
@@ -56,20 +55,20 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     LOG(INFO) << "------------------------------------\n";
 
     for (size_t i = 0; i < cloud->points.size(); ++i) {
-        cartographer::sensor::TimedRangefinderPoint TimedRP;
-        TimedRP.position = Eigen::Vector3f(
+        cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;
+        timed_rangefinder_point.position = Eigen::Vector3f(
             cloud->points[i].x, cloud->points[i].y, cloud->points[i].z);
-        TimedRP.time = 0 - i * 0.0001;
+        timed_rangefinder_point.time = 0 - i * 0.0001;
 
-        ranges.push_back(TimedRP);
+        ranges.push_back(timed_rangefinder_point);
     }
 
-    timedPCD.time = cartographer::common::FromUniversal(123) +
-                    cartographer::common::FromSeconds(double(time_delta));
-    timedPCD.origin = Eigen::Vector3f::Zero();
-    timedPCD.ranges = ranges;
+    timed_pcd.time = cartographer::common::FromUniversal(123) +
+                     cartographer::common::FromSeconds(double(time_delta));
+    timed_pcd.origin = Eigen::Vector3f::Zero();
+    timed_pcd.ranges = ranges;
 
-    return timedPCD;
+    return timed_pcd;
 }
 
 std::vector<std::string> ListSortedFilesInDirectory(
@@ -92,11 +91,10 @@ int RemoveFile(std::string file_path) {
     return 1;
 }
 
-// Converts UTC time string to a double value.
-double ReadTimeFromFilename(std::string filename) {
+double ReadTimeFromTimestamp(std::string timestamp) {
     std::string::size_type sz;
     // Create a stream which we will use to parse the string
-    std::istringstream ss(filename);
+    std::istringstream ss(timestamp);
 
     // Create a tm object to store the parsed date and time.
     std::tm dt = {0};
@@ -104,14 +102,26 @@ double ReadTimeFromFilename(std::string filename) {
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
     ss >> std::get_time(&dt, time_format.c_str());
-    time_t thisTime = std::mktime(&dt);
-    auto sub_sec_index = filename.find(".");
+    double timestamp_time = (double)std::mktime(&dt);
+    if (timestamp_time == -1) {
+        throw std::runtime_error(
+            "timestamp cannot be represented as a std::time_t object: " +
+            timestamp);
+    }
+    auto sub_sec_index = timestamp.find(".");
     if ((sub_sec_index != std::string::npos)) {
-        double sub_sec = (double)std::stof(filename.substr(sub_sec_index), &sz);
-        double myTime = (double)thisTime + sub_sec;
-        return myTime;
+        double sub_sec = 0;
+        try {
+            sub_sec = (double)std::stof(timestamp.substr(sub_sec_index), &sz);
+        } catch (std::exception& e) {
+            LOG(ERROR) << e.what();
+            throw std::runtime_error(
+                "could not extract sub seconds from timestamp: " + timestamp);
+        }
+        double timestamp_time_w_sub_sec = timestamp_time + sub_sec;
+        return timestamp_time_w_sub_sec;
     } else {
-        return (double)thisTime;
+        return timestamp_time;
     }
 }
 

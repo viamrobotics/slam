@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "cartographer/mapping/map_builder.h"
 
 #include "../io/file_handler.h"
@@ -58,11 +57,13 @@ void MapBuilder::BuildMapBuilder() {
 }
 
 void MapBuilder::LoadMapFromFile(std::string map_filename,
-                                 bool load_frozen_trajectory, bool optimize) {
+                                 bool load_frozen_trajectory,
+                                 bool optimize_on_start) {
     std::map<int, int> trajectory_ids_map =
         map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
 
-    if (optimize) {
+    if (optimize_on_start) {
+        LOG(INFO) << "Optimizing map on start, this may take a few minutes";
         map_builder_->pose_graph()->RunFinalOptimization();
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
@@ -104,9 +105,10 @@ MapBuilder::GetLocalSlamResultCallback() {
 }
 
 void MapBuilder::SetStartTime(std::string initial_filename) {
-    start_time = viam::io::ReadTimeFromFilename(initial_filename.substr(
-        initial_filename.find(io::filenamePrefix) + io::filenamePrefix.length(),
-        initial_filename.find(".pcd")));
+    start_time = viam::io::ReadTimeFromTimestamp(
+        initial_filename.substr(initial_filename.find(io::filename_prefix) +
+                                    io::filename_prefix.length(),
+                                initial_filename.find(".pcd")));
 }
 
 cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(

@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 
 #include "config.h"
 
@@ -57,7 +56,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     }
     if (FLAGS_sensors.empty()) {
         LOG(INFO) << "No camera given -> running in offline mode";
-        slamService.offlineFlag = true;
+        slamService.offline_flag = true;
     }
 
     LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
@@ -103,6 +102,12 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     boost::algorithm::to_lower(slamService.slam_mode);
     if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
         throw std::runtime_error("Invalid slam_mode=" + slamService.slam_mode);
+    }
+
+    const auto optimize_on_start =
+        ConfigParamParser(FLAGS_config_param, "optimize_on_start=");
+    if (optimize_on_start == "true") {
+        slamService.optimize_on_start = true;
     }
 
     std::vector<std::string> carto_params = {"optimize_every_n_nodes",

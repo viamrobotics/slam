@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #ifndef FILE_HANDLER_H_
 #define FILE_HANDLER_H_
 
@@ -14,7 +13,7 @@
 
 namespace viam {
 namespace io {
-static const std::string filenamePrefix = "_data_";
+static const std::string filename_prefix = "_data_";
 static const std::string time_format = "%Y-%m-%dT%H:%M:%S.0000Z";
 
 // MakeFilenameWithTimestamp creates a filename for a provided sensor with a
@@ -35,7 +34,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
 int RemoveFile(std::string);
 
 // Converts UTC time string to a double value.
-double ReadTimeFromFilename(std::string filename);
+double ReadTimeFromTimestamp(std::string timestamp);
 
 }  // namespace io
 }  // namespace viam
