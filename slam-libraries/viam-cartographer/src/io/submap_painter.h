@@ -27,11 +27,6 @@ void DrawPoseOnSurface(
     cartographer::io::PaintSubmapSlicesResult* painted_slices,
     cartographer::transform::Rigid3d global_pose, float resolution);
 
-// WritePaintedSlicesToJpegString writes painted slices to
-// a jpeg string and returns it.
-std::string WritePaintedSlicesToJpegString(
-    cartographer::io::PaintSubmapSlicesResult& painted_slices);
-
 }  // namespace io
 }  // namespace viam
 

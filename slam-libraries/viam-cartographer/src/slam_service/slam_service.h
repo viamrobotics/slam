@@ -175,17 +175,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // with or without the pose marker depending on the argument value.
     std::string GetLatestJpegMapString(bool add_pose_marker);
 
-    // GetLatestSubmapSlices draws and returns the latest map as submap slices.
-    std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
-    GetLatestSubmapSlices();
-
     // PaintMarker paints the latest global pose on the painted slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
 
     // ExtractPointCloudToString extracts the pointcloud from the map builder
     // and saves it in a string. It returns a boolean that indicates whether
     // or not the pointcloud string contains any points.
-    bool ExtractPointCloudToString(std::string &pointcloud_str);
+    bool ExtractPointCloudToString(std::string &pointcloud);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
@@ -202,30 +198,30 @@ class SLAMServiceImpl final : public SLAMService::Service {
     size_t current_file_offline = 0;
     std::string current_file_online;
 
+    // If mutexes map_builder_mutex and optimization_shared_mutex are held
+    // concurrently, then optimization_shared_mutex must be taken
+    // before map_builder_mutex. No other mutexes are expected to
+    // be held concurrently.
+    std::shared_mutex optimization_shared_mutex;
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
 
-    std::mutex latest_global_pose_mutex;
+    std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
-
     // --- The following variables are used exclusively to
     // enable GetMap to send the most recent map out while
     // cartographer works on creating an optimized map.
     // The variables are only updated right before the
     // optimization is started.
-    std::shared_mutex optimization_shared_mutex;
+    std::string latest_jpeg_map_with_marker;
+    std::string latest_jpeg_map_without_marker;
 
-    std::mutex latest_jpeg_map_str_mutex;
-    std::string latest_jpeg_map_str_with_marker;
-    std::string latest_jpeg_map_str_without_marker;
-
-    std::mutex latest_pointcloud_map_mutex;
-    std::atomic<bool> latest_pointcloud_map_has_points{false};
-    std::string latest_pointcloud_map_str;
+    bool latest_pointcloud_map_has_points = false;
+    std::string latest_pointcloud_map;
     // ---
 };
 

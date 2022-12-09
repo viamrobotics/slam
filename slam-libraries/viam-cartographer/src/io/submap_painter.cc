@@ -135,11 +135,5 @@ void DrawPoseOnSurface(
     cairo_surface_flush(painted_slices->surface.get());
 }
 
-std::string WritePaintedSlicesToJpegString(
-    cartographer::io::PaintSubmapSlicesResult& painted_slices) {
-    auto image = Image(std::move(painted_slices.surface));
-    return image.WriteJpegToString(50);
-}
-
 }  // namespace io
 }  // namespace viam
