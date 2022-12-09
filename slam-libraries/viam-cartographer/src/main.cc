@@ -12,7 +12,6 @@
 #include "slam_service/slam_service.h"
 
 const int maxMessageSize = 32 * 1024 * 1024;
-;
 
 void exit_loop_handler(int s) {
     LOG(INFO) << "Finishing session.\n";
