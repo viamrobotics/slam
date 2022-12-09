@@ -7,6 +7,7 @@
 #include "../io/file_handler.h"
 #include "../io/image.h"
 #include "../mapping/map_builder.h"
+#include "../utils/slam_service_helpers.h"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
 #include "cartographer/io/submap_painter.h"
@@ -31,15 +32,10 @@ std::atomic<bool> b_continue_session{true};
     PoseInFrame *inFrame = response->mutable_pose();
     Pose *myPose = inFrame->mutable_pose();
 
-    // set pose for our response
+    // Set pose for our response
     myPose->set_x(global_pose.translation().x());
     myPose->set_y(global_pose.translation().y());
     myPose->set_z(global_pose.translation().z());
-
-    // TODO DATA-531: Remove extraction and conversion of quaternion from the
-    // extra field in the response once the Rust spatial math library is
-    // available and the desired math can be implemented on the Cartographer
-    // side
 
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
@@ -63,78 +59,126 @@ std::atomic<bool> b_continue_session{true};
     response->set_mime_type(mime_type);
 
     if (mime_type == "image/jpeg") {
-        std::string jpeg_img = "";
-        bool pose_marker_flag = request->include_robot_marker();
-        try {
-            jpeg_img = PaintMap(pose_marker_flag);
-            if (jpeg_img == "") {
-                return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                    "currently no map exists yet");
-            }
-        } catch (std::exception &e) {
-            std::ostringstream oss;
-            oss << "error encoding image " << e.what();
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
-        }
-
-        // Write the image to the response.
-        try {
-            response->set_image(jpeg_img);
-        } catch (std::exception &e) {
-            std::ostringstream oss;
-            oss << "error writing image to response " << e.what();
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
-        }
+        return GetJpegMap(request, response);
     } else if (mime_type == "pointcloud/pcd") {
-        std::stringbuf buffer;
-        bool has_points = ExtractPointCloudToBuffer(buffer);
-        if (has_points) {
-            common::v1::PointCloudObject *pco = response->mutable_point_cloud();
-            pco->set_point_cloud(buffer.str());
-        } else {
-            LOG(ERROR) << "map pointcloud does not have points yet";
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                "map pointcloud does not have points yet");
-        }
+        return GetPointCloudMap(request, response);
     } else {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             "mime_type should be \"image/jpeg\" or "
                             "\"pointcloud/pcd\", got \"" +
                                 mime_type + "\"");
     }
-    return grpc::Status::OK;
 }
 
-void SLAMServiceImpl::DetermineActionMode() {
-    // Check if there is an apriori map in the path_to_map directory
-    std::vector<std::string> map_filenames =
-        viam::io::ListSortedFilesInDirectory(path_to_map);
+::grpc::Status SLAMServiceImpl::GetJpegMap(const GetMapRequest *request,
+                                           GetMapResponse *response) {
+    std::string jpeg_map = "";
+    bool add_pose_marker = request->include_robot_marker();
 
-    // Check if there is a *.pbstream map in the path_to_map directory
-    for (auto filename : map_filenames) {
-        if (filename.find(".pbstream") != std::string::npos) {
-            // There is an apriori map present, so we're running either in
-            // updating or localization mode.
-            if (map_rate_sec.count() == 0) {
-                LOG(INFO) << "Running in localization only mode";
-                action_mode = SLAMServiceActionMode::LOCALIZING;
-                return;
+    // Paint or grab the latest occupancy map in form of a jpeg string
+    try {
+        {
+            std::shared_lock optimization_lock{optimization_shared_mutex,
+                                               std::defer_lock};
+            if (optimization_lock.try_lock()) {
+                // We are able to lock the optimization_shared_mutex, which
+                // means that the optimization is not ongoing and we can grab
+                // the newest map
+                jpeg_map = GetLatestJpegMapString(add_pose_marker);
+            } else {
+                // We couldn't lock the mutex which means the optimization
+                // process locked it and we need to use the backed up latest map
+                std::lock_guard<std::mutex> lk(viam_response_mutex);
+                if (add_pose_marker) {
+                    jpeg_map = latest_jpeg_map_with_marker;
+                } else {
+                    jpeg_map = latest_jpeg_map_without_marker;
+                }
             }
-            LOG(INFO) << "Running in updating mode";
-            action_mode = SLAMServiceActionMode::UPDATING;
-            return;
         }
+        if (jpeg_map.empty()) {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "currently no map exists yet");
+        }
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error encoding image " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
-    if (map_rate_sec.count() == 0) {
-        throw std::runtime_error(
-            "set to localization mode (map_rate_sec = 0) but couldn't find "
-            "apriori map to localize on");
+
+    // Write the jpeg map string to the response
+    try {
+        response->set_image(jpeg_map);
+        return grpc::Status::OK;
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error writing image to response " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
-    LOG(INFO) << "Running in mapping mode";
-    action_mode = SLAMServiceActionMode::MAPPING;
 }
 
-SLAMServiceActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
+::grpc::Status SLAMServiceImpl::GetPointCloudMap(const GetMapRequest *request,
+                                                 GetMapResponse *response) {
+    bool pointcloud_has_points = false;
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    try {
+        std::shared_lock optimization_lock{optimization_shared_mutex,
+                                           std::defer_lock};
+        if (optimization_lock.try_lock()) {
+            // We are able to lock the optimization_shared_mutex, which means
+            // that the optimization is not ongoing and we can grab the newest
+            // map
+            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+        } else {
+            // We couldn't lock the mutex which means the optimization process
+            // locked it and we need to use the backed up latest map
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            pointcloud_has_points = latest_pointcloud_map_has_points;
+            pointcloud_map = latest_pointcloud_map;
+        }
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error encoding pointcloud " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+
+    // Write the pointcloud map string to the response
+    try {
+        common::v1::PointCloudObject *pco = response->mutable_point_cloud();
+        if (!pointcloud_has_points) {
+            LOG(ERROR) << "map pointcloud does not have points yet";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "map pointcloud does not have points yet");
+        }
+        pco->set_point_cloud(pointcloud_map);
+        return grpc::Status::OK;
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error writing pointcloud to response " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+}
+
+void SLAMServiceImpl::BackupLatestMap() {
+    std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
+    std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
+    std::string pointcloud_map_tmp;
+    bool pointcloud_map_has_points_tmp =
+        ExtractPointCloudToString(pointcloud_map_tmp);
+
+    std::lock_guard<std::mutex> lk(viam_response_mutex);
+    latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
+    latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
+    latest_pointcloud_map_has_points = pointcloud_map_has_points_tmp;
+    latest_pointcloud_map = std::move(pointcloud_map_tmp);
+}
+
+ActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
+
+void SLAMServiceImpl::SetActionMode() {
+    action_mode = viam::utils::DetermineActionMode(path_to_map, map_rate_sec);
+}
 
 void SLAMServiceImpl::OverwriteMapBuilderParameters() {
     {
@@ -144,10 +188,10 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
         map_builder.OverwriteMissingDataRayLength(missing_data_ray_length);
         map_builder.OverwriteMaxRange(max_range);
         map_builder.OverwriteMinRange(min_range);
-        if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+        if (action_mode == ActionMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(max_submaps_to_keep);
         }
-        if (action_mode == SLAMServiceActionMode::UPDATING) {
+        if (action_mode == ActionMode::UPDATING) {
             map_builder.OverwriteFreshSubmapsCount(fresh_submaps_count);
             map_builder.OverwriteMinCoveredArea(min_covered_area);
             map_builder.OverwriteMinAddedSubmapsCount(min_added_submaps_count);
@@ -159,15 +203,15 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
 }
 
 void SLAMServiceImpl::SetUpMapBuilder() {
-    if (action_mode == SLAMServiceActionMode::MAPPING) {
+    if (action_mode == ActionMode::MAPPING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(configuration_directory,
                           configuration_mapping_basename);
-    } else if (action_mode == SLAMServiceActionMode::LOCALIZING) {
+    } else if (action_mode == ActionMode::LOCALIZING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(configuration_directory,
                           configuration_localization_basename);
-    } else if (action_mode == SLAMServiceActionMode::UPDATING) {
+    } else if (action_mode == ActionMode::UPDATING) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(configuration_directory,
                           configuration_update_basename);
@@ -179,8 +223,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     map_builder.BuildMapBuilder();
 }
 
-std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
-    const double kPixelSize = 0.01;
+std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
         cartographer::mapping::PoseGraphInterface::SubmapPose>
@@ -251,24 +294,25 @@ std::string SLAMServiceImpl::PaintMap(bool pose_marker_flag) {
 
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-    if (pose_marker_flag) {
-        cartographer::transform::Rigid3d global_pose;
-        {
-            std::lock_guard<std::mutex> lk(viam_response_mutex);
-            global_pose = latest_global_pose;
-        }
-        viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
+    if (add_pose_marker) {
+        PaintMarker(painted_slices);
     }
 
-    auto image = viam::io::Image(std::move(painted_slices.surface));
-    std::string jpeg_img = image.WriteJpegToString(50);
-    return jpeg_img;
+    auto image = io::Image(std::move(painted_slices.surface));
+    return image.WriteJpegToString(50);
 }
 
-bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
-    std::ostream oss(&buffer);
-    bool has_points = false;
+void SLAMServiceImpl::PaintMarker(
+    cartographer::io::PaintSubmapSlicesResult &painted_slices) {
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        global_pose = latest_global_pose;
+    }
+    viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
+}
 
+bool SLAMServiceImpl::ExtractPointCloudToString(std::string &pointcloud) {
     cartographer::mapping::MapById<cartographer::mapping::NodeId,
                                    cartographer::mapping::TrajectoryNode>
         trajectory_nodes;
@@ -277,6 +321,10 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
         trajectory_nodes =
             map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
     }
+
+    bool pointcloud_has_points = false;
+    std::stringbuf pointcloud_buffer;
+    std::ostream oss(&pointcloud_buffer);
 
     long number_points = 0;
     for (const auto &&trajectory_node : trajectory_nodes) {
@@ -318,47 +366,42 @@ bool SLAMServiceImpl::ExtractPointCloudToBuffer(std::stringbuf &buffer) {
 
         for (auto &&point : global_point_cloud) {
             int rgb = 0;
-            buffer.sputn((const char *)&point.position[1], 4);
-            buffer.sputn((const char *)&point.position[2], 4);
-            buffer.sputn((const char *)&point.position[0], 4);
-            buffer.sputn((const char *)&rgb, 4);
-            has_points = true;
+            pointcloud_buffer.sputn((const char *)&point.position[1], 4);
+            pointcloud_buffer.sputn((const char *)&point.position[2], 4);
+            pointcloud_buffer.sputn((const char *)&point.position[0], 4);
+            pointcloud_buffer.sputn((const char *)&rgb, 4);
+            pointcloud_has_points = true;
         }
     }
-    return has_points;
+    pointcloud = pointcloud_buffer.str();
+    return pointcloud_has_points;
 }
 
 void SLAMServiceImpl::RunSLAM() {
     LOG(INFO) << "Setting up cartographer";
     // Set up and build the MapBuilder
     SetUpMapBuilder();
-    DetermineActionMode();
+    SetActionMode();
 
     double data_start_time = 0;
-    if (action_mode == SLAMServiceActionMode::UPDATING ||
-        action_mode == SLAMServiceActionMode::LOCALIZING) {
+    if (action_mode == ActionMode::UPDATING ||
+        action_mode == ActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
-        std::vector<std::string> map_filenames =
-            viam::io::ListSortedFilesInDirectory(path_to_map);
-
-        bool found_map = false;
-        std::string latest_map_filename;
-        for (int i = map_filenames.size() - 1; i >= 0; i--) {
-            if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
-                latest_map_filename = map_filenames.at(i);
-                found_map = true;
-                break;
-            }
-        }
-        if (!found_map) {
-            throw std::runtime_error(
-                "cannot find maps but they should be present");
-        }
+        std::string latest_map_filename =
+            viam::utils::GetLatestMapFilename(path_to_map);
         // load_frozen_trajectory has to be true for LOCALIZING action mode,
         // and false for UPDATING action mode.
-        bool load_frozen_trajectory =
-            action_mode == SLAMServiceActionMode::LOCALIZING;
-        {
+        bool load_frozen_trajectory = (action_mode == ActionMode::LOCALIZING);
+        if (optimize_on_start) {
+            BackupLatestMap();
+            std::unique_lock optimization_lock{optimization_shared_mutex,
+                                               std::defer_lock};
+            optimization_lock.lock();
+            // Load apriori map
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.LoadMapFromFile(
+                latest_map_filename, load_frozen_trajectory, optimize_on_start);
+        } else {
             // Load apriori map
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.LoadMapFromFile(
@@ -366,8 +409,8 @@ void SLAMServiceImpl::RunSLAM() {
         }
         data_start_time =
             viam::io::ReadTimeFromTimestamp(latest_map_filename.substr(
-                latest_map_filename.find(io::filename_prefix) +
-                    io::filename_prefix.length(),
+                latest_map_filename.find(viam::io::filename_prefix) +
+                    viam::io::filename_prefix.length(),
                 latest_map_filename.find(".pbstream")));
     }
 
@@ -514,9 +557,10 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         }
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
-            double file_time = viam::io::ReadTimeFromTimestamp(file.substr(
-                file.find(io::filename_prefix) + io::filename_prefix.length(),
-                file.find(".pcd")));
+            double file_time = viam::io::ReadTimeFromTimestamp(
+                file.substr(file.find(viam::io::filename_prefix) +
+                                viam::io::filename_prefix.length(),
+                            file.find(".pcd")));
             if (file_time < data_start_time) {
                 file = GetNextDataFile();
                 continue;
@@ -567,7 +611,12 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
     }
     if (offline_flag) {
+        BackupLatestMap();
         {
+            std::unique_lock<std::shared_mutex> optimization_lock(
+                optimization_shared_mutex, std::defer_lock);
+            optimization_lock.lock();
+
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             LOG(INFO)
                 << "Starting to optimize final map. Can take a little while...";

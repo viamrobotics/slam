@@ -47,12 +47,8 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
 
-    LOG(INFO) << "------------ FILE DATA -------------\n";
     LOG(INFO) << "Accessing file " << file_path << " ... ";
     LOG(INFO) << "Loaded " << cloud->width * cloud->height << " data points \n";
-    LOG(INFO) << "Size " << cloud->points.size() << "\n";
-    LOG(INFO) << "TD " << time_delta << "\n";
-    LOG(INFO) << "------------------------------------\n";
 
     for (size_t i = 0; i < cloud->points.size(); ++i) {
         cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;

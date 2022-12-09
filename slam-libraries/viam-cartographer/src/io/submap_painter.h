@@ -15,11 +15,14 @@
 namespace viam {
 namespace io {
 
+// PaintSubmapSlices paints the submaps using cairo and returns
+// the result in form of PaintSubmapsSlicesResult.
 cartographer::io::PaintSubmapSlicesResult PaintSubmapSlices(
     const std::map<::cartographer::mapping::SubmapId,
                    cartographer::io::SubmapSlice>& submaps,
     double resolution);
 
+// DrawPoseOnSurface draws global_pose onto the painted_slices.
 void DrawPoseOnSurface(
     cartographer::io::PaintSubmapSlicesResult* painted_slices,
     cartographer::transform::Rigid3d global_pose, float resolution);

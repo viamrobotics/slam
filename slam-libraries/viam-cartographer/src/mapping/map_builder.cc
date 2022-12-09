@@ -120,13 +120,6 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
     }
     point_cloud = viam::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
 
-    LOG(INFO) << "----------PCD-------";
-    LOG(INFO) << "Time: " << point_cloud.time;
-    LOG(INFO) << "Range (size): " << point_cloud.ranges.size();
-    LOG(INFO) << "Range start (time): " << point_cloud.ranges[0].time;
-    LOG(INFO) << "Range end (time): " << (point_cloud.ranges.back()).time;
-    LOG(INFO) << "-----------------\n";
-
     return point_cloud;
 }
 
