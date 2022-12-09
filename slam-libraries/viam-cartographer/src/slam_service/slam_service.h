@@ -7,6 +7,7 @@
 #include <grpcpp/server_context.h>
 
 #include <atomic>
+#include <shared_mutex>
 #include <string>
 
 #include "../io/draw_trajectories.h"
@@ -170,8 +171,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters depending on the action mode.
     void SetUpMapBuilder();
 
-    // UpdateLatestSubmapSlices saves the latest map in latest_submap_slices.
-    void UpdateLatestSubmapSlices();
+    // GetLatestJpegMapString paints and returns the latest map as a jpeg string
+    // with or without the pose marker depending on the argument value.
+    std::string GetLatestJpegMapString(bool add_pose_marker);
+
+    // GetLatestSubmapSlices draws and returns the latest map as submap slices.
+    std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
+    GetLatestSubmapSlices();
 
     // PaintMarker paints the latest_global_pose on the latest_painted_slices.
     // Should be only used once after latest_painted_slices is updated, since
@@ -179,9 +185,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // on the current latest_painted_slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
 
-    // ExtractPointCloudToBuffer extracts the pointcloud from the map_builder
-    // and saves it in a buffer.
-    void ExtractPointCloudToBuffer();
+    // ExtractPointCloudToString extracts the pointcloud from the map_builder
+    // and saves it in a string. It returns a boolean that indicates whether
+    // or not the pointcloud string contains any points.
+    bool ExtractPointCloudToString(std::string &pointcloud_str);
+
+    // BackupLatestMap extracts and saves the latest map as a backup.
+    void BackupLatestMap();
 
     ActionMode action_mode = ActionMode::MAPPING;
 
@@ -200,19 +210,25 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
 
-    std::atomic<bool> optimizing{false};
-
-    std::mutex latest_submap_slices_mutex;
-    std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
-        latest_submap_slices;
-
-    std::mutex latest_pointcloud_mutex;
-    std::atomic<bool> latest_pointcloud_has_points{false};
-    std::stringbuf latest_pointcloud_buffer;
-
     std::mutex latest_global_pose_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
+
+    // --- The following variables are used exclusively to
+    // enable GetMap to send the most recent map out while
+    // cartographer works on creating an optimized map.
+    // The variables are only updated right before the
+    // optimization is started.
+    std::shared_mutex optimization_shared_mutex;
+
+    std::mutex latest_jpeg_map_str_mutex;
+    std::string latest_jpeg_map_str_with_marker;
+    std::string latest_jpeg_map_str_without_marker;
+
+    std::mutex latest_pointcloud_map_mutex;
+    std::atomic<bool> latest_pointcloud_map_has_points{false};
+    std::string latest_pointcloud_map_str;
+    // ---
 };
 
 }  // namespace viam
