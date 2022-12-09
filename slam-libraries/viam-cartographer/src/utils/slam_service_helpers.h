@@ -2,6 +2,7 @@
 #ifndef SLAM_SERVICE_HELPER_FUNCTIONS_H_
 #define SLAM_SERVICE_HELPER_FUNCTIONS_H_
 
+#include <chrono>
 #include <iostream>
 #include <string>
 
