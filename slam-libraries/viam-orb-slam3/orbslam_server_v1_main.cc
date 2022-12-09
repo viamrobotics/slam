@@ -18,6 +18,8 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
+const int maxMessageSize = 32 * 1024 * 1024;
+
 void exit_loop_handler(int s) {
     BOOST_LOG_TRIVIAL(info) << "Finishing session";
     viam::b_continue_session = false;
@@ -51,6 +53,7 @@ int main(int argc, char **argv) {
     builder.AddListeningPort(slamService.slam_port,
                              grpc::InsecureServerCredentials(),
                              selected_port.get());
+    builder.SetMaxSendMessageSize(maxMessageSize);
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
