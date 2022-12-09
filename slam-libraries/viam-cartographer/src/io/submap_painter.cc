@@ -3,7 +3,6 @@
 
 #include "cartographer/mapping/2d/submap_2d.h"
 #include "cartographer/mapping/3d/submap_3d.h"
-#include "image.h"
 
 namespace viam {
 namespace io {
