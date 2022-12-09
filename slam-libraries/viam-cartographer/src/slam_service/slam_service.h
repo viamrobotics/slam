@@ -179,18 +179,16 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
     GetLatestSubmapSlices();
 
-    // PaintMarker paints the latest_global_pose on the latest_painted_slices.
-    // Should be only used once after latest_painted_slices is updated, since
-    // calling every call of PaintMarker will paint the latest_global_pose
-    // on the current latest_painted_slices.
+    // PaintMarker paints the latest global pose on the painted slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
 
-    // ExtractPointCloudToString extracts the pointcloud from the map_builder
+    // ExtractPointCloudToString extracts the pointcloud from the map builder
     // and saves it in a string. It returns a boolean that indicates whether
     // or not the pointcloud string contains any points.
     bool ExtractPointCloudToString(std::string &pointcloud_str);
 
-    // BackupLatestMap extracts and saves the latest map as a backup.
+    // BackupLatestMap extracts and saves the latest map as a backup in
+    // the respective member variables.
     void BackupLatestMap();
 
     ActionMode action_mode = ActionMode::MAPPING;
