@@ -129,8 +129,7 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            pointcloud_has_points =
-                ExtractPointCloudToString(pointcloud_map);
+            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
@@ -165,7 +164,8 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
-    bool pointcloud_map_has_points_tmp = ExtractPointCloudToString(pointcloud_map_tmp);
+    bool pointcloud_map_has_points_tmp =
+        ExtractPointCloudToString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
