@@ -18,8 +18,6 @@ using grpc::Server;
 using grpc::ServerBuilder;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
-const int maxMessageSize = 32 * 1024 * 1024;
-
 void exit_loop_handler(int s) {
     BOOST_LOG_TRIVIAL(info) << "Finishing session";
     viam::b_continue_session = false;
