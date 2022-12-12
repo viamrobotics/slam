@@ -11,8 +11,6 @@
 #include "slam_service/config.h"
 #include "slam_service/slam_service.h"
 
-const int maxMessageSize = 32 * 1024 * 1024;
-
 void exit_loop_handler(int s) {
     LOG(INFO) << "Finishing session.\n";
     viam::b_continue_session = false;
@@ -40,7 +38,10 @@ int main(int argc, char** argv) {
     builder.AddListeningPort(slamService.port,
                              grpc::InsecureServerCredentials(),
                              selected_port.get());
-    builder.SetMaxSendMessageSize(maxMessageSize);
+    // Increasing the gRPC max message size from the default value of 4MB to 32MB,
+    // to match the limit that is set in RDK. This is necessary for transmitting large
+    // pointclouds.
+    builder.SetMaxSendMessageSize(32 * 1024 * 1024);
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server

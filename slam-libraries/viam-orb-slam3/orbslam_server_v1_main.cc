@@ -53,7 +53,11 @@ int main(int argc, char **argv) {
     builder.AddListeningPort(slamService.slam_port,
                              grpc::InsecureServerCredentials(),
                              selected_port.get());
-    builder.SetMaxSendMessageSize(maxMessageSize);
+
+    // Increasing the gRPC max message size from the default value of 4MB to 32MB,
+    // to match the limit that is set in RDK. This is necessary for transmitting large
+    // pointclouds.
+    builder.SetMaxSendMessageSize(32 * 1024 * 1024);
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
