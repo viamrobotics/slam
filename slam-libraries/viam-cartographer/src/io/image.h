@@ -1,3 +1,4 @@
+// This is an experimental integration of cartographer into RDK.
 #ifndef VIAM_IO_IMAGE_H_
 #define VIAM_IO_IMAGE_H_
 

@@ -1,4 +1,4 @@
-// This is an Experimental integration of orbslam into RDK.
+// This is an experimental integration of orbslam into RDK.
 #include "orbslam_server_v1.h"
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     }
 
     // Grab timestamp from yaml
-    slamService.yamlTime = viam::utils::ReadTimeFromFilename(
+    slamService.yamlTime = viam::utils::ReadTimeFromTimestamp(
         myYAML.substr(myYAML.find("_data_") + viam::filenamePrefixLength));
     BOOST_LOG_TRIVIAL(debug)
         << "The time from our config is: " << slamService.yamlTime

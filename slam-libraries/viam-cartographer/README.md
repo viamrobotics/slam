@@ -5,9 +5,6 @@
 > **Warning**
 > This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
 
-> **Disclaimer**
-> Cartographer has not yet been integrated into RDK.
-
 ## Overview
 [Cartographer](https://github.com/cartographer-project/cartographer) is a system that provides real-time simultaneous localization
 and mapping [SLAM](https://en.wikipedia.org/wiki/Simultaneous_localization_and_mapping) in 2D and 3D across multiple platforms and sensor

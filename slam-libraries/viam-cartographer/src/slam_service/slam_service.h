@@ -1,3 +1,4 @@
+// This is an experimental integration of cartographer into RDK.
 #ifndef SLAM_SERVICE_H_
 #define SLAM_SERVICE_H_
 
@@ -6,12 +7,14 @@
 #include <grpcpp/server_context.h>
 
 #include <atomic>
+#include <shared_mutex>
 #include <string>
 
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
 #include "../io/submap_painter.h"
 #include "../mapping/map_builder.h"
+#include "../utils/slam_service_helpers.h"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -29,8 +32,6 @@ using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
 
 namespace viam {
-
-enum SLAMServiceActionMode { MAPPING, LOCALIZING, UPDATING };
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 extern std::atomic<bool> b_continue_session;
@@ -53,13 +54,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // ProcessDataAndStartSavingMaps processes the data in the data directory
-    // that is newer than the provided data_cutoff_time
-    // and starts the process to save maps in parallel. In offline mode,
-    // all data in the directory is processed. In online mode, the most
-    // recently generated data is processed until a shutdown signal is
-    // received.
-    void ProcessDataAndStartSavingMaps(double data_cutoff_time);
+    // RunSLAM sets up and runs cartographer. It runs cartogapher in
+    // the ActionMode mode: Either creating
+    // a new map, updating an apriori map, or localizing on an apriori map.
+    void RunSLAM();
 
     // GetNextDataFile returns the next data file to be processed, determined
     // by whether cartographer is running in offline or online mode.
@@ -75,33 +73,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // empty string if stop has been signaled.
     std::string GetNextDataFileOnline();
 
-    // RunSLAM sets up and runs cartographer. It runs cartogapher in
-    // the SLAMServiceActionMode mode: Either creating
-    // a new map, updating an apriori map, or localizing on an apriori map.
-    void RunSLAM();
-
-    // DetermineActionMode determines the action mode the slam service runs in,
-    // which is either mapping, updating, or localizing.
-    void DetermineActionMode();
-
     // GetActionMode returns the slam action mode from the provided
     // parameters.
-    SLAMServiceActionMode GetActionMode();
+    ActionMode GetActionMode();
 
-    // SetUpMapBuilder loads the lua file with default cartographer config
-    // parameters depending on the action mode.
-    void SetUpMapBuilder();
+    // SetActionMode sets the slam action mode based on provided
+    // data and parameters.
+    void SetActionMode();
 
     // OverwriteMapBuilderParameters overwrites cartographer specific
     // MapBuilder parameters.
     void OverwriteMapBuilderParameters();
-
-    // PaintMap paints the map in jpeg format.
-    std::string PaintMap(bool pose_marker_flag);
-
-    // ExtractPointCloudToBuffer extracts the pointcloud from the map_builder
-    // and saves it in a buffer.
-    bool ExtractPointCloudToBuffer(std::stringbuf &buffer);
 
     // Getter functions for map_builder parameters (called: options)
     int GetOptimizeEveryNNodesFromMapBuilder();
@@ -126,7 +108,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::chrono::milliseconds data_rate_ms;
     std::chrono::seconds map_rate_sec;
     std::string slam_mode;
-    std::atomic<bool> offlineFlag{false};
+    std::atomic<bool> optimize_on_start{false};
+    std::atomic<bool> offline_flag{false};
 
     // -- Cartographer specific config params:
     // MAP_BUILDER.pose_graph
@@ -149,6 +132,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
+    // kPixelSize defines the pixel size for drawing the jpeg map
+    const double kPixelSize = 0.01;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
@@ -160,24 +145,84 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // timestamp of the time when the map is saved.
     void SaveMapWithTimestamp();
 
-    SLAMServiceActionMode action_mode = SLAMServiceActionMode::MAPPING;
+    // GetJpegMap paints the jpeg version of the map and writes the
+    // image to the response. Returns a grpc status that reflects
+    // whether or not painting the map and writing it to the response
+    // was successful.
+    ::grpc::Status GetJpegMap(const GetMapRequest *request,
+                              GetMapResponse *response);
+
+    // GetPointCloudMap writes the pointcloud version of the map to
+    // the response. Returns a grpc status that reflects
+    // whether or not writing the map to the response
+    // was successful.
+    ::grpc::Status GetPointCloudMap(const GetMapRequest *request,
+                                    GetMapResponse *response);
+
+    // ProcessDataAndStartSavingMaps processes the data in the data directory
+    // that is newer than the provided data_cutoff_time
+    // and starts the process to save maps in parallel. In offline mode,
+    // all data in the directory is processed. In online mode, the most
+    // recently generated data is processed until a shutdown signal is
+    // received.
+    void ProcessDataAndStartSavingMaps(double data_cutoff_time);
+
+    // SetUpMapBuilder loads the lua file with default cartographer config
+    // parameters depending on the action mode.
+    void SetUpMapBuilder();
+
+    // GetLatestJpegMapString paints and returns the latest map as a jpeg string
+    // with or without the pose marker depending on the argument value.
+    std::string GetLatestJpegMapString(bool add_pose_marker);
+
+    // PaintMarker paints the latest global pose on the painted slices.
+    void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
+
+    // ExtractPointCloudToString extracts the pointcloud from the map builder
+    // and saves it in a string. It returns a boolean that indicates whether
+    // or not the pointcloud string contains any points.
+    bool ExtractPointCloudToString(std::string &pointcloud);
+
+    // BackupLatestMap extracts and saves the latest map as a backup in
+    // the respective member variables.
+    void BackupLatestMap();
+
+    ActionMode action_mode = ActionMode::MAPPING;
+
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
     const std::string configuration_localization_basename =
         "locating_in_map.lua";
     const std::string configuration_update_basename = "updating_a_map.lua";
+
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
 
-    std::atomic<bool> finished_processing_offline{false};
-    std::thread *thread_save_map_with_timestamp;
-
+    // If mutexes map_builder_mutex and optimization_shared_mutex are held
+    // concurrently, then optimization_shared_mutex must be taken
+    // before map_builder_mutex. No other mutexes are expected to
+    // be held concurrently.
+    std::shared_mutex optimization_shared_mutex;
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
+
+    std::atomic<bool> finished_processing_offline{false};
+    std::thread *thread_save_map_with_timestamp;
 
     std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
+    // --- The following variables are used exclusively to
+    // enable GetMap to send the most recent map out while
+    // cartographer works on creating an optimized map.
+    // The variables are only updated right before the
+    // optimization is started.
+    std::string latest_jpeg_map_with_marker;
+    std::string latest_jpeg_map_without_marker;
+
+    bool latest_pointcloud_map_has_points = false;
+    std::string latest_pointcloud_map;
+    // ---
 };
 
 }  // namespace viam

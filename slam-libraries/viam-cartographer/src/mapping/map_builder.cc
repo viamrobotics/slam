@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #include "cartographer/mapping/map_builder.h"
 
 #include "../io/file_handler.h"
@@ -58,11 +57,13 @@ void MapBuilder::BuildMapBuilder() {
 }
 
 void MapBuilder::LoadMapFromFile(std::string map_filename,
-                                 bool load_frozen_trajectory, bool optimize) {
+                                 bool load_frozen_trajectory,
+                                 bool optimize_on_start) {
     std::map<int, int> trajectory_ids_map =
         map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
 
-    if (optimize) {
+    if (optimize_on_start) {
+        LOG(INFO) << "Optimizing map on start, this may take a few minutes";
         map_builder_->pose_graph()->RunFinalOptimization();
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
@@ -104,7 +105,7 @@ MapBuilder::GetLocalSlamResultCallback() {
 }
 
 void MapBuilder::SetStartTime(std::string initial_filename) {
-    start_time = viam::io::ReadTimeFromFilename(
+    start_time = viam::io::ReadTimeFromTimestamp(
         initial_filename.substr(initial_filename.find(io::filename_prefix) +
                                     io::filename_prefix.length(),
                                 initial_filename.find(".pcd")));
@@ -118,13 +119,6 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
         throw std::runtime_error("start_time has not been initialized");
     }
     point_cloud = viam::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
-
-    LOG(INFO) << "----------PCD-------";
-    LOG(INFO) << "Time: " << point_cloud.time;
-    LOG(INFO) << "Range (size): " << point_cloud.ranges.size();
-    LOG(INFO) << "Range start (time): " << point_cloud.ranges[0].time;
-    LOG(INFO) << "Range end (time): " << (point_cloud.ranges.back()).time;
-    LOG(INFO) << "-----------------\n";
 
     return point_cloud;
 }

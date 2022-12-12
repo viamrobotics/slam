@@ -1,5 +1,4 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
@@ -9,7 +8,6 @@
 #include "slam_service.h"
 
 namespace viam {
-
 namespace config {
 
 // Parses and validates the command line arguments. Sets the log level. Throws

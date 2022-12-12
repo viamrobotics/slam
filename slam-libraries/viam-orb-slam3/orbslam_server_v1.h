@@ -1,4 +1,4 @@
-// This is an Experimental integration of orbslam into RDK.
+// This is an experimental integration of orbslam into RDK.
 #include <System.h>
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
@@ -93,7 +93,7 @@ void ParseAndValidateArguments(const vector<string> &args,
                                SLAMServiceImpl &slamService);
 
 // Converts UTC time string to a double value.
-double ReadTimeFromFilename(const string filename);
+double ReadTimeFromTimestamp(const string timestamp);
 
 std::vector<std::string> ListFilesInDirectoryForCamera(
     const std::string data_directory, const std::string extension,

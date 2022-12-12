@@ -1,3 +1,4 @@
+// This is an experimental integration of cartographer into RDK.
 #include "image.h"
 
 #include <iostream>

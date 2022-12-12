@@ -1,14 +1,17 @@
-// This is an Experimental variation of cartographer. It has not yet been
-// integrated into RDK.
+// This is an experimental integration of cartographer into RDK.
 
 #include "config.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
 #include <iostream>
 #include <string>
 
+#include "../utils/slam_service_helpers.h"
 #include "glog/logging.h"
 
+using namespace boost::filesystem;
 namespace viam {
 namespace config {
 
@@ -54,7 +57,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     }
     if (FLAGS_sensors.empty()) {
         LOG(INFO) << "No camera given -> running in offline mode";
-        slamService.offlineFlag = true;
+        slamService.offline_flag = true;
     }
 
     LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
@@ -67,6 +70,24 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.configuration_directory = FLAGS_data_dir + "/config/lua_files";
+
+    // Find the lua files.
+    path pathToLuasFromConfig(slamService.configuration_directory);
+    if (exists(pathToLuasFromConfig)) {
+        LOG(INFO) << "Using lua files in config folder";
+    } else {
+        auto programLocation = boost::dll::program_location();
+        auto relativePathToLuas = programLocation.parent_path().parent_path();
+        relativePathToLuas.append("share/cartographer/lua_files");
+        if (exists(relativePathToLuas)) {
+            LOG(INFO) << "Using lua files from relative path";
+            slamService.configuration_directory = relativePathToLuas.string();
+        } else {
+            LOG(ERROR) << "No lua files found, looked in "
+                       << pathToLuasFromConfig << " and " << relativePathToLuas;
+        }
+    }
+
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
     slamService.camera_name = FLAGS_sensors;
@@ -82,6 +103,12 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     boost::algorithm::to_lower(slamService.slam_mode);
     if (slamService.slam_mode != "2d" && slamService.slam_mode != "3d") {
         throw std::runtime_error("Invalid slam_mode=" + slamService.slam_mode);
+    }
+
+    const auto optimize_on_start =
+        ConfigParamParser(FLAGS_config_param, "optimize_on_start=");
+    if (optimize_on_start == "true") {
+        slamService.optimize_on_start = true;
     }
 
     std::vector<std::string> carto_params = {"optimize_every_n_nodes",
@@ -105,7 +132,7 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
     std::string new_parameter =
         ConfigParamParser(slamService.config_params, parameter + "=");
 
-    SLAMServiceActionMode slam_action_mode = slamService.GetActionMode();
+    ActionMode slam_action_mode = slamService.GetActionMode();
     if (!new_parameter.empty()) {
         LOG(INFO) << parameter << " is overwritten to: " << new_parameter;
 
@@ -120,25 +147,25 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "min_range") {
             slamService.min_range = std::stof(new_parameter);
         } else if (parameter == "max_submaps_to_keep") {
-            if (slam_action_mode != SLAMServiceActionMode::LOCALIZING) {
+            if (slam_action_mode != ActionMode::LOCALIZING) {
                 LOG(WARNING) << "Not in localizing action mode: Setting "
                                 "max_submaps_to_keep has no effect\n";
             }
             slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
-            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+            if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
                                 "fresh_submaps_count has no effect\n";
             }
             slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
-            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+            if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
                                 "min_covered_area has no effect\n";
             }
             slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
-            if (slam_action_mode != SLAMServiceActionMode::UPDATING) {
+            if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
                                 "min_added_submaps_count has no effect\n";
             }
