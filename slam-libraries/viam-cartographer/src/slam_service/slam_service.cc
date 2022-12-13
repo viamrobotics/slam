@@ -599,6 +599,10 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         // This log line is needed by rdk integration tests.
         VLOG(1) << "Passed sensor data to SLAM " << file;
 
+        if (!offline_flag && delete_processed_data) {
+            viam::io::RemoveFile(file);
+        }
+
         file = GetNextDataFile();
     }
 
