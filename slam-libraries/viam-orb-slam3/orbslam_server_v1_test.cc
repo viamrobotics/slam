@@ -86,7 +86,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60"};
+                              "-data_rate_ms=200",  "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.path_to_vocab == "/path/to/config/ORBvoc.txt");
@@ -100,6 +101,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
     BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(60).count());
     BOOST_TEST(slamService.camera_name == "color");
     BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.delete_processed_data == false);
 }
 
 BOOST_AUTO_TEST_CASE(
@@ -110,6 +112,7 @@ BOOST_AUTO_TEST_CASE(
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
+    BOOST_TEST(slamService.delete_processed_data == true);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
@@ -120,6 +123,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");
     BOOST_TEST(slamService.offlineFlag == true);
+    BOOST_TEST(slamService.delete_processed_data == false);
 }
 
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp) {

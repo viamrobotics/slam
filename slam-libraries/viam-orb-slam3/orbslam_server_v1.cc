@@ -625,6 +625,11 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // image
     if (boost::filesystem::exists(colorName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
+
+        if (!slamService.offlineFlag && slamService.delete_processed_data) {
+            RemoveFile(colorName);
+        }
+
         if (imRGB.empty()) return false;
         return true;
     }
@@ -645,6 +650,12 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
         boost::filesystem::exists(depthName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
+
+        if (!slamService.offlineFlag && slamService.delete_processed_data) {
+            RemoveFile(colorName);
+            RemoveFile(depthName);
+        }
+
         if (imRGB.empty() || imDepth.empty()) return false;
         return true;
     }
@@ -878,6 +889,14 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
     }
     // if we do not find a file return -1 as an error
     return -1;
+}
+
+int RemoveFile(std::string file_path) {
+    if (remove(file_path.c_str()) != 0) {
+        LOG(INFO) << "Error removing file";
+        return 0;
+    }
+    return 1;
 }
 
 // Make a filename to a specific location for a sensor with a timestamp
