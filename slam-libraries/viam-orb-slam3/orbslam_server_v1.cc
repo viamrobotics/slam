@@ -378,7 +378,7 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             filesRGB = utils::ListFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
             // In online mode we want the most recent frames, so parse the
-            // data directorys with this in mind
+            // data directory with this in mind
             i = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent,
                                       prevTimeStamp + fileTimeStart, &currTime);
@@ -393,9 +393,9 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         cv::Mat imRGB, imDepth;
         bool ok = false;
         if (slam_mode == "rgbd") {
-            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
+            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth, delete_processed_data);
         } else if (slam_mode == "mono") {
-            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB);
+            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB, delete_processed_data);
         } else {
             BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         }
@@ -460,9 +460,9 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
         cv::Mat imRGB, imDepth;
         bool ok = false;
         if (slam_mode == "rgbd") {
-            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
+            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth, delete_processed_data);
         } else if (slam_mode == "mono") {
-            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB);
+            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB, delete_processed_data);
         } else {
             BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         }
@@ -617,7 +617,8 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
 namespace utils {
 // LoadRGB loads in rgb images to be used by ORBSLAM, and
 // returns whether the image was loaded successfully
-bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
+bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB, 
+            bool delete_processed_data) {
     // write out the filename for the image
     std::string colorName = path_to_data + strRGB + "/" + filename + ".png";
 
@@ -625,9 +626,8 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // image
     if (boost::filesystem::exists(colorName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
-
-        if (!slamService.offlineFlag && slamService.delete_processed_data) {
-            RemoveFile(colorName);
+        if (delete_processed_data) {
+            utils::RemoveFile(colorName);
         }
 
         if (imRGB.empty()) return false;
@@ -639,7 +639,7 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
 // LoadRGBD loads in a rgbd pair of images to be used by ORBSLAM, and
 // returns whether the current pair is okay
 bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
-              cv::Mat &imDepth) {
+            cv::Mat &imDepth, bool delete_processed_data) {
     // write out filenames and paths for each respective image
     std::string colorName = path_to_data + strRGB + "/" + filename + ".png";
     std::string depthName = path_to_data + strDepth + "/" + filename + ".png";
@@ -650,10 +650,9 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
         boost::filesystem::exists(depthName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
-
-        if (!slamService.offlineFlag && slamService.delete_processed_data) {
-            RemoveFile(colorName);
-            RemoveFile(depthName);
+        if (delete_processed_data) {
+            utils::RemoveFile(colorName);
+            utils::RemoveFile(depthName);
         }
 
         if (imRGB.empty() || imDepth.empty()) return false;
@@ -775,6 +774,13 @@ void ParseAndValidateArguments(const vector<string> &args,
         BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
         slamService.offlineFlag = true;
     }
+
+    const auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
+    if (delete_processed_data.empty()) {
+        throw runtime_error("a delete_processed_data value is required");
+    }
+    slamService.delete_processed_data = (delete_processed_data == "true");
+
     string local_viewer = ArgParser(args, "--localView=");
     boost::algorithm::to_lower(local_viewer);
     if ((local_viewer == "true") && (slamService.offlineFlag)) {
@@ -893,7 +899,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 
 int RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
-        LOG(INFO) << "Error removing file";
+        BOOST_LOG_TRIVIAL(info) << "Error removing file";
         return 0;
     }
     return 1;
