@@ -904,7 +904,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 
 int RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
-        BOOST_LOG_TRIVIAL(info) << "Error removing file";
+        BOOST_LOG_TRIVIAL(error) << "Error removing file";
         return 0;
     }
     return 1;
