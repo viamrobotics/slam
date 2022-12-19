@@ -152,6 +152,10 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make buildcarto'
 
+    - name: make install-lua-carto
+      run: |
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make install-lua-carto'
+
     - name: make testcarto
       run: |
         sudo -u testbot bash -lc 'cd slam/slam-libraries && make testcarto'

@@ -85,6 +85,10 @@ else
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
 
+install-lua-carto:
+	sudo mkdir -p /usr/local/share/cartographer/lua_files/
+	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
+	sudo cp viam-cartographer/cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 
 testcarto:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
