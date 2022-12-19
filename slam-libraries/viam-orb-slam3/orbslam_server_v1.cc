@@ -786,8 +786,9 @@ void ParseAndValidateArguments(const vector<string> &args,
         slamService.delete_processed_data = false;
     }
 
-    // TODO: Remove once PR #1689 is submitted https://github.com/viamrobotics/rdk/pull/1689
-    // This will allow intergation tests to pass in current PR
+    // TODO: Remove once PR #1689 is submitted
+    // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    // tests to pass in current PR
     if (delete_processed_data == "") {
         slamService.delete_processed_data = false;
     }
