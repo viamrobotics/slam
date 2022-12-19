@@ -59,7 +59,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     chrono::seconds map_rate_sec;
     double yamlTime;
     std::atomic<bool> offlineFlag{false};
-    bool delete_processed_data = false;
+    bool delete_processed_data = true;
     bool local_viewer_flag = false;
     bool pure_localization_mode = false;
     int n_key_frames = 0;
@@ -102,13 +102,13 @@ std::vector<std::string> ListFilesInDirectoryForCamera(
 
 // LoadRGB loads in rgb images to be used by ORBSLAM, and
 // returns whether the image was loaded successfully
-bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB, 
+bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB,
              bool delete_processed_data);
 
 // LoadRGBD loads in a rgbd pair of images to be used by ORBSLAM, and
 // returns whether the current pair is okay
 bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
-              cv::Mat &imDepth,  bool delete_processed_data);
+              cv::Mat &imDepth, bool delete_processed_data);
 
 // Find the next frame based off the current interest given a directory of
 // data and time to search from

@@ -576,6 +576,9 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             LOG(INFO) << "Starting to save maps...";
             StartSaveMap();
         }
+        if (delete_processed_data) {
+            viam::io::RemoveFile(file);
+        }
         // Add data to the map_builder to add to the map
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -598,10 +601,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
 
         // This log line is needed by rdk integration tests.
         VLOG(1) << "Passed sensor data to SLAM " << file;
-
-        if (!offline_flag && delete_processed_data) {
-            viam::io::RemoveFile(file);
-        }
 
         file = GetNextDataFile();
     }

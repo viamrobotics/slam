@@ -83,20 +83,14 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_delete_processed_data) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60",
-                              "-delete_processed_data="};
-    const string message = "a delete_processed_data value is required";
-    checkParseAndValidateArgumentsException(args, message);
-}
-
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60",
-                              "-delete_processed_data=0"};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.path_to_vocab == "/path/to/config/ORBvoc.txt");
@@ -117,19 +111,17 @@ BOOST_AUTO_TEST_CASE(
     ParseAndValidateArguments_valid_config_capitalized_slam_mode) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=RGBD}",
                               "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60",
-                              "-delete_processed_data=0"};
+                              "-data_rate_ms=200",  "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
-    BOOST_TEST(slamService.delete_processed_data == false);
+    BOOST_TEST(slamService.delete_processed_data == true);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
     const vector<string> args{
         "-data_dir=/path/to", "-config_param={mode=rgbd}", "-port=20000",
-        "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60",
-        "-delete_processed_data=0"};
+        "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");

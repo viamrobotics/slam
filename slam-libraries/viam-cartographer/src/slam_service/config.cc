@@ -30,7 +30,8 @@ DEFINE_int64(
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
-DEFINE_bool(delete_processed_data, false, "Deletes data after its been processed");
+DEFINE_bool(delete_processed_data, true,
+            "Deletes data after its been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -67,7 +68,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "sensors: " << FLAGS_sensors << "\n";
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms << "\n";
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec << "\n";
-    LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data << "\n";
+    LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data
+              << "\n";
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
@@ -96,6 +98,10 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
     slamService.delete_processed_data = FLAGS_delete_processed_data;
+
+    if (slamService.offline_flag) {
+        slamService.delete_processed_data = false;
+    }
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");
@@ -213,7 +219,7 @@ void ResetFlagsForTesting() {
     FLAGS_sensors = "";
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
-    FLAGS_delete_processed_data = false;
+    FLAGS_delete_processed_data = true;
 }
 
 }  // namespace config
