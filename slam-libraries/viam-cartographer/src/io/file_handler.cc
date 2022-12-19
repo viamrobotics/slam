@@ -90,7 +90,8 @@ int RemoveFile(std::string file_path) {
 
 double ReadTimeFromTimestamp(std::string timestamp) {
     std::string::size_type sz;
-    // Create a stream which we will use to parse the string
+    auto partial_time_format = time_format.substr(0, time_format.find("."));
+     // Create a stream which we will use to parse the string
     std::istringstream ss(timestamp);
 
     // Create a tm object to store the parsed date and time.
@@ -98,7 +99,12 @@ double ReadTimeFromTimestamp(std::string timestamp) {
 
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
-    ss >> std::get_time(&dt, time_format.c_str());
+    ss >> std::get_time(&dt, partial_time_format.c_str());
+    if (ss.fail()) {
+        throw std::runtime_error(
+            "timestamp cannot be parsed into a std::tm object: " +
+            timestamp);
+    }
     double timestamp_time = (double)std::mktime(&dt);
     if (timestamp_time == -1) {
         throw std::runtime_error(

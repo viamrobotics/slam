@@ -122,6 +122,18 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
     BOOST_TEST(slamService.offlineFlag == true);
 }
 
+BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
+    // Provide a filename with a missing timestamp
+    std::string timestamp = "no-timestamp";
+    const std::string message =
+        "timestamp cannot be parsed into a std::tm object: " + timestamp;
+    BOOST_CHECK_EXCEPTION(utils::ReadTimeFromTimestamp(timestamp), std::runtime_error,
+                          [&message](const std::runtime_error& ex) {
+                              BOOST_CHECK_EQUAL(ex.what(), message);
+                              return true;
+                          });
+}
+
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp) {
     const string timestamp_1 = "2022-01-01T01:00:00.0000Z";
     const string timestamp_2 = "2022-01-01T01:00:00.0001Z";
