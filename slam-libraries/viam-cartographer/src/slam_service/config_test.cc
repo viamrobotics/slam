@@ -363,7 +363,9 @@ BOOST_AUTO_TEST_CASE(
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.offline_flag == false);
-    BOOST_TEST(slamService.delete_processed_data == true);
+    // TODO: Add back in once PR #1689 is submitted
+    // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    // BOOST_TEST(slamService.delete_processed_data == true);
     delete argv;
 }
 

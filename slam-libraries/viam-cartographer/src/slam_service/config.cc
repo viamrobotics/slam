@@ -30,8 +30,12 @@ DEFINE_int64(
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
-DEFINE_bool(delete_processed_data, true,
-            "Deletes data after its been processed");
+// TODO: Switch back to bool once PR #1689 is submitted
+// https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+// DEFINE_bool(delete_processed_data, true,
+//             "Deletes data after its been processed");
+DEFINE_string(delete_processed_data, "",
+              "Deletes data after its been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -97,11 +101,21 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.camera_name = FLAGS_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
-    slamService.delete_processed_data = FLAGS_delete_processed_data;
 
-    if (slamService.offline_flag) {
+    // TODO: Remove once PR #1689 is submitted
+    // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    if (FLAGS_delete_processed_data.empty()) {
         slamService.delete_processed_data = false;
+        LOG(ERROR) << "HI\n";
+    } else {
+        LOG(ERROR) << "HO\n";
+        slamService.delete_processed_data =
+            !(FLAGS_delete_processed_data == "false");
     }
+    // slamService.delete_processed_data = FLAGS_delete_processed_data;
+    // if (slamService.offline_flag) {
+    //     slamService.delete_processed_data = false;
+    // }
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");
@@ -219,7 +233,10 @@ void ResetFlagsForTesting() {
     FLAGS_sensors = "";
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
-    FLAGS_delete_processed_data = true;
+    // TODO: Switch back over PR #1689 is submitted
+    // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    // FLAGS_delete_processed_data = true;
+    FLAGS_delete_processed_data = "";
 }
 
 }  // namespace config
