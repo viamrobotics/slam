@@ -93,6 +93,6 @@ install-lua-carto:
 testcarto:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
 
-carto-all: bufinstall buf setupcarto buildcarto testcarto
+carto-all: bufinstall buf setupcarto buildcarto install-lua-carto testcarto
 
 include *.make
