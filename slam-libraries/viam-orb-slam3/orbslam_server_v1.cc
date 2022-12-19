@@ -789,8 +789,7 @@ double ReadTimeFromTimestamp(string timestamp) {
     ss >> std::get_time(&dt, partial_time_format.c_str());
     if (ss.fail()) {
         throw std::runtime_error(
-            "timestamp cannot be parsed into a std::tm object: " +
-            timestamp);
+            "timestamp cannot be parsed into a std::tm object: " + timestamp);
     }
     double timestamp_time = (double)std::mktime(&dt);
     if (timestamp_time == -1) {
