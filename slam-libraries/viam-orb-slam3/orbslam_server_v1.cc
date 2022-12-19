@@ -786,6 +786,12 @@ void ParseAndValidateArguments(const vector<string> &args,
         slamService.delete_processed_data = false;
     }
 
+    // TODO: Remove once PR #1689 is submitted https://github.com/viamrobotics/rdk/pull/1689
+    // This will allow intergation tests to pass in current PR
+    if (delete_processed_data == "") {
+        slamService.delete_processed_data = false;
+    }
+
     string local_viewer = ArgParser(args, "--localView=");
     boost::algorithm::to_lower(local_viewer);
     if ((local_viewer == "true") && (slamService.offlineFlag)) {
