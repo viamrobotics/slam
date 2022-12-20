@@ -789,8 +789,8 @@ void ParseAndValidateArguments(const vector<string> &args,
     // https://viam.atlassian.net/browse/RSDK-1593) if
     // if (slamService.offlineFlag && slamService.delete_processed_data) {
     //     throw runtime_error(
-    //         "a true delete_processed_data value is invalid when running slam "
-    //         "in offline mode");
+    //         "a true delete_processed_data value is invalid when running slam
+    //         " "in offline mode");
     // }
     if (delete_processed_data == "") {
         slamService.delete_processed_data = false;
