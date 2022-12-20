@@ -137,13 +137,11 @@ BOOST_AUTO_TEST_CASE(
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=true"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
-    // TODO: Add back in once PR #1689 is submitted
-    // https://github.com/viamrobotics/rdk/pull/1689 This will allow tests to
-    // pass in current PR BOOST_TEST(slamService.delete_processed_data == true);
+    BOOST_TEST(slamService.delete_processed_data == true);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {

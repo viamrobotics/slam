@@ -780,21 +780,19 @@ void ParseAndValidateArguments(const vector<string> &args,
     }
 
     auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
-
     slamService.delete_processed_data = !(delete_processed_data == "false");
-
-    // TODO: Remove once PR #1689 is submitted
+    // TODO: Remove, uncomment and add test once PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
     // tests to pass (See associated JIRA ticket:
-    // https://viam.atlassian.net/browse/RSDK-1593) if
+    // https://viam.atlassian.net/browse/RSDK-1593)
+    if (delete_processed_data == "") {
+        slamService.delete_processed_data = false;
+    }
     // if (slamService.offlineFlag && slamService.delete_processed_data) {
     //     throw runtime_error(
     //         "a true delete_processed_data value is invalid when running slam
     //         " "in offline mode");
     // }
-    if (delete_processed_data == "") {
-        slamService.delete_processed_data = false;
-    }
 
     string local_viewer = ArgParser(args, "--localView=");
     boost::algorithm::to_lower(local_viewer);

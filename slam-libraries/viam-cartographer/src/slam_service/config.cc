@@ -34,10 +34,10 @@ DEFINE_string(input_file_pattern, "", "Input file pattern");
 // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
 // tests to pass (See associated JIRA ticket:
 // https://viam.atlassian.net/browse/RSDK-1593)
-// DEFINE_bool(delete_processed_data, true,
-//             "Deletes data after its been processed");
 DEFINE_string(delete_processed_data, "",
               "Deletes data after its been processed");
+// DEFINE_bool(delete_processed_data, true,
+//             "Deletes data after its been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -240,9 +240,9 @@ void ResetFlagsForTesting() {
     // TODO: Switch back over PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
     // tests to pass (See associated JIRA ticket:
-    // https://viam.atlassian.net/browse/RSDK-1593) FLAGS_delete_processed_data
-    // = true;
+    // https://viam.atlassian.net/browse/RSDK-1593)
     FLAGS_delete_processed_data = "";
+    // FLAGS_delete_processed_data  = true;
 }
 
 }  // namespace config
