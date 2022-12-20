@@ -30,8 +30,10 @@ DEFINE_int64(
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
-// TODO: Switch back to bool once PR #1689 is submitted
+// TODO: Switch back to DEFINE_bool once PR #1689 is submitted
 // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+// tests to pass (See associated JIRA ticket:
+// https://viam.atlassian.net/browse/RSDK-1593)
 // DEFINE_bool(delete_processed_data, true,
 //             "Deletes data after its been processed");
 DEFINE_string(delete_processed_data, "",
@@ -104,18 +106,20 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     // TODO: Remove once PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    // tests to pass (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1593)
     if (FLAGS_delete_processed_data.empty()) {
         slamService.delete_processed_data = false;
-        LOG(ERROR) << "HI\n";
     } else {
-        LOG(ERROR) << "HO\n";
         slamService.delete_processed_data =
             !(FLAGS_delete_processed_data == "false");
     }
     // slamService.delete_processed_data = FLAGS_delete_processed_data;
-    // if (slamService.offline_flag) {
-    //     slamService.delete_processed_data = false;
-    // }
+    if (slamService.offline_flag && slamService.delete_processed_data) {
+        throw std::runtime_error(
+            "a true delete_processed_data value is invalid when running slam "
+            "in offline mode");
+    }
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");
@@ -235,7 +239,9 @@ void ResetFlagsForTesting() {
     FLAGS_map_rate_sec = defaultMapRateSec;
     // TODO: Switch back over PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
-    // FLAGS_delete_processed_data = true;
+    // tests to pass (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1593) FLAGS_delete_processed_data
+    // = true;
     FLAGS_delete_processed_data = "";
 }
 

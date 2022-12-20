@@ -36,49 +36,71 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_args) {
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_data_dir) {
-    const vector<string> args{
-        "-config_param={mode=rgbd}", "-port=20000",      "-sensors=color",
-        "-data_rate_ms=200",         "-map_rate_sec=60", "-unknown=unknown"};
+    const vector<string> args{"-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false",
+                              "-unknown=unknown"};
     const string message = "No data directory given";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_mode) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     const string message = "No SLAM mode given";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_invalid_slam_mode) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=bad}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=bad}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     const string message = "Invalid slam_mode=bad";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_port) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-sensors=color",     "-data_rate_ms=200",
-                              "-map_rate_sec=60",   "-unknown=unknown"};
+    const vector<string> args{
+        "-data_dir=/path/to", "-config_param={mode=rgbd}",
+        "-sensors=color",     "-data_rate_ms=200",
+        "-map_rate_sec=60",   "-delete_processed_data=false",
+        "-unknown=unknown"};
     const string message = "No gRPC port given";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_data_rate_msec) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=",     "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     const string message = "a data_rate_ms value is required";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec="};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=",
+                              "-delete_processed_data=false"};
     const string message = "a map_rate_sec value is required";
     checkParseAndValidateArgumentsException(args, message);
 }
@@ -109,9 +131,13 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
 
 BOOST_AUTO_TEST_CASE(
     ParseAndValidateArguments_valid_config_capitalized_slam_mode) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=RGBD}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=RGBD}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
@@ -121,9 +147,13 @@ BOOST_AUTO_TEST_CASE(
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=rgbd}", "-port=20000",
-        "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60"};
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");

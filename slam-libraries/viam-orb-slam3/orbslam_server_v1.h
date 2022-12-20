@@ -122,7 +122,7 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
 string MakeFilenameWithTimestamp(string path_to_dir, string camera_name);
 
 // Removes data file
-int RemoveFile(std::string file_path);
+void RemoveFile(std::string file_path);
 
 }  // namespace utils
 }  // namespace viam

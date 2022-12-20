@@ -31,7 +31,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time);
 
 // RemoveFile removes the file at the provided path.
-int RemoveFile(std::string);
+void RemoveFile(std::string);
 
 // Converts UTC time string to a double value.
 double ReadTimeFromTimestamp(std::string timestamp);

@@ -780,15 +780,22 @@ void ParseAndValidateArguments(const vector<string> &args,
     }
 
     auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
+
     slamService.delete_processed_data = !(delete_processed_data == "false");
 
-    if (slamService.offlineFlag) {
-        slamService.delete_processed_data = false;
+    if (slamService.offlineFlag && slamService.delete_processed_data) {
+        throw runtime_error(
+            "a true delete_processed_data value is invalid when running slam "
+            "in offline mode");
     }
 
     // TODO: Remove once PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
-    // tests to pass in current PR
+    // tests to pass (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1593) if
+    // (delete_processed_data.empty()) {
+    //     throw runtime_error("a delete_processed_data is required");
+    // }
     if (delete_processed_data == "") {
         slamService.delete_processed_data = false;
     }
@@ -909,12 +916,11 @@ int FindFrameIndex(const std::vector<std::string> &filesRGB,
     return -1;
 }
 
-int RemoveFile(std::string file_path) {
+void RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
         BOOST_LOG_TRIVIAL(error) << "Error removing file";
-        return 0;
     }
-    return 1;
+    return;
 }
 
 // Make a filename to a specific location for a sensor with a timestamp

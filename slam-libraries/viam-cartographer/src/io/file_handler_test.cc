@@ -76,9 +76,7 @@ BOOST_AUTO_TEST_CASE(RemoveFile_success) {
 
     // Remove a file
     int file_num = 1;
-    int success =
-        RemoveFile(tmp_dir.string() + "/data/" + data_files.at(file_num));
-    BOOST_TEST(success == file_num);
+    RemoveFile(tmp_dir.string() + "/data/" + data_files.at(file_num));
     data_files.erase(data_files.begin() + file_num);
     // List the files in the directory and check if the right number of files
     // and the right files are still in the directory

@@ -80,12 +80,11 @@ std::vector<std::string> ListSortedFilesInDirectory(
     return file_paths;
 }
 
-int RemoveFile(std::string file_path) {
+void RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
         LOG(ERROR) << "Error removing file";
-        return 0;
     }
-    return 1;
+    return;
 }
 
 double ReadTimeFromTimestamp(std::string timestamp) {
