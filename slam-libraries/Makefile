@@ -58,14 +58,14 @@ orbslam-all: bufinstall buf setuporb buildorb testorb
 
 appimageorb: buildorb
 	cd packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe orb_grpc_server-`uname -m`.yml
-	cd packaging/appimages && ./package_release.sh
+	cd packaging/appimages && ./package_release_orb.sh
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
 
 appimagecarto: buildcarto
 	cd packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe carto_grpc_server-`uname -m`.yml
-	cd packaging/appimages && ./package_release.sh
+	cd packaging/appimages && ./package_release_carto.sh
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
