@@ -92,8 +92,8 @@ sudo cp build/carto_grpc_server /usr/local/bin/
 In your desired data directory, move the configuration files from cartographer into /usr/local/share`:  
 ```bash
 sudo mkdir -p /usr/local/share/cartographer/lua_files
-cp lua_files/* /usr/local/share/cartographer/lua_files/
-cp cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
+sudo cp lua_files/* /usr/local/share/cartographer/lua_files/
+sudo cp cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 ```
 You only have to do this once per data directory. Note cartographer will fail if the configuration files cannot be found.
 
