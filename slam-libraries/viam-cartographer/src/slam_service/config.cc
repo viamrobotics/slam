@@ -79,8 +79,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         slamService.configuration_directory = relativePathToLuas.string();
     } else {
         LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
-        LOG(ERROR)
-            << "Use 'make install-lua-carto' to install lua files on system";
+        LOG(ERROR) << "Use 'make install-lua-carto' to install lua files into "
+                      "/usr/local/share";
     }
 
     slamService.config_params = FLAGS_config_param;

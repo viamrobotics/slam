@@ -31,6 +31,11 @@ To build cartographer use
 ```
 make buildcarto
 ```
+
+In addition, install the lua files locally with
+```
+make install-lua-carto
+```
 Then, follow the instruction as described in [viam-cartographer/README.md](./viam-cartographer/README.md).
 
 ### ORB_SLAM3
