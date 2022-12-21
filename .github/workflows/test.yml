@@ -158,7 +158,7 @@ jobs:
 
     - name: move cartographer tests and test
       run: |
-        sudo cp slam/slam--libraries/viam-cartographer/build/unit_tests /usr/local/bin/unit_tests
+        sudo cp slam/slam-libraries/viam-cartographer/build/unit_tests /usr/local/bin/unit_tests
         sudo -u testbot bash -lc 'unit_tests'
 
     - name: Copy carto_grpc_server binary
