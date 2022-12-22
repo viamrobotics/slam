@@ -279,6 +279,7 @@ BOOST_AUTO_TEST_CASE(
     BOOST_TEST(slamService.camera_name == "lidar");
     BOOST_TEST(slamService.offline_flag == false);
     BOOST_TEST(slamService.optimize_on_start == true);
+    BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
 }
 
@@ -353,45 +354,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config_no_camera) {
 }
 
 BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_valid_offline_config_with_delete_processed_data) {
-    ResetFlagsForTesting();
-    std::vector<std::string> args{
-        "carto_grpc_server",  "-config_param={mode=2d}",
-        "-data_dir=/path/to", "-port=localhost:0",
-        "-sensors=",          "-map_rate_sec=60",
-        "-data_rate_ms=200",  "-delete_processed_data=true"};
-    int argc = args.size();
-    char** argv = toCharArrayArray(args);
-    SLAMServiceImpl slamService;
-    const std::string message =
-        "a true delete_processed_data value is invalid when running slam in "
-        "offline mode";
-    checkParseAndValidateConfigParamsException(argc, argv, message);
-    // ParseAndValidateConfigParams(argc, argv, slamService);
-    // BOOST_TEST(slamService.offline_flag == true);
-    // BOOST_TEST(slamService.delete_processed_data == false);
-    delete argv;
-}
-
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_valid_offline_config_without_delete_processed_data) {
-    ResetFlagsForTesting();
-    std::vector<std::string> args{
-        "carto_grpc_server",  "-config_param={mode=2d}",
-        "-data_dir=/path/to", "-port=localhost:0",
-        "-sensors=",          "-map_rate_sec=60",
-        "-data_rate_ms=200",  "-delete_processed_data=false"};
-    int argc = args.size();
-    char** argv = toCharArrayArray(args);
-    SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == true);
-    BOOST_TEST(slamService.delete_processed_data == false);
-    delete argv;
-}
-
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_valid_online_config_with_delete_processed_data) {
+    ParseAndValidateConfigParams_valid_online_config_with_true_delete_processed_data) {
     ResetFlagsForTesting();
     std::vector<std::string> args{
         "carto_grpc_server",  "-config_param={mode=2d}",
@@ -408,7 +371,7 @@ BOOST_AUTO_TEST_CASE(
 }
 
 BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_valid_online_config_without_delete_processed_data) {
+    ParseAndValidateConfigParams_valid_online_config_with_false_delete_processed_data) {
     ResetFlagsForTesting();
     std::vector<std::string> args{
         "carto_grpc_server",  "-config_param={mode=2d}",
@@ -420,6 +383,78 @@ BOOST_AUTO_TEST_CASE(
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.delete_processed_data == false);
+    delete argv;
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_valid_offline_config_with_true_delete_processed_data) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server",  "-config_param={mode=2d}",
+        "-data_dir=/path/to", "-port=localhost:0",
+        "-sensors=",          "-map_rate_sec=60",
+        "-data_rate_ms=200",  "-delete_processed_data=true"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    const std::string message =
+        "a true delete_processed_data value is invalid when running slam in "
+        "offline mode";
+    checkParseAndValidateConfigParamsException(argc, argv, message);
+    delete argv;
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_valid_offline_config_with_false_delete_processed_data) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server",  "-config_param={mode=2d}",
+        "-data_dir=/path/to", "-port=localhost:0",
+        "-sensors=",          "-map_rate_sec=60",
+        "-data_rate_ms=200",  "-delete_processed_data=false"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    ParseAndValidateConfigParams(argc, argv, slamService);
+    BOOST_TEST(slamService.offline_flag == true);
+    BOOST_TEST(slamService.delete_processed_data == false);
+    delete argv;
+}
+
+// TODO: Remove no delete_processed_data test cases once PR #1689 is in
+// https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
+// tests to pass (See associated JIRA ticket:
+// https://viam.atlassian.net/browse/RSDK-1593)
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_valid_online_config_with_no_delete_processed_data) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server", "-config_param={mode=2d}", "-data_dir=/path/to",
+        "-port=localhost:0", "-sensors=lidar",          "-map_rate_sec=60",
+        "-data_rate_ms=200"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    ParseAndValidateConfigParams(argc, argv, slamService);
+    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.delete_processed_data == false);
+    delete argv;
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_valid_offline_config_with_no_delete_processed_data) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server",  "-config_param={mode=2d}",
+        "-data_dir=/path/to", "-port=localhost:0",
+        "-sensors=",          "-map_rate_sec=60",
+        "-data_rate_ms=200"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    ParseAndValidateConfigParams(argc, argv, slamService);
+    BOOST_TEST(slamService.offline_flag == true);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
 }
