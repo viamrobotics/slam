@@ -79,23 +79,18 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
-    slamService.configuration_directory = FLAGS_data_dir + "/config/lua_files";
 
     // Find the lua files.
-    path pathToLuasFromConfig(slamService.configuration_directory);
-    if (exists(pathToLuasFromConfig)) {
-        LOG(INFO) << "Using lua files in config folder";
+    auto programLocation = boost::dll::program_location();
+    auto relativePathToLuas = programLocation.parent_path().parent_path();
+    relativePathToLuas.append("share/cartographer/lua_files");
+    if (exists(relativePathToLuas)) {
+        LOG(INFO) << "Using lua files from relative path";
+        slamService.configuration_directory = relativePathToLuas.string();
     } else {
-        auto programLocation = boost::dll::program_location();
-        auto relativePathToLuas = programLocation.parent_path().parent_path();
-        relativePathToLuas.append("share/cartographer/lua_files");
-        if (exists(relativePathToLuas)) {
-            LOG(INFO) << "Using lua files from relative path";
-            slamService.configuration_directory = relativePathToLuas.string();
-        } else {
-            LOG(ERROR) << "No lua files found, looked in "
-                       << pathToLuasFromConfig << " and " << relativePathToLuas;
-        }
+        LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
+        LOG(ERROR) << "Use 'make install-lua-carto' to install lua files into "
+                      "/usr/local/share";
     }
 
     slamService.config_params = FLAGS_config_param;
