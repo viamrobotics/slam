@@ -236,7 +236,7 @@ void ResetFlagsForTesting() {
     // tests to pass (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1593)
     // FLAGS_delete_processed_data = "";
-    FLAGS_delete_processed_data = true;
+    FLAGS_delete_processed_data = false;
 }
 
 }  // namespace config
