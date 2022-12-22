@@ -815,6 +815,7 @@ void ParseAndValidateArguments(const vector<string> &args,
 // Converts UTC time string to a double value.
 double ReadTimeFromTimestamp(string timestamp) {
     std::string::size_type sz;
+    auto partial_time_format = time_format.substr(0, time_format.find("."));
     // Create a stream which we will use to parse the string
     std::istringstream ss(timestamp);
 
@@ -823,7 +824,11 @@ double ReadTimeFromTimestamp(string timestamp) {
 
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately.
-    ss >> std::get_time(&dt, time_format.c_str());
+    ss >> std::get_time(&dt, partial_time_format.c_str());
+    if (ss.fail()) {
+        throw std::runtime_error(
+            "timestamp cannot be parsed into a std::tm object: " + timestamp);
+    }
     double timestamp_time = (double)std::mktime(&dt);
     if (timestamp_time == -1) {
         throw std::runtime_error(

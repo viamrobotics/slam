@@ -146,6 +146,18 @@ BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
     utils::removeTmpDirectory(tmp_dir);
 }
 
+BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
+    // Provide a filename with a missing timestamp
+    std::string timestamp = "no-timestamp";
+    const std::string message =
+        "timestamp cannot be parsed into a std::tm object: " + timestamp;
+    BOOST_CHECK_EXCEPTION(ReadTimeFromTimestamp(timestamp), std::runtime_error,
+                          [&message](const std::runtime_error& ex) {
+                              BOOST_CHECK_EQUAL(ex.what(), message);
+                              return true;
+                          });
+}
+
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_success) {
     // Provide a filename with a timestamp
     std::time_t t = std::time(nullptr);
