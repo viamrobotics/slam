@@ -110,6 +110,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string slam_mode;
     std::atomic<bool> optimize_on_start{false};
     std::atomic<bool> offline_flag{false};
+    bool delete_processed_data = false;
 
     // -- Cartographer specific config params:
     // MAP_BUILDER.pose_graph

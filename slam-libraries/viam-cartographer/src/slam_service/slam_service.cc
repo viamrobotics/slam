@@ -590,6 +590,9 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 }
             }
         }
+        if (delete_processed_data) {
+            viam::io::RemoveFile(file);
+        }
         // Save a copy of the global pose
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);

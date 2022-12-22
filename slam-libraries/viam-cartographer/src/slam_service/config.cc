@@ -30,6 +30,8 @@ DEFINE_int64(
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
+DEFINE_bool(delete_processed_data, false,
+            "Deletes data after it has been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -60,12 +62,13 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         slamService.offline_flag = true;
     }
 
-    LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
-    LOG(INFO) << "config_param: " << FLAGS_config_param << "\n";
-    LOG(INFO) << "port: " << FLAGS_port << "\n";
-    LOG(INFO) << "sensors: " << FLAGS_sensors << "\n";
-    LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms << "\n";
-    LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec << "\n";
+    LOG(INFO) << "data_dir: " << FLAGS_data_dir;
+    LOG(INFO) << "config_param: " << FLAGS_config_param;
+    LOG(INFO) << "port: " << FLAGS_port;
+    LOG(INFO) << "sensors: " << FLAGS_sensors;
+    LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
+    LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
+    LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data;
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
@@ -88,6 +91,13 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.camera_name = FLAGS_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
+
+    slamService.delete_processed_data = FLAGS_delete_processed_data;
+    if (slamService.offline_flag && slamService.delete_processed_data) {
+        throw std::runtime_error(
+            "a true delete_processed_data value is invalid when running slam "
+            "in offline mode");
+    }
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");
@@ -144,25 +154,25 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "max_submaps_to_keep") {
             if (slam_action_mode != ActionMode::LOCALIZING) {
                 LOG(WARNING) << "Not in localizing action mode: Setting "
-                                "max_submaps_to_keep has no effect\n";
+                                "max_submaps_to_keep has no effect";
             }
             slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
             if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
-                                "fresh_submaps_count has no effect\n";
+                                "fresh_submaps_count has no effect";
             }
             slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
             if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
-                                "min_covered_area has no effect\n";
+                                "min_covered_area has no effect";
             }
             slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
             if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
-                                "min_added_submaps_count has no effect\n";
+                                "min_added_submaps_count has no effect";
             }
             slamService.min_added_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "occupied_space_weight") {
@@ -205,6 +215,7 @@ void ResetFlagsForTesting() {
     FLAGS_sensors = "";
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
+    FLAGS_delete_processed_data = false;
 }
 
 }  // namespace config
