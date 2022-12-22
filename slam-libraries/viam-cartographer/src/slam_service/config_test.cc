@@ -363,9 +363,13 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == true);
-    BOOST_TEST(slamService.delete_processed_data == false);
+    const std::string message =
+        "a true delete_processed_data value is invalid when running slam in "
+        "offline mode";
+    checkParseAndValidateConfigParamsException(argc, argv, message);
+    // ParseAndValidateConfigParams(argc, argv, slamService);
+    // BOOST_TEST(slamService.offline_flag == true);
+    // BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
 }
 

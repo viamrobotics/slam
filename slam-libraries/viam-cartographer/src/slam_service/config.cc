@@ -31,13 +31,13 @@ DEFINE_int64(
     "is running.");
 DEFINE_string(input_file_pattern, "", "Input file pattern");
 // TODO: Switch back to DEFINE_bool once PR #1689 is submitted
-// https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+// https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
 // tests to pass (See associated JIRA ticket:
 // https://viam.atlassian.net/browse/RSDK-1593)
-DEFINE_string(delete_processed_data, "",
-              "Deletes data after it has been processed");
-// DEFINE_bool(delete_processed_data, true,
-//             "Deletes data after it has been processed");
+// DEFINE_string(delete_processed_data, "",
+//               "Deletes data after it has been processed");
+DEFINE_bool(delete_processed_data, true,
+            "Deletes data after it has been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -99,15 +99,16 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     // TODO: Remove once PR #1689 is submitted
-    // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    // https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
     // tests to pass (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1593)
-    if (FLAGS_delete_processed_data.empty()) {
-        slamService.delete_processed_data = false;
-    } else {
-        slamService.delete_processed_data = (delete_processed_data == "true");
-    }
-    // slamService.delete_processed_data = FLAGS_delete_processed_data;
+    // if (FLAGS_delete_processed_data.empty()) {
+    //     slamService.delete_processed_data = false;
+    // } else {
+    //     slamService.delete_processed_data = (FLAGS_delete_processed_data ==
+    //     "true");
+    // }
+    slamService.delete_processed_data = FLAGS_delete_processed_data;
     if (slamService.offline_flag && slamService.delete_processed_data) {
         throw std::runtime_error(
             "a true delete_processed_data value is invalid when running slam "
@@ -231,11 +232,11 @@ void ResetFlagsForTesting() {
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
     // TODO: Switch back over PR #1689 is submitted
-    // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
+    // https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
     // tests to pass (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1593)
-    FLAGS_delete_processed_data = "";
-    // FLAGS_delete_processed_data  = true;
+    // FLAGS_delete_processed_data = "";
+    FLAGS_delete_processed_data = true;
 }
 
 }  // namespace config

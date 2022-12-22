@@ -141,7 +141,6 @@ BOOST_AUTO_TEST_CASE(
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
-    BOOST_TEST(slamService.delete_processed_data == true);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
@@ -156,7 +155,79 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");
     BOOST_TEST(slamService.offlineFlag == true);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_online_with_delete_processed_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=true"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.delete_processed_data == true);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_online_without_delete_processed_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.offlineFlag == false);
     BOOST_TEST(slamService.delete_processed_data == false);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_offline_with_delete_processed_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=true"};
+    const string message =
+        "a true delete_processed_data value is invalid when running slam in "
+        "offline mode";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_offline_without_delete_processed_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.offlineFlag == true);
+    BOOST_TEST(slamService.delete_processed_data == false);
+}
+
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_invalid_delete_processed_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=gibberish"};
+    const string message =
+        "invalid delete_processed_data value, set to either true or false";
+    checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp) {
