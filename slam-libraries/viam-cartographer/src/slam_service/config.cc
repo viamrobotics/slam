@@ -36,7 +36,7 @@ DEFINE_string(input_file_pattern, "", "Input file pattern");
 // https://viam.atlassian.net/browse/RSDK-1593)
 // DEFINE_string(delete_processed_data, "",
 //               "Deletes data after it has been processed");
-DEFINE_bool(delete_processed_data, true,
+DEFINE_bool(delete_processed_data, false,
             "Deletes data after it has been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
@@ -236,7 +236,7 @@ void ResetFlagsForTesting() {
     // tests to pass (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1593)
     // FLAGS_delete_processed_data = "";
-    FLAGS_delete_processed_data = true;
+    FLAGS_delete_processed_data = false;
 }
 
 }  // namespace config
