@@ -58,14 +58,14 @@ orbslam-all: bufinstall buf setuporb buildorb testorb
 
 appimageorb: buildorb
 	cd packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe orb_grpc_server-`uname -m`.yml
-	cd packaging/appimages && ./package_release.sh
+	cd packaging/appimages && ./package_release_orb.sh
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
 
 appimagecarto: buildcarto
 	cd packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe carto_grpc_server-`uname -m`.yml
-	cd packaging/appimages && ./package_release.sh
+	cd packaging/appimages && ./package_release_carto.sh
 	mkdir -p packaging/appimages/deploy/
 	mv packaging/appimages/*.AppImage* packaging/appimages/deploy/
 	chmod 755 packaging/appimages/deploy/*.AppImage
@@ -85,10 +85,14 @@ else
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
 
+install-lua-carto:
+	sudo mkdir -p /usr/local/share/cartographer/lua_files/
+	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
+	sudo cp viam-cartographer/cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 
 testcarto:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
 
-carto-all: bufinstall buf setupcarto buildcarto testcarto
+carto-all: bufinstall buf setupcarto buildcarto install-lua-carto testcarto
 
 include *.make
