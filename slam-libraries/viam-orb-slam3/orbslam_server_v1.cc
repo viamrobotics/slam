@@ -780,7 +780,7 @@ void ParseAndValidateArguments(const vector<string> &args,
     }
 
     auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
-    slamService.delete_processed_data = !(delete_processed_data == "false");
+    slamService.delete_processed_data = (delete_processed_data == "true");
     // TODO: Remove, uncomment and add test once PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow intergation
     // tests to pass (See associated JIRA ticket:

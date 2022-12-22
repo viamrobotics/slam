@@ -35,9 +35,9 @@ DEFINE_string(input_file_pattern, "", "Input file pattern");
 // tests to pass (See associated JIRA ticket:
 // https://viam.atlassian.net/browse/RSDK-1593)
 DEFINE_string(delete_processed_data, "",
-              "Deletes data after its been processed");
+              "Deletes data after it has been processed");
 // DEFINE_bool(delete_processed_data, true,
-//             "Deletes data after its been processed");
+//             "Deletes data after it has been processed");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -68,14 +68,13 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         slamService.offline_flag = true;
     }
 
-    LOG(INFO) << "data_dir: " << FLAGS_data_dir << "\n";
-    LOG(INFO) << "config_param: " << FLAGS_config_param << "\n";
-    LOG(INFO) << "port: " << FLAGS_port << "\n";
-    LOG(INFO) << "sensors: " << FLAGS_sensors << "\n";
-    LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms << "\n";
-    LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec << "\n";
-    LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data
-              << "\n";
+    LOG(INFO) << "data_dir: " << FLAGS_data_dir;
+    LOG(INFO) << "config_param: " << FLAGS_config_param;
+    LOG(INFO) << "port: " << FLAGS_port;
+    LOG(INFO) << "sensors: " << FLAGS_sensors;
+    LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
+    LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
+    LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data;
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
@@ -106,8 +105,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (FLAGS_delete_processed_data.empty()) {
         slamService.delete_processed_data = false;
     } else {
-        slamService.delete_processed_data =
-            !(FLAGS_delete_processed_data == "false");
+        slamService.delete_processed_data = (delete_processed_data == "true");
     }
     // slamService.delete_processed_data = FLAGS_delete_processed_data;
     if (slamService.offline_flag && slamService.delete_processed_data) {
@@ -171,25 +169,25 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "max_submaps_to_keep") {
             if (slam_action_mode != ActionMode::LOCALIZING) {
                 LOG(WARNING) << "Not in localizing action mode: Setting "
-                                "max_submaps_to_keep has no effect\n";
+                                "max_submaps_to_keep has no effect";
             }
             slamService.max_submaps_to_keep = std::stoi(new_parameter);
         } else if (parameter == "fresh_submaps_count") {
             if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
-                                "fresh_submaps_count has no effect\n";
+                                "fresh_submaps_count has no effect";
             }
             slamService.fresh_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "min_covered_area") {
             if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
-                                "min_covered_area has no effect\n";
+                                "min_covered_area has no effect";
             }
             slamService.min_covered_area = std::stod(new_parameter);
         } else if (parameter == "min_added_submaps_count") {
             if (slam_action_mode != ActionMode::UPDATING) {
                 LOG(WARNING) << "Not in updating action mode: Setting "
-                                "min_added_submaps_count has no effect\n";
+                                "min_added_submaps_count has no effect";
             }
             slamService.min_added_submaps_count = std::stoi(new_parameter);
         } else if (parameter == "occupied_space_weight") {
