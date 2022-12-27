@@ -147,7 +147,7 @@ std::atomic<bool> b_continue_session{true};
     try {
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
         if (!pointcloud_has_points) {
-            LOG(FATAL) << "map pointcloud does not have points yet";
+            LOG(ERROR) << "map pointcloud does not have points yet";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "map pointcloud does not have points yet");
         }
