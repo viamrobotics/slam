@@ -439,7 +439,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     }
     if (current_file_offline == file_list_offline.size()) {
         // This log line is needed by rdk integration tests.
-        LOG(INFO) << "Finished processing offline data";
+        VLOG(1) << "Finished processing offline data";
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
