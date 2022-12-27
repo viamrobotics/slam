@@ -45,8 +45,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         ConfigParamParser(FLAGS_config_param, "minloglevel=");
     if (!minloglevel.empty()) {
         FLAGS_minloglevel = std::stoi(minloglevel);
-    } else {
-        FLAGS_minloglevel = 1;
     }
     const auto v = ConfigParamParser(FLAGS_config_param, "v=");
     if (!v.empty()) {

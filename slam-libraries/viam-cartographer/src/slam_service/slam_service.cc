@@ -439,7 +439,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     }
     if (current_file_offline == file_list_offline.size()) {
         // This log line is needed by rdk integration tests.
-        VLOG(1) << "Finished processing offline data";
+        LOG(INFO) << "Finished processing offline data";
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
@@ -637,7 +637,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             latest_global_pose = tmp_global_pose;
         }
         finished_processing_offline = true;
-        LOG(INFO) << "Finished optimizing final map";
+        // This log line is needed by rdk integration tests.
+        VLOG(1) << "Finished optimizing final map";
 
         while (viam::b_continue_session) {
             VLOG(1) << "Standing by to continue serving requests";
