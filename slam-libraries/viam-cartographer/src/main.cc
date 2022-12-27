@@ -11,7 +11,7 @@
 #include "slam_service/slam_service.h"
 
 void exit_loop_handler(int s) {
-    LOG(INFO) << "Finishing session.\n";
+    LOG(INFO) << "Finishing session.";
     viam::b_continue_session = false;
 }
 

@@ -640,7 +640,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         LOG(INFO) << "Finished optimizing final map";
 
         while (viam::b_continue_session) {
-            VLOG(1) << "Standing by to continue serving requests\n";
+            VLOG(1) << "Standing by to continue serving requests";
             std::this_thread::sleep_for(std::chrono::microseconds(
                 viam::checkForShutdownIntervalMicroseconds));
         }

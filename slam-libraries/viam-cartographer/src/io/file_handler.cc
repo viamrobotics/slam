@@ -49,7 +49,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     double time_delta = current_time - start_time;
 
     VLOG(1) << "Accessing file " << file_path << " ... ";
-    VLOG(1) << "Loaded " << cloud->width * cloud->height << " data points \n";
+    VLOG(1) << "Loaded " << cloud->width * cloud->height << " data points";
 
     for (size_t i = 0; i < cloud->points.size(); ++i) {
         cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;
