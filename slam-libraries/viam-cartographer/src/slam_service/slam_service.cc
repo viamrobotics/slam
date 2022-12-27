@@ -147,7 +147,7 @@ std::atomic<bool> b_continue_session{true};
     try {
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
         if (!pointcloud_has_points) {
-            LOG(ERROR) << "map pointcloud does not have points yet";
+            LOG(FATAL) << "map pointcloud does not have points yet";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "map pointcloud does not have points yet");
         }
@@ -538,7 +538,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         // Set TrajectoryBuilder
         trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
                                                          {kRangeSensorId});
-        LOG(INFO) << "Using trajectory ID: " << trajectory_id;
+        VLOG(1) << "Using trajectory ID: " << trajectory_id;
     }
 
     LOG(INFO) << "Beginning to add data...";
@@ -622,7 +622,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
 
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             LOG(INFO)
-                << "Starting to optimize final map. Can take a little while...";
+                << "Starting to optimize final map. This can take a little while...";
             map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();
@@ -640,7 +640,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         LOG(INFO) << "Finished optimizing final map";
 
         while (viam::b_continue_session) {
-            LOG(INFO) << "Standing by to continue serving requests\n";
+            VLOG(1) << "Standing by to continue serving requests\n";
             std::this_thread::sleep_for(std::chrono::microseconds(
                 viam::checkForShutdownIntervalMicroseconds));
         }

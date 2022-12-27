@@ -48,8 +48,8 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
 
-    LOG(INFO) << "Accessing file " << file_path << " ... ";
-    LOG(INFO) << "Loaded " << cloud->width * cloud->height << " data points \n";
+    VLOG(1) << "Accessing file " << file_path << " ... ";
+    VLOG(1) << "Loaded " << cloud->width * cloud->height << " data points \n";
 
     for (size_t i = 0; i < cloud->points.size(); ++i) {
         cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;
@@ -115,7 +115,7 @@ double ReadTimeFromTimestamp(std::string timestamp) {
         try {
             sub_sec = (double)std::stof(timestamp.substr(sub_sec_index), &sz);
         } catch (std::exception& e) {
-            LOG(ERROR) << e.what();
+            LOG(FATAL) << e.what();
             throw std::runtime_error(
                 "could not extract sub seconds from timestamp: " + timestamp);
         }
