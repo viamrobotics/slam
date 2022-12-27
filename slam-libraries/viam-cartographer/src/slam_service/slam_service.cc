@@ -621,8 +621,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             optimization_lock.lock();
 
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            LOG(INFO)
-                << "Starting to optimize final map. This can take a little while...";
+            LOG(INFO) << "Starting to optimize final map. This can take a "
+                         "little while...";
             map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();

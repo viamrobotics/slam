@@ -68,8 +68,8 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
         VLOG(1) << "Trajectory ids mapping from apriori map: "
-                  << trajectory_ids_pair.first << " "
-                  << trajectory_ids_pair.second;
+                << trajectory_ids_pair.first << " "
+                << trajectory_ids_pair.second;
 }
 
 void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
