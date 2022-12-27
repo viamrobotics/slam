@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
 
     // This log line is needed by rdk to get the port.
     LOG(INFO) << "Server listening on " << *selected_port << "\n";
+    LOG(INFO) << "Test!";
 
     slamService.RunSLAM();
 
