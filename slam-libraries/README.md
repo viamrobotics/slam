@@ -50,7 +50,7 @@ To automatically install dependencies run
 make setuporb
 ```
 
-To build ORB_SLAM3 and thirdparty packages use
+To build ORB_SLAM3 and third party packages use
 ```
 make buildorb
 ```
