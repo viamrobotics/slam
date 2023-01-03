@@ -60,8 +60,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double yamlTime;
     std::atomic<bool> use_live_data{false};
     bool delete_processed_data = false;
-    // The size of the buffer has to be the same as in the
-    // RDK tests.
+    // The size of the buffer has to be the same as
+    // dataBufferSize in RDK's builtin_test.go
     int data_buffer_size = 4;
     std::vector<std::string> processed_color_files;
     std::vector<std::string> processed_depth_files;
