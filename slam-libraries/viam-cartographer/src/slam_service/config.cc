@@ -77,8 +77,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.offline_flag = !(FLAGS_use_live_data);
 
-    // TODO: Remove no use_live_data test cases once integration tests have been
-    // updated (See associated JIRA ticket:
+    // TODO: Remove no use_live_data definition based on sensor list after
+    // integration tests have been updated (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1625)
     slamService.offline_flag = FLAGS_sensors.empty();
 

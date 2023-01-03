@@ -781,7 +781,7 @@ void ParseAndValidateArguments(const vector<string> &args,
     }
 
     auto use_live_data = ArgParser(args, "-use_live_data=");
-    // TODO: Remove no use_live_data test cases once integration tests have been
+    // TODO: Remove use_live_data == "" check once integration tests have been
     // updated (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1625)
     if (use_live_data == "") {
