@@ -77,6 +77,11 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.offline_flag = !(FLAGS_use_live_data);
 
+    // TODO: Remove no use_live_data test cases once integration tests have been
+    // updated (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1625)
+    slamService.offline_flag = FLAGS_sensors.empty();
+
     // Find the lua files.
     auto programLocation = boost::dll::program_location();
     auto relativePathToLuas = programLocation.parent_path().parent_path();
@@ -102,11 +107,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
             "a true delete_processed_data value is invalid when running slam "
             "in offline mode");
     }
-
-    // TODO: Remove no use_live_data test cases once integration tests have been
-    // updated (See associated JIRA ticket:
-    // https://viam.atlassian.net/browse/RSDK-1625)
-    slamService.offline_flag = FLAGS_sensors.empty();
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");
