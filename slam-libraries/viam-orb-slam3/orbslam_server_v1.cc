@@ -383,7 +383,7 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             if (delete_processed_data &&
                 processed_depth_files.size() >= data_buffer_size) {
                 utils::RemoveFile(processed_depth_files.at(0));
-                processed_depth_files.erase(processed_depth_files.begin())
+                processed_depth_files.erase(processed_depth_files.begin());
             }
             filesRGB = utils::ListFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
