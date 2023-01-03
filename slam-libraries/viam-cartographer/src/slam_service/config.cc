@@ -106,11 +106,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     // TODO: Remove no use_live_data test cases once integration tests have been
     // updated (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1625)
-    if (FLAGS_sensors.empty()) {
-        slamService.offline_flag = true;
-    } else {
-        slamService.offline_flag = false;
-    }
+    slamService.offline_flag = FLAGS_sensors.empty();
 
     slamService.slam_mode =
         ConfigParamParser(slamService.config_params, "mode=");

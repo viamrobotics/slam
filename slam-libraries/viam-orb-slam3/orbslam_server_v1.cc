@@ -793,10 +793,6 @@ void ParseAndValidateArguments(const vector<string> &args,
             "invalid use_live_data value, set to either true or false");
     }
 
-    if (slamService.slam_port.empty()) {
-        throw runtime_error("No gRPC port given");
-    }
-
     auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
     // TODO: Remove empty check once PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
