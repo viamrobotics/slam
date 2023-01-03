@@ -11,13 +11,13 @@
 #include "slam_service/slam_service.h"
 
 void exit_loop_handler(int s) {
-    LOG(INFO) << "Finishing session.\n";
+    LOG(INFO) << "Finishing session.";
     viam::b_continue_session = false;
 }
 
 int main(int argc, char** argv) {
     // glog only supports logging to files and stderr, not stdout.
-    FLAGS_alsologtostderr = 1;
+    FLAGS_logtostderr = 1;
     google::InitGoogleLogging(argv[0]);
     struct sigaction sigIntHandler;
 

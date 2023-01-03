@@ -538,7 +538,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         // Set TrajectoryBuilder
         trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
                                                          {kRangeSensorId});
-        LOG(INFO) << "Using trajectory ID: " << trajectory_id;
+        VLOG(1) << "Using trajectory ID: " << trajectory_id;
     }
 
     LOG(INFO) << "Beginning to add data...";
@@ -621,8 +621,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             optimization_lock.lock();
 
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            LOG(INFO)
-                << "Starting to optimize final map. Can take a little while...";
+            LOG(INFO) << "Starting to optimize final map. This can take a "
+                         "little while...";
             map_builder.map_builder_->pose_graph()->RunFinalOptimization();
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();
@@ -637,10 +637,11 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             latest_global_pose = tmp_global_pose;
         }
         finished_processing_offline = true;
-        LOG(INFO) << "Finished optimizing final map";
+        // This log line is needed by rdk integration tests.
+        VLOG(1) << "Finished optimizing final map";
 
         while (viam::b_continue_session) {
-            LOG(INFO) << "Standing by to continue serving requests\n";
+            VLOG(1) << "Standing by to continue serving requests";
             std::this_thread::sleep_for(std::chrono::microseconds(
                 viam::checkForShutdownIntervalMicroseconds));
         }

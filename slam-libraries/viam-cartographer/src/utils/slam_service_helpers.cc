@@ -36,9 +36,11 @@ ActionMode DetermineActionMode(std::string path_to_map,
             // There is an apriori map present, so we're running either in
             // updating or localization mode.
             if (map_rate_sec.count() == 0) {
+                // This log line is needed by rdk integration tests.
                 LOG(INFO) << "Running in localization only mode";
                 return ActionMode::LOCALIZING;
             }
+            // This log line is needed by rdk integration tests.
             LOG(INFO) << "Running in updating mode";
             return ActionMode::UPDATING;
         }
@@ -48,6 +50,7 @@ ActionMode DetermineActionMode(std::string path_to_map,
             "set to localization mode (map_rate_sec = 0) but couldn't find "
             "apriori map to localize on");
     }
+    // This log line is needed by rdk integration tests.
     LOG(INFO) << "Running in mapping mode";
     return ActionMode::MAPPING;
 }
