@@ -67,9 +67,9 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
         map_builder_->pose_graph()->RunFinalOptimization();
     }
     for (auto&& trajectory_ids_pair : trajectory_ids_map)
-        LOG(INFO) << "Trajectory ids mapping from apriori map: "
-                  << trajectory_ids_pair.first << " "
-                  << trajectory_ids_pair.second;
+        VLOG(1) << "Trajectory ids mapping from apriori map: "
+                << trajectory_ids_pair.first << " "
+                << trajectory_ids_pair.second;
 }
 
 void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
@@ -77,7 +77,7 @@ void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     bool ok = map_builder_->SerializeStateToFile(include_unfinished_submaps,
                                                  filename_with_timestamp);
     if (!ok) {
-        LOG(WARNING) << "Saving the map to pbstream failed.";
+        LOG(ERROR) << "Saving the map to pbstream failed.";
     }
 }
 
