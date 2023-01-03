@@ -449,6 +449,10 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
     while (b_continue_session) {
+        if (delete_processed_data && processed_files.size() >= data_buffer_size) {
+            viam::io::RemoveFile(processed_files.at(0));
+            processed_files.erase(processed_files.begin());
+        }
         const auto file_list_online =
             viam::io::ListSortedFilesInDirectory(path_to_data);
         if (file_list_online.size() > 1) {
@@ -458,6 +462,7 @@ std::string SLAMServiceImpl::GetNextDataFileOnline() {
                 file_list_online[file_list_online.size() - 2];
             if (to_return.compare(current_file_online) != 0) {
                 current_file_online = to_return;
+                processed_files.push_back(to_return);
                 return to_return;
             }
         }
@@ -589,9 +594,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                         trajectory_id, local_poses.back());
                 }
             }
-        }
-        if (delete_processed_data) {
-            viam::io::RemoveFile(file);
         }
         // Save a copy of the global pose
         {
