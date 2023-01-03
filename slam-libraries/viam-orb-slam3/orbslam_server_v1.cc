@@ -375,11 +375,13 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         // Currently pauses based off frame_delay_msec if no image is found
         while (i == -1) {
             if (!b_continue_session) return;
-            if (delete_processed_data && processed_color_files.size() >= data_buffer_size) {
+            if (delete_processed_data &&
+                processed_color_files.size() >= data_buffer_size) {
                 utils::RemoveFile(processed_color_files.at(0));
                 processed_color_files.erase(processed_color_files.begin())
             }
-            if (delete_processed_data && processed_depth_files.size() >= data_buffer_size) {
+            if (delete_processed_data &&
+                processed_depth_files.size() >= data_buffer_size) {
                 utils::RemoveFile(processed_depth_files.at(0));
                 processed_depth_files.erase(processed_depth_files.begin())
             }
@@ -403,15 +405,18 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         if (slam_mode == "rgbd") {
             ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
             if (ok) {
-                std::string colorName = path_to_data + strRGB + "/" + filesRGB[i] + ".png";
-                std::string depthName = path_to_data + strDepth + "/" + filesRGB[i] + ".png";
+                std::string colorName =
+                    path_to_data + strRGB + "/" + filesRGB[i] + ".png";
+                std::string depthName =
+                    path_to_data + strDepth + "/" + filesRGB[i] + ".png";
                 processed_color_files.push_back(colorName);
                 processed_depth_files.push_back(depthName);
             }
         } else if (slam_mode == "mono") {
             ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB);
             if (ok) {
-                std::string colorName = path_to_data + strRGB + "/" + filesRGB[i] + ".png";
+                std::string colorName =
+                    path_to_data + strRGB + "/" + filesRGB[i] + ".png";
                 processed_color_files.push_back(colorName);
             }
         } else {

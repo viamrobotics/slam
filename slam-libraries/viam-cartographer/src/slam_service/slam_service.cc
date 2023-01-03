@@ -449,7 +449,8 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
     while (b_continue_session) {
-        if (delete_processed_data && processed_files.size() >= data_buffer_size) {
+        if (delete_processed_data &&
+            processed_files.size() >= data_buffer_size) {
             viam::io::RemoveFile(processed_files.at(0));
             processed_files.erase(processed_files.begin());
         }
