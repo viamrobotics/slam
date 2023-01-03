@@ -32,6 +32,9 @@ DEFINE_int64(
 DEFINE_string(input_file_pattern, "", "Input file pattern");
 DEFINE_bool(delete_processed_data, false,
             "Deletes data after it has been processed");
+DEFINE_bool(use_live_data, false,
+            "Indicate whether or not SLAM should use new live-generated data "
+            "or previously generated data");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -59,7 +62,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     }
     if (FLAGS_sensors.empty()) {
         LOG(INFO) << "No camera given -> running in offline mode";
-        slamService.offline_flag = true;
     }
 
     LOG(INFO) << "data_dir: " << FLAGS_data_dir;
@@ -69,9 +71,11 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
     LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data;
+    LOG(INFO) << "use_live_data: " << FLAGS_use_live_data;
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
+    slamService.offline_flag = !(FLAGS_use_live_data);
 
     // Find the lua files.
     auto programLocation = boost::dll::program_location();
@@ -97,6 +101,15 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         throw std::runtime_error(
             "a true delete_processed_data value is invalid when running slam "
             "in offline mode");
+    }
+
+    // TODO: Remove no use_live_data test cases once integration tests have been
+    // updated (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1625)
+    if (FLAGS_sensors.empty()) {
+        slamService.offline_flag = true;
+    } else {
+        slamService.offline_flag = false;
     }
 
     slamService.slam_mode =
@@ -216,6 +229,7 @@ void ResetFlagsForTesting() {
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
     FLAGS_delete_processed_data = false;
+    FLAGS_use_live_data = false;
 }
 
 }  // namespace config

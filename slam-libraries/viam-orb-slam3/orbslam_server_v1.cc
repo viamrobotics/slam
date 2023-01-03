@@ -713,7 +713,9 @@ void ParseAndValidateArguments(const vector<string> &args,
             "-port=grpc_port "
             "-sensors=sensor_name "
             "-data_rate_ms=frame_delay "
-            "-map_rate_sec=map_rate_sec");
+            "-map_rate_sec=map_rate_sec "
+            "-delete_processed_data=delete_data "
+            "-use_live_data=offline_or_online");
     }
 
     const auto config_params = ArgParser(args, "-config_param=");
@@ -776,11 +778,26 @@ void ParseAndValidateArguments(const vector<string> &args,
     slamService.camera_name = ArgParser(args, "-sensors=");
     if (slamService.camera_name.empty()) {
         BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
-        slamService.offlineFlag = true;
+    }
+
+    auto use_live_data = ArgParser(args, "-use_live_data=");
+    // TODO: Remove no use_live_data test cases once integration tests have been
+    // updated (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1625)
+    if (use_live_data == "") {
+        slamService.offlineFlag = (slamService.camera_name.empty());
+    } else if (use_live_data == "true" || use_live_data == "false") {
+        slamService.offlineFlag = !(use_live_data == "true");
+    } else {
+        throw runtime_error(
+            "invalid use_live_data value, set to either true or false");
+    }
+
+    if (slamService.slam_port.empty()) {
+        throw runtime_error("No gRPC port given");
     }
 
     auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
-
     // TODO: Remove empty check once PR #1689 is submitted
     // https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
     // tests to pass (See associated JIRA ticket:
