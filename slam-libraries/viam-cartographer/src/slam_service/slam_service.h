@@ -114,7 +114,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // The size of the buffer has to be the same as
     // dataBufferSize in RDK's builtin_test.go
     const int data_buffer_size = 4;
-    std::vector<std::string> processed_files;
+    int first_processed_file_index = -1;
 
     // -- Cartographer specific config params:
     // MAP_BUILDER.pose_graph

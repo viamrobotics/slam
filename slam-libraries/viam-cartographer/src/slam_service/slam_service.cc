@@ -449,13 +449,13 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
     while (b_continue_session) {
-        if (delete_processed_data &&
-            processed_files.size() >= data_buffer_size) {
-            viam::io::RemoveFile(processed_files.at(0));
-            processed_files.erase(processed_files.begin());
-        }
         const auto file_list_online =
             viam::io::ListSortedFilesInDirectory(path_to_data);
+        if (delete_processed_data && first_processed_file_index >= 0) {
+            for (int i = first_processed_file_index; i < file_list_online.size() - data_buffer_size; i++) {
+                viam::io::RemoveFile(file_list_online.at(i));
+            }
+        }
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
@@ -463,7 +463,6 @@ std::string SLAMServiceImpl::GetNextDataFileOnline() {
                 file_list_online[file_list_online.size() - 2];
             if (to_return.compare(current_file_online) != 0) {
                 current_file_online = to_return;
-                processed_files.push_back(to_return);
                 return to_return;
             }
         }
@@ -571,6 +570,14 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 file = GetNextDataFile();
                 continue;
             }
+            // Get index of the first file we're reading in
+            const auto files =
+                viam::io::ListSortedFilesInDirectory(path_to_data);
+            auto file_index = std::find(begin(files), end(files), file);
+            if (file_index == std::end(files)) {
+                throw std::runtime_error("the file should be in the list of files: " + file);
+            }
+            first_processed_file_index = std::distance(files.begin(), file_index);
 
             // Set the start time if it has not yet been set and
             // start saving maps

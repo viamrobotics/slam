@@ -63,8 +63,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // The size of the buffer has to be the same as
     // dataBufferSize in RDK's builtin_test.go
     int data_buffer_size = 4;
-    std::vector<std::string> processed_color_files;
-    std::vector<std::string> processed_depth_files;
+    int first_processed_file_index = -1;
     bool local_viewer_flag = false;
     bool pure_localization_mode = false;
     int n_key_frames = 0;

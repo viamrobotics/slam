@@ -350,22 +350,21 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
     double fileTimeStart = yamlTime;
     // In online mode we want the most recent frames, so parse the data
     // directory with this in mind
-    int locRecent = -1;
-    locRecent = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
+    first_processed_file_index = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
                                       utils::FileParserMethod::Recent, yamlTime,
                                       &fileTimeStart);
-    while (locRecent == -1) {
+    while (first_processed_file_index == -1) {
         if (!b_continue_session) return;
         BOOST_LOG_TRIVIAL(debug) << "No new files found";
         this_thread::sleep_for(frame_delay_msec);
         filesRGB = utils::ListFilesInDirectoryForCamera(path_to_data + strRGB,
                                                         ".png", camera_name);
-        locRecent = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
+        first_processed_file_index = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
                                           utils::FileParserMethod::Recent,
                                           yamlTime, &fileTimeStart);
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
-    int i = locRecent;
+    int i = first_processed_file_index;
 
     while (true) {
         if (!b_continue_session) return;
@@ -375,16 +374,6 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         // Currently pauses based off frame_delay_msec if no image is found
         while (i == -1) {
             if (!b_continue_session) return;
-            if (delete_processed_data &&
-                processed_color_files.size() >= data_buffer_size) {
-                utils::RemoveFile(processed_color_files.at(0));
-                processed_color_files.erase(processed_color_files.begin())
-            }
-            if (delete_processed_data &&
-                processed_depth_files.size() >= data_buffer_size) {
-                utils::RemoveFile(processed_depth_files.at(0));
-                processed_depth_files.erase(processed_depth_files.begin());
-            }
             filesRGB = utils::ListFilesInDirectoryForCamera(
                 path_to_data + strRGB, ".png", camera_name);
             // In online mode we want the most recent frames, so parse the
@@ -404,21 +393,8 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         bool ok = false;
         if (slam_mode == "rgbd") {
             ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
-            if (ok) {
-                std::string colorName =
-                    path_to_data + strRGB + "/" + filesRGB[i] + ".png";
-                std::string depthName =
-                    path_to_data + strDepth + "/" + filesRGB[i] + ".png";
-                processed_color_files.push_back(colorName);
-                processed_depth_files.push_back(depthName);
-            }
         } else if (slam_mode == "mono") {
             ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB);
-            if (ok) {
-                std::string colorName =
-                    path_to_data + strRGB + "/" + filesRGB[i] + ".png";
-                processed_color_files.push_back(colorName);
-            }
         } else {
             BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         }
@@ -428,6 +404,14 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             BOOST_LOG_TRIVIAL(error)
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
+            if (delete_processed_data) {
+                for (int fi = first_processed_file_index; fi < filesRGB.size() - data_buffer_size; fi++) {
+                    utils::RemoveFile(path_to_data + strRGB + "/" + filesRGB[fi] + ".png");
+                    if (slam_mode == "rgbd") {
+                        utils::RemoveFile(path_to_data + strDepth + "/" + filesRGB[fi] + ".png");
+                    }
+                }
+            }
             // Pass the image to the SLAM system
             BOOST_LOG_TRIVIAL(debug)
                 << "Passing image to SLAM: " << filesRGB[i];
