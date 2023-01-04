@@ -795,15 +795,7 @@ void ParseAndValidateArguments(const vector<string> &args,
             "a true use_live_data value is invalid when no sensors are given");
     }
 
-    auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
-    // TODO: Remove empty check once PR #1689 is submitted
-    // https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
-    // tests to pass (See associated JIRA ticket:
-    // https://viam.atlassian.net/browse/RSDK-1593)
-    if (delete_processed_data == "") {
-        slamService.delete_processed_data = false;
-    } else if (delete_processed_data == "true" ||
-               delete_processed_data == "false") {
+    if (delete_processed_data == "true" || delete_processed_data == "false") {
         slamService.delete_processed_data = (delete_processed_data == "true");
     } else {
         throw runtime_error(
