@@ -62,7 +62,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     bool delete_processed_data = false;
     // The size of the buffer has to be the same as
     // dataBufferSize in RDK's builtin_test.go
-    int data_buffer_size = 4;
+    const int data_buffer_size = 4;
     int first_processed_file_index = -1;
     bool local_viewer_flag = false;
     bool pure_localization_mode = false;
