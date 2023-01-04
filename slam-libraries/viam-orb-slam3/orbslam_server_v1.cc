@@ -350,18 +350,18 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
     double fileTimeStart = yamlTime;
     // In online mode we want the most recent frames, so parse the data
     // directory with this in mind
-    first_processed_file_index = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
-                                      utils::FileParserMethod::Recent, yamlTime,
-                                      &fileTimeStart);
+    first_processed_file_index = utils::FindFrameIndex(
+        filesRGB, slam_mode, path_to_data, utils::FileParserMethod::Recent,
+        yamlTime, &fileTimeStart);
     while (first_processed_file_index == -1) {
         if (!b_continue_session) return;
         BOOST_LOG_TRIVIAL(debug) << "No new files found";
         this_thread::sleep_for(frame_delay_msec);
         filesRGB = utils::ListFilesInDirectoryForCamera(path_to_data + strRGB,
                                                         ".png", camera_name);
-        first_processed_file_index = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
-                                          utils::FileParserMethod::Recent,
-                                          yamlTime, &fileTimeStart);
+        first_processed_file_index = utils::FindFrameIndex(
+            filesRGB, slam_mode, path_to_data, utils::FileParserMethod::Recent,
+            yamlTime, &fileTimeStart);
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
     int i = first_processed_file_index;
@@ -405,10 +405,13 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
             if (delete_processed_data) {
-                for (int fi = first_processed_file_index; fi < filesRGB.size() - data_buffer_size; fi++) {
-                    utils::RemoveFile(path_to_data + strRGB + "/" + filesRGB[fi] + ".png");
+                for (int fi = first_processed_file_index;
+                     fi < filesRGB.size() - data_buffer_size; fi++) {
+                    utils::RemoveFile(path_to_data + strRGB + "/" +
+                                      filesRGB[fi] + ".png");
                     if (slam_mode == "rgbd") {
-                        utils::RemoveFile(path_to_data + strDepth + "/" + filesRGB[fi] + ".png");
+                        utils::RemoveFile(path_to_data + strDepth + "/" +
+                                          filesRGB[fi] + ".png");
                     }
                 }
             }
