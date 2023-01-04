@@ -453,7 +453,7 @@ std::string SLAMServiceImpl::GetNextDataFileOnline() {
             viam::io::ListSortedFilesInDirectory(path_to_data);
         if (delete_processed_data && first_processed_file_index >= 0) {
             for (int i = first_processed_file_index;
-                 i < file_list_online.size() - data_buffer_size; i++) {
+                 i < int(file_list_online.size()) - data_buffer_size; i++) {
                 viam::io::RemoveFile(file_list_online.at(i));
             }
         }

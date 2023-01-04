@@ -406,7 +406,7 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         } else {
             if (delete_processed_data) {
                 for (int fi = first_processed_file_index;
-                     fi < filesRGB.size() - data_buffer_size; fi++) {
+                     fi < int(filesRGB.size()) - data_buffer_size; fi++) {
                     utils::RemoveFile(path_to_data + strRGB + "/" +
                                       filesRGB[fi] + ".png");
                     if (slam_mode == "rgbd") {
