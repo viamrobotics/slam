@@ -78,7 +78,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     auto relativePathToLuas = programLocation.parent_path().parent_path();
     relativePathToLuas.append("share/cartographer/lua_files");
     if (exists(relativePathToLuas)) {
-        LOG(INFO) << "Using lua files from relative path";
+        VLOG(1) << "Using lua files from relative path";
         slamService.configuration_directory = relativePathToLuas.string();
     } else {
         LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
