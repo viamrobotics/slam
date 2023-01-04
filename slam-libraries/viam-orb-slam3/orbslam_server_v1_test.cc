@@ -257,6 +257,7 @@ BOOST_AUTO_TEST_CASE(
                               "-use_live_data=true"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.camera_name == "color");
     BOOST_TEST(slamService.use_live_data == true);
 }
 
@@ -272,6 +273,7 @@ BOOST_AUTO_TEST_CASE(
                               "-use_live_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.camera_name == "color");
     BOOST_TEST(slamService.use_live_data == false);
 }
 
@@ -302,6 +304,7 @@ BOOST_AUTO_TEST_CASE(
                               "-use_live_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.camera_name == "");
     BOOST_TEST(slamService.use_live_data == false);
 }
 
@@ -325,7 +328,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_config_invalid_use_live_data) {
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_online_with_no_live_data) {
     const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
                               "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60"};
+                              "-data_rate_ms=200",  "-delete_processed_data=false",
+                              "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.use_live_data == true);
@@ -334,14 +338,13 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_online_with_no_live_data) {
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_offline_with_no_live_data) {
     const vector<string> args{
         "-data_dir=/path/to", "-config_param={mode=rgbd}", "-port=20000",
-        "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60"};
+        "-sensors=",          "-data_rate_ms=200",         "-delete_processed_data=false",
+        "-map_rate_sec=60"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.use_live_data == false);
 }
 
-=======
->>>>>>> 31f4c0b921f90385bf8c997ad017878153d1a503
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
     // Provide a filename with a missing timestamp
     std::string timestamp = "no-timestamp";
@@ -368,6 +371,8 @@ BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp) {
 
 BOOST_AUTO_TEST_CASE(FindFrameIndex_Closest_no_files) {
     const string configTimeString = "2022-01-01T01:00:00.0000Z";
+    const auto configTime = utils::ReadTimeFromTimestamp(configTimeString);
+    vector<string> files;
     double timeInterest;
     BOOST_TEST(utils::FindFrameIndex(files, "mono", "",
                                      utils::FileParserMethod::Closest,

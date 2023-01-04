@@ -795,6 +795,7 @@ void ParseAndValidateArguments(const vector<string> &args,
             "a true use_live_data value is invalid when no sensors are given");
     }
 
+    auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
     if (delete_processed_data == "true" || delete_processed_data == "false") {
         slamService.delete_processed_data = (delete_processed_data == "true");
     } else {
