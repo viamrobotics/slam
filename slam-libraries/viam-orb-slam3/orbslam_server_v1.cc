@@ -580,7 +580,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
         auto start = std::chrono::high_resolution_clock::now();
         string path_save_file_name =
             utils::MakeFilenameWithTimestamp(path_to_map, camera_name);
-        if (offlineFlag && finished_processing_offline) {
+        if (!use_live_data && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lock(slam_mutex);
                 SLAM->SaveAtlasAsOsaWithTimestamp(path_save_file_name);
@@ -776,21 +776,23 @@ void ParseAndValidateArguments(const vector<string> &args,
     }
 
     slamService.camera_name = ArgParser(args, "-sensors=");
-    if (slamService.camera_name.empty()) {
-        BOOST_LOG_TRIVIAL(info) << "No camera given -> running in offline mode";
-    }
 
     auto use_live_data = ArgParser(args, "-use_live_data=");
     // TODO: Remove use_live_data == "" check once integration tests have been
     // updated (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1625)
     if (use_live_data == "") {
-        slamService.offlineFlag = (slamService.camera_name.empty());
+        slamService.use_live_data = !(slamService.camera_name.empty());
     } else if (use_live_data == "true" || use_live_data == "false") {
-        slamService.offlineFlag = !(use_live_data == "true");
+        slamService.use_live_data = (use_live_data == "true");
     } else {
         throw runtime_error(
             "invalid use_live_data value, set to either true or false");
+    }
+
+    if (slamService.use_live_data && slamService.camera_name.empty()) {
+        throw runtime_error(
+            "a true use_live_data value is invalid when no sensors are given");
     }
 
     auto delete_processed_data = ArgParser(args, "-delete_processed_data=");
@@ -808,7 +810,7 @@ void ParseAndValidateArguments(const vector<string> &args,
             "invalid delete_processed_data value, set to either true or false");
     }
 
-    if (slamService.offlineFlag && slamService.delete_processed_data) {
+    if (!(slamService.use_live_data) && slamService.delete_processed_data) {
         throw runtime_error(
             "a true delete_processed_data value is invalid when running slam "
             "in offline mode");
@@ -816,7 +818,7 @@ void ParseAndValidateArguments(const vector<string> &args,
 
     string local_viewer = ArgParser(args, "--localView=");
     boost::algorithm::to_lower(local_viewer);
-    if ((local_viewer == "true") && (slamService.offlineFlag)) {
+    if ((local_viewer == "true") && !(slamService.use_live_data)) {
         BOOST_LOG_TRIVIAL(info) << "Running with local viewer";
         slamService.local_viewer_flag = true;
     } else {

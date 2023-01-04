@@ -109,7 +109,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::chrono::seconds map_rate_sec;
     std::string slam_mode;
     std::atomic<bool> optimize_on_start{false};
-    std::atomic<bool> offline_flag{false};
+    std::atomic<bool> use_live_data{false};
     bool delete_processed_data = false;
 
     // -- Cartographer specific config params:

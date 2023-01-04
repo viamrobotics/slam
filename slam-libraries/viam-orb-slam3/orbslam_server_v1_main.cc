@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
         if (is_regular_file(p) && p.extension() == ".yaml") {
             std::time_t timestamp = last_write_time(p);
             if (timestamp > latest_tm) {
-                if (slamService.offlineFlag ||
+                if (!slamService.use_live_data ||
                     p.stem().string().find(slamService.camera_name) !=
                         string::npos) {
                     latest = p;
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 
     string full_path_to_settings =
         slamService.path_to_settings + "/" + latest.filename().string();
-    if (slamService.offlineFlag) {
+    if (!slamService.use_live_data) {
         if (myYAML.find("_data_") != string::npos)
             slamService.camera_name = myYAML.substr(0, myYAML.find("_data_"));
         else {
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
         SLAM->GetAtlas()->ChangeMap(largestMap);
     }
 
-    if (slamService.offlineFlag) {
+    if (!slamService.use_live_data) {
         BOOST_LOG_TRIVIAL(info) << "Running in offline mode";
         slamService.StartSaveAtlasAsOsa(SLAM.get());
         slamService.ProcessDataOffline(SLAM.get());

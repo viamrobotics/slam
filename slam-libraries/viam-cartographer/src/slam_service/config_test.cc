@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config) {
     BOOST_TEST(slamService.map_rate_sec.count() ==
                std::chrono::seconds(60).count());
     BOOST_TEST(slamService.camera_name == "lidar");
-    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.optimize_on_start == false);
     delete argv;
 }
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(
     BOOST_TEST(slamService.map_rate_sec.count() ==
                std::chrono::seconds(60).count());
     BOOST_TEST(slamService.camera_name == "lidar");
-    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.optimize_on_start == true);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config_no_camera) {
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.camera_name == "");
-    BOOST_TEST(slamService.offline_flag == true);
+    BOOST_TEST(slamService.use_live_data == false);
     delete argv;
 }
 
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == true);
     delete argv;
 }
@@ -401,13 +401,13 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
 }
 
 BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_valid_offline_config_with_true_delete_processed_data) {
+    ParseAndValidateConfigParams_invalid_offline_config_with_true_delete_processed_data) {
     ResetFlagsForTesting();
     std::vector<std::string> args{
         "carto_grpc_server",   "-config_param={mode=2d}",
@@ -438,8 +438,78 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == true);
+    BOOST_TEST(slamService.use_live_data == false);
     BOOST_TEST(slamService.delete_processed_data == false);
+    delete argv;
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_config_with_true_use_live_data_and_sensors) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server",  "-config_param={mode=2d}",
+        "-data_dir=/path/to", "-port=localhost:0",
+        "-sensors=lidar",     "-map_rate_sec=60",
+        "-data_rate_ms=200",  "-delete_processed_data=false",
+        "-use_live_data=true"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    ParseAndValidateConfigParams(argc, argv, slamService);
+    BOOST_TEST(slamService.use_live_data == true);
+    delete argv;
+}
+
+// TODO: Add test in once integration tests have been updated (See associated
+// JIRA ticket: https://viam.atlassian.net/browse/RSDK-1625)
+// BOOST_AUTO_TEST_CASE(
+//     ParseAndValidateConfigParams_config_with_false_use_live_data_and_sensors)
+//     { ResetFlagsForTesting(); std::vector<std::string> args{
+//         "carto_grpc_server",  "-config_param={mode=2d}",
+//         "-data_dir=/path/to", "-port=localhost:0",
+//         "-sensors=lidar",     "-map_rate_sec=60",
+//         "-data_rate_ms=200",  "-delete_processed_data=false",
+//         "-use_live_data=false"};
+//     int argc = args.size();
+//     char** argv = toCharArrayArray(args);
+//     SLAMServiceImpl slamService;
+//     ParseAndValidateConfigParams(argc, argv, slamService);
+//     BOOST_TEST(slamService.use_live_data == false);
+//     delete argv;
+// }
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_config_with_true_use_live_data_and_no_sensors) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server",  "-config_param={mode=2d}",
+        "-data_dir=/path/to", "-port=localhost:0",
+        "-sensors=",          "-map_rate_sec=60",
+        "-data_rate_ms=200",  "-delete_processed_data=false",
+        "-use_live_data=true"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    const std::string message =
+        "a true use_live_data value is invalid when no sensors are given";
+    checkParseAndValidateConfigParamsException(argc, argv, message);
+    delete argv;
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateConfigParams_config_with_false_use_live_data_and_no_sensors) {
+    ResetFlagsForTesting();
+    std::vector<std::string> args{
+        "carto_grpc_server",   "-config_param={mode=2d}",
+        "-data_dir=/path/to",  "-port=localhost:0",
+        "-sensors=",           "-map_rate_sec=60",
+        "-data_rate_ms=200",   "-delete_processed_data=false",
+        "-use_live_data=false"};
+    int argc = args.size();
+    char** argv = toCharArrayArray(args);
+    SLAMServiceImpl slamService;
+    ParseAndValidateConfigParams(argc, argv, slamService);
+    BOOST_TEST(slamService.use_live_data == false);
     delete argv;
 }
 
@@ -458,7 +528,7 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
 }
@@ -475,7 +545,7 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == true);
+    BOOST_TEST(slamService.use_live_data == false);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
 }
@@ -483,9 +553,8 @@ BOOST_AUTO_TEST_CASE(
 // TODO: Remove no use_live_data test cases once integration tests have been
 // updated (See associated JIRA ticket:
 // https://viam.atlassian.net/browse/RSDK-1625)
-
 BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_online_config_no_use_live_data) {
+    ParseAndValidateConfigParams_config_no_use_live_data_with_sensors) {
     ResetFlagsForTesting();
     std::vector<std::string> args{
         "carto_grpc_server",  "-config_param={mode=2d}",
@@ -496,12 +565,12 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     delete argv;
 }
 
 BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_offline_config_no_use_live_data) {
+    ParseAndValidateConfigParams_config_no_use_live_data_with_no_sensors) {
     ResetFlagsForTesting();
     std::vector<std::string> args{
         "carto_grpc_server",  "-config_param={mode=2d}",
@@ -512,7 +581,7 @@ BOOST_AUTO_TEST_CASE(
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
     ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == true);
+    BOOST_TEST(slamService.use_live_data == false);
     delete argv;
 }
 

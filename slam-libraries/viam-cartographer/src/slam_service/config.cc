@@ -60,9 +60,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (FLAGS_port.empty()) {
         throw std::runtime_error("-port is missing");
     }
-    if (FLAGS_sensors.empty()) {
-        LOG(INFO) << "No camera given -> running in offline mode";
-    }
 
     LOG(INFO) << "data_dir: " << FLAGS_data_dir;
     LOG(INFO) << "config_param: " << FLAGS_config_param;
@@ -75,12 +72,16 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
-    slamService.offline_flag = !(FLAGS_use_live_data);
+    slamService.use_live_data = FLAGS_use_live_data;
+    if (slamService.use_live_data && FLAGS_sensors.empty()) {
+        throw std::runtime_error(
+            "a true use_live_data value is invalid when no sensors are given");
+    }
 
     // TODO: Remove no use_live_data definition based on sensor list after
     // integration tests have been updated (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1625)
-    slamService.offline_flag = FLAGS_sensors.empty();
+    slamService.use_live_data = !(FLAGS_sensors.empty());
 
     // Find the lua files.
     auto programLocation = boost::dll::program_location();
@@ -102,7 +103,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     slamService.delete_processed_data = FLAGS_delete_processed_data;
-    if (slamService.offline_flag && slamService.delete_processed_data) {
+    if (!slamService.use_live_data && slamService.delete_processed_data) {
         throw std::runtime_error(
             "a true delete_processed_data value is invalid when running slam "
             "in offline mode");
