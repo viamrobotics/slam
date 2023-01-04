@@ -19,13 +19,14 @@ int main(int argc, char** argv) {
     // glog only supports logging to files and stderr, not stdout.
     FLAGS_logtostderr = 1;
     google::InitGoogleLogging(argv[0]);
-    struct sigaction sigTermHandler;
+    struct sigaction sigHandler;
 
-    sigTermHandler.sa_handler = exit_loop_handler;
-    sigemptyset(&sigTermHandler.sa_mask);
-    sigTermHandler.sa_flags = 0;
+    sigHandler.sa_handler = exit_loop_handler;
+    sigemptyset(&sigHandler.sa_mask);
+    sigHandler.sa_flags = 0;
 
-    sigaction(SIGTERM, &sigTermHandler, NULL);
+    sigaction(SIGTERM, &sigHandler, NULL);
+    sigaction(SIGINT, &sigHandler, NULL);
 
     viam::SLAMServiceImpl slamService;
     viam::config::ParseAndValidateConfigParams(argc, argv, slamService);
