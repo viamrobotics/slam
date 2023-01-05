@@ -322,6 +322,20 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_config_invalid_use_live_data) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_config_no_use_live_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false",
+                              "-use_live_data="};
+    const string message =
+        "invalid use_live_data value, set to either true or false";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
     // Provide a filename with a missing timestamp
     std::string timestamp = "no-timestamp";
