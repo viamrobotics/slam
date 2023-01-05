@@ -468,10 +468,10 @@ std::string SLAMServiceImpl::GetNextDataFileOnline() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFile() {
-    if (!use_live_data) {
-        return GetNextDataFileOffline();
+    if (use_live_data) {
+        return GetNextDataFileOnline();
     }
-    return GetNextDataFileOnline();
+    return GetNextDataFileOffline();
 }
 
 void SLAMServiceImpl::StartSaveMap() {
@@ -500,7 +500,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if ((time_elapsed_msec >= map_rate_sec) ||
-                (!(use_live_data) && finished_processing_offline)) {
+                (!use_live_data && finished_processing_offline)) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
@@ -515,7 +515,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         const std::string filename_with_timestamp =
             viam::io::MakeFilenameWithTimestamp(path_to_map);
 
-        if (!(use_live_data) && finished_processing_offline) {
+        if (!use_live_data && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lk(map_builder_mutex);
                 map_builder.SaveMapToFile(true, filename_with_timestamp);

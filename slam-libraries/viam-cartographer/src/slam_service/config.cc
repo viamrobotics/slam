@@ -81,7 +81,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     // TODO: Remove no use_live_data definition based on sensor list after
     // integration tests have been updated (See associated JIRA ticket:
     // https://viam.atlassian.net/browse/RSDK-1625)
-    slamService.use_live_data = !(FLAGS_sensors.empty());
+    slamService.use_live_data = !FLAGS_sensors.empty();
 
     // Find the lua files.
     auto programLocation = boost::dll::program_location();
