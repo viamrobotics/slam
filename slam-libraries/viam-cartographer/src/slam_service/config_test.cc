@@ -513,41 +513,6 @@ BOOST_AUTO_TEST_CASE(
     delete argv;
 }
 
-// TODO: Remove no use_live_data test cases once integration tests have been
-// updated (See associated JIRA ticket:
-// https://viam.atlassian.net/browse/RSDK-1625)
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_config_no_use_live_data_with_sensors) {
-    ResetFlagsForTesting();
-    std::vector<std::string> args{
-        "carto_grpc_server",  "-config_param={mode=2d}",
-        "-data_dir=/path/to", "-port=localhost:0",
-        "-sensors=lidar",     "-data_rate_ms=200",
-        "-map_rate_sec=60",   "-delete_processed_data=false"};
-    int argc = args.size();
-    char** argv = toCharArrayArray(args);
-    SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.use_live_data == true);
-    delete argv;
-}
-
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_config_no_use_live_data_with_no_sensors) {
-    ResetFlagsForTesting();
-    std::vector<std::string> args{
-        "carto_grpc_server",  "-config_param={mode=2d}",
-        "-data_dir=/path/to", "-port=localhost:0",
-        "-sensors=",          "-data_rate_ms=200",
-        "-map_rate_sec=60",   "-delete_processed_data=false"};
-    int argc = args.size();
-    char** argv = toCharArrayArray(args);
-    SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.use_live_data == false);
-    delete argv;
-}
-
 BOOST_AUTO_TEST_SUITE_END()
 
 }  // namespace

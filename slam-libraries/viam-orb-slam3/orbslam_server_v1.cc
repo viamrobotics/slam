@@ -778,12 +778,7 @@ void ParseAndValidateArguments(const vector<string> &args,
     slamService.camera_name = ArgParser(args, "-sensors=");
 
     auto use_live_data = ArgParser(args, "-use_live_data=");
-    // TODO: Remove use_live_data == "" check once integration tests have been
-    // updated (See associated JIRA ticket:
-    // https://viam.atlassian.net/browse/RSDK-1625)
-    if (use_live_data == "") {
-        slamService.use_live_data = !slamService.camera_name.empty();
-    } else if (use_live_data == "true" || use_live_data == "false") {
+    if (use_live_data == "true" || use_live_data == "false") {
         slamService.use_live_data = (use_live_data == "true");
     } else {
         throw runtime_error(

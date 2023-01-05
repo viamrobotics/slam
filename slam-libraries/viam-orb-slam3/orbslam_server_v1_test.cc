@@ -322,31 +322,6 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_config_invalid_use_live_data) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-// TODO: Remove no use_live_data test cases once integration tests have been
-// updated (See associated JIRA ticket:
-// https://viam.atlassian.net/browse/RSDK-1625)
-BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_online_with_no_live_data) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=rgbd}",
-        "-port=20000",        "-sensors=color",
-        "-data_rate_ms=200",  "-delete_processed_data=false",
-        "-map_rate_sec=60"};
-    SLAMServiceImpl slamService;
-    utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.use_live_data == true);
-}
-
-BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_offline_with_no_live_data) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=rgbd}",
-        "-port=20000",        "-sensors=",
-        "-data_rate_ms=200",  "-delete_processed_data=false",
-        "-map_rate_sec=60"};
-    SLAMServiceImpl slamService;
-    utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.use_live_data == false);
-}
-
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
     // Provide a filename with a missing timestamp
     std::string timestamp = "no-timestamp";
