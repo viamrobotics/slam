@@ -36,14 +36,19 @@ In addition, install the lua files locally with
 ```
 make install-lua-carto
 ```
-Then, follow the instructions described in [viam-cartographer/README.md](./viam-cartographer/README.md).
 
+Copy the binary to a location in your PATH:
+```
+sudo cp ./viam-cartographer/build/carto_grpc_server /usr/local/bin/
+```
 ### ORB_SLAM3
 ORB_SLAM3 is a SLAM system for feature based mapping using monocular, rgbd, and stereo camera setups.
 
 For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 
 #### Getting started
+
+##### NOTE: Orbslam is not currently supported on MacOS
 
 To automatically install dependencies run
 ```
@@ -55,5 +60,8 @@ To build ORB_SLAM3 and third party packages use
 make buildorb
 ```
 
-Then, follow the instructions described in [viam-orb-slam3/README.md](./viam-orb-slam3/README.md).
+Copy the binary to a location in your PATH:
+```
+sudo cp ./viam-orb-slam3/bin/orb_grpc_server /usr/local/bin/
+```
 
