@@ -48,6 +48,8 @@ For more information see [the official ORB_SLAM3 Repo](https://github.com/UZ-SLA
 
 #### Getting started
 
+##### NOTE: Orbslam is not currently supported on MacOS
+
 To automatically install dependencies run
 ```
 make setuporb
