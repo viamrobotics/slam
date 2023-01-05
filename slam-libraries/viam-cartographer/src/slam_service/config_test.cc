@@ -422,26 +422,6 @@ BOOST_AUTO_TEST_CASE(
     delete argv;
 }
 
-// TODO: Remove no delete_processed_data test cases once PR #1689 is in
-// https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
-// tests to pass (See associated JIRA ticket:
-// https://viam.atlassian.net/browse/RSDK-1593)
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateConfigParams_valid_online_config_with_no_delete_processed_data) {
-    ResetFlagsForTesting();
-    std::vector<std::string> args{
-        "carto_grpc_server", "-config_param={mode=2d}", "-data_dir=/path/to",
-        "-port=localhost:0", "-sensors=lidar",          "-map_rate_sec=60",
-        "-data_rate_ms=200"};
-    int argc = args.size();
-    char** argv = toCharArrayArray(args);
-    SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, slamService);
-    BOOST_TEST(slamService.offline_flag == false);
-    BOOST_TEST(slamService.delete_processed_data == false);
-    delete argv;
-}
-
 BOOST_AUTO_TEST_CASE(
     ParseAndValidateConfigParams_valid_offline_config_with_no_delete_processed_data) {
     ResetFlagsForTesting();

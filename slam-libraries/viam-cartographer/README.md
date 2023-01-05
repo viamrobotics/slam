@@ -49,7 +49,6 @@ brew install openssl eigen gflags glog suite-sparse sphinx-doc pcl
 
 ```
 
-
 #### Setup: Raspberry Pi OS Lite (64-bit)
 
 **Install dependencies**
@@ -87,9 +86,7 @@ This will build the binary and save it at `./build/carto_grpc_server`. Move this
 sudo cp build/carto_grpc_server /usr/local/bin/
 ```
 
-## Running cartographer
-
-In your desired data directory, move the configuration files from cartographer into /usr/local/share`:  
+In your desired data directory, move the configuration files from cartographer into `/usr/local/share`:  
 ```bash
 sudo mkdir -p /usr/local/share/cartographer/lua_files
 sudo cp lua_files/* /usr/local/share/cartographer/lua_files/
