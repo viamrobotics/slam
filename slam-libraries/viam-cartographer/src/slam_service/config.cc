@@ -32,6 +32,9 @@ DEFINE_int64(
 DEFINE_string(input_file_pattern, "", "Input file pattern");
 DEFINE_bool(delete_processed_data, false,
             "Deletes data after it has been processed");
+DEFINE_bool(use_live_data, false,
+            "Indicate whether or not SLAM should use new live-generated data "
+            "or previously generated data");
 DEFINE_bool(aix_auto_update, false, "Automatically updates the app image");
 
 void ParseAndValidateConfigParams(int argc, char** argv,
@@ -57,10 +60,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     if (FLAGS_port.empty()) {
         throw std::runtime_error("-port is missing");
     }
-    if (FLAGS_sensors.empty()) {
-        LOG(INFO) << "No camera given -> running in offline mode";
-        slamService.offline_flag = true;
-    }
 
     LOG(INFO) << "data_dir: " << FLAGS_data_dir;
     LOG(INFO) << "config_param: " << FLAGS_config_param;
@@ -69,9 +68,20 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
     LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data;
+    LOG(INFO) << "use_live_data: " << FLAGS_use_live_data;
 
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
+    slamService.use_live_data = FLAGS_use_live_data;
+    if (slamService.use_live_data && FLAGS_sensors.empty()) {
+        throw std::runtime_error(
+            "a true use_live_data value is invalid when no sensors are given");
+    }
+
+    // TODO: Remove no use_live_data definition based on sensor list after
+    // integration tests have been updated (See associated JIRA ticket:
+    // https://viam.atlassian.net/browse/RSDK-1625)
+    slamService.use_live_data = !FLAGS_sensors.empty();
 
     // Find the lua files.
     auto programLocation = boost::dll::program_location();
@@ -93,7 +103,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     slamService.delete_processed_data = FLAGS_delete_processed_data;
-    if (slamService.offline_flag && slamService.delete_processed_data) {
+    if (!slamService.use_live_data && slamService.delete_processed_data) {
         throw std::runtime_error(
             "a true delete_processed_data value is invalid when running slam "
             "in offline mode");
@@ -216,6 +226,7 @@ void ResetFlagsForTesting() {
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
     FLAGS_delete_processed_data = false;
+    FLAGS_use_live_data = false;
 }
 
 }  // namespace config
