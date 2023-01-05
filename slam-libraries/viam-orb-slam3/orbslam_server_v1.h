@@ -58,7 +58,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     chrono::milliseconds frame_delay_msec;
     chrono::seconds map_rate_sec;
     double yamlTime;
-    std::atomic<bool> offlineFlag{false};
+    std::atomic<bool> use_live_data{false};
     bool delete_processed_data = false;
     bool local_viewer_flag = false;
     bool pure_localization_mode = false;

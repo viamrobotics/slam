@@ -31,7 +31,9 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_args) {
         "-port=grpc_port "
         "-sensors=sensor_name "
         "-data_rate_ms=frame_delay "
-        "-map_rate_sec=map_rate_sec";
+        "-map_rate_sec=map_rate_sec "
+        "-delete_processed_data=delete_data "
+        "-use_live_data=offline_or_online";
     checkParseAndValidateArgumentsException(args, message);
 }
 
@@ -42,6 +44,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_data_dir) {
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
                               "-delete_processed_data=false",
+                              "-use_live_data=true",
                               "-unknown=unknown"};
     const string message = "No data directory given";
     checkParseAndValidateArgumentsException(args, message);
@@ -54,7 +57,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_mode) {
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=true"};
     const string message = "No SLAM mode given";
     checkParseAndValidateArgumentsException(args, message);
 }
@@ -66,17 +70,18 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_invalid_slam_mode) {
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=true"};
     const string message = "Invalid slam_mode=bad";
     checkParseAndValidateArgumentsException(args, message);
 }
 
 BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_no_slam_port) {
     const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=rgbd}",
-        "-sensors=color",     "-data_rate_ms=200",
-        "-map_rate_sec=60",   "-delete_processed_data=false",
-        "-unknown=unknown"};
+        "-data_dir=/path/to",  "-config_param={mode=rgbd}",
+        "-sensors=color",      "-data_rate_ms=200",
+        "-map_rate_sec=60",    "-delete_processed_data=false",
+        "-use_live_data=true", "-unknown=unknown"};
     const string message = "No gRPC port given";
     checkParseAndValidateArgumentsException(args, message);
 }
@@ -88,7 +93,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_data_rate_msec) {
                               "-sensors=color",
                               "-data_rate_ms=",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=true"};
     const string message = "a data_rate_ms value is required";
     checkParseAndValidateArgumentsException(args, message);
 }
@@ -100,7 +106,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_map_rate_sec) {
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=true"};
     const string message = "a map_rate_sec value is required";
     checkParseAndValidateArgumentsException(args, message);
 }
@@ -112,7 +119,8 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=true"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.path_to_vocab == "/path/to/config/ORBvoc.txt");
@@ -125,7 +133,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config) {
                chrono::milliseconds(200).count());
     BOOST_TEST(slamService.map_rate_sec.count() == chrono::seconds(60).count());
     BOOST_TEST(slamService.camera_name == "color");
-    BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == false);
 }
 
@@ -137,7 +145,8 @@ BOOST_AUTO_TEST_CASE(
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=true"};
+                              "-delete_processed_data=true",
+                              "-use_live_data=true"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.slam_mode == "rgbd");
@@ -150,11 +159,12 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_valid_config_no_camera) {
                               "-sensors=",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
     BOOST_TEST(slamService.camera_name == "");
-    BOOST_TEST(slamService.offlineFlag == true);
+    BOOST_TEST(slamService.use_live_data == false);
 }
 
 BOOST_AUTO_TEST_CASE(
@@ -165,10 +175,11 @@ BOOST_AUTO_TEST_CASE(
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=true"};
+                              "-delete_processed_data=true",
+                              "-use_live_data=true"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == true);
 }
 
@@ -180,10 +191,11 @@ BOOST_AUTO_TEST_CASE(
                               "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=true"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.offlineFlag == false);
+    BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == false);
 }
 
@@ -195,7 +207,8 @@ BOOST_AUTO_TEST_CASE(
                               "-sensors=",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=true"};
+                              "-delete_processed_data=true",
+                              "-use_live_data=false"};
     const string message =
         "a true delete_processed_data value is invalid when running slam in "
         "offline mode";
@@ -210,10 +223,11 @@ BOOST_AUTO_TEST_CASE(
                               "-sensors=",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=false"};
+                              "-delete_processed_data=false",
+                              "-use_live_data=false"};
     SLAMServiceImpl slamService;
     utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.offlineFlag == true);
+    BOOST_TEST(slamService.use_live_data == false);
     BOOST_TEST(slamService.delete_processed_data == false);
 }
 
@@ -221,13 +235,116 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_invalid_delete_processed_data) {
     const vector<string> args{"-data_dir=/path/to",
                               "-config_param={mode=rgbd}",
                               "-port=20000",
-                              "-sensors=",
+                              "-sensors=color",
                               "-data_rate_ms=200",
                               "-map_rate_sec=60",
-                              "-delete_processed_data=gibberish"};
+                              "-delete_processed_data=gibberish"
+                              "-use_live_data=true"};
     const string message =
         "invalid delete_processed_data value, set to either true or false";
     checkParseAndValidateArgumentsException(args, message);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_config_with_true_use_live_data_and_sensors) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=true",
+                              "-use_live_data=true"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.camera_name == "color");
+    BOOST_TEST(slamService.use_live_data == true);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_config_with_false_use_live_data_and_sensors) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false",
+                              "-use_live_data=false"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.camera_name == "color");
+    BOOST_TEST(slamService.use_live_data == false);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_config_with_true_use_live_data_and_no_sensors) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=true",
+                              "-use_live_data=true"};
+    const string message =
+        "a true use_live_data value is invalid when no sensors are given";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
+BOOST_AUTO_TEST_CASE(
+    ParseAndValidateArguments_config_with_false_use_live_data_and_no_sensors) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false",
+                              "-use_live_data=false"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.camera_name == "");
+    BOOST_TEST(slamService.use_live_data == false);
+}
+
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_config_invalid_use_live_data) {
+    const vector<string> args{"-data_dir=/path/to",
+                              "-config_param={mode=rgbd}",
+                              "-port=20000",
+                              "-sensors=color",
+                              "-data_rate_ms=200",
+                              "-map_rate_sec=60",
+                              "-delete_processed_data=false",
+                              "-use_live_data=gibberish"};
+    const string message =
+        "invalid use_live_data value, set to either true or false";
+    checkParseAndValidateArgumentsException(args, message);
+}
+
+// TODO: Remove no use_live_data test cases once integration tests have been
+// updated (See associated JIRA ticket:
+// https://viam.atlassian.net/browse/RSDK-1625)
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_online_with_no_live_data) {
+    const vector<string> args{
+        "-data_dir=/path/to", "-config_param={mode=rgbd}",
+        "-port=20000",        "-sensors=color",
+        "-data_rate_ms=200",  "-delete_processed_data=false",
+        "-map_rate_sec=60"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.use_live_data == true);
+}
+
+BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_offline_with_no_live_data) {
+    const vector<string> args{
+        "-data_dir=/path/to", "-config_param={mode=rgbd}",
+        "-port=20000",        "-sensors=",
+        "-data_rate_ms=200",  "-delete_processed_data=false",
+        "-map_rate_sec=60"};
+    SLAMServiceImpl slamService;
+    utils::ParseAndValidateArguments(args, slamService);
+    BOOST_TEST(slamService.use_live_data == false);
 }
 
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
