@@ -230,32 +230,6 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateArguments_invalid_delete_processed_data) {
     checkParseAndValidateArgumentsException(args, message);
 }
 
-// TODO: Remove no delete_processed_data test cases once PR #1689 is in
-// https://github.com/viamrobotics/rdk/pull/1689 This will allow integration
-// tests to pass (See associated JIRA ticket:
-// https://viam.atlassian.net/browse/RSDK-1593)
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateArguments_online_with_no_delete_processed_data) {
-    const vector<string> args{"-data_dir=/path/to", "-config_param={mode=rgbd}",
-                              "-port=20000",        "-sensors=color",
-                              "-data_rate_ms=200",  "-map_rate_sec=60"};
-    SLAMServiceImpl slamService;
-    utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.offlineFlag == false);
-    BOOST_TEST(slamService.delete_processed_data == false);
-}
-
-BOOST_AUTO_TEST_CASE(
-    ParseAndValidateArguments_offline_with_no_delete_processed_data) {
-    const vector<string> args{
-        "-data_dir=/path/to", "-config_param={mode=rgbd}", "-port=20000",
-        "-sensors=",          "-data_rate_ms=200",         "-map_rate_sec=60"};
-    SLAMServiceImpl slamService;
-    utils::ParseAndValidateArguments(args, slamService);
-    BOOST_TEST(slamService.offlineFlag == true);
-    BOOST_TEST(slamService.delete_processed_data == false);
-}
-
 BOOST_AUTO_TEST_CASE(ReadTimeFromTimestamp_missing_timestamp) {
     // Provide a filename with a missing timestamp
     std::string timestamp = "no-timestamp";
