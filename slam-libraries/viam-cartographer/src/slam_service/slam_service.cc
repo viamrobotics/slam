@@ -451,6 +451,12 @@ std::string SLAMServiceImpl::GetNextDataFileOnline() {
     while (b_continue_session) {
         const auto file_list_online =
             viam::io::ListSortedFilesInDirectory(path_to_data);
+        if (delete_processed_data && first_processed_file_index >= 0) {
+            for (int i = first_processed_file_index;
+                 i < int(file_list_online.size()) - data_buffer_size; i++) {
+                viam::io::RemoveFile(file_list_online.at(i));
+            }
+        }
         if (file_list_online.size() > 1) {
             // Get the second-most-recent file, since the most-recent file may
             // still be being written.
@@ -565,6 +571,16 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 file = GetNextDataFile();
                 continue;
             }
+            // Get index of the first file we're reading in
+            const auto files =
+                viam::io::ListSortedFilesInDirectory(path_to_data);
+            auto file_index = std::find(begin(files), end(files), file);
+            if (file_index == std::end(files)) {
+                throw std::runtime_error(
+                    "the file should be in the list of files: " + file);
+            }
+            first_processed_file_index =
+                std::distance(files.begin(), file_index);
 
             // Set the start time if it has not yet been set and
             // start saving maps
@@ -589,9 +605,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                         trajectory_id, local_poses.back());
                 }
             }
-        }
-        if (delete_processed_data) {
-            viam::io::RemoveFile(file);
         }
         // Save a copy of the global pose
         {

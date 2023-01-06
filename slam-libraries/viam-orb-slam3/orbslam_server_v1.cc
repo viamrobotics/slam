@@ -350,22 +350,21 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
     double fileTimeStart = yamlTime;
     // In online mode we want the most recent frames, so parse the data
     // directory with this in mind
-    int locRecent = -1;
-    locRecent = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
-                                      utils::FileParserMethod::Recent, yamlTime,
-                                      &fileTimeStart);
-    while (locRecent == -1) {
+    first_processed_file_index = utils::FindFrameIndex(
+        filesRGB, slam_mode, path_to_data, utils::FileParserMethod::Recent,
+        yamlTime, &fileTimeStart);
+    while (first_processed_file_index == -1) {
         if (!b_continue_session) return;
         BOOST_LOG_TRIVIAL(debug) << "No new files found";
         this_thread::sleep_for(frame_delay_msec);
         filesRGB = utils::ListFilesInDirectoryForCamera(path_to_data + strRGB,
                                                         ".png", camera_name);
-        locRecent = utils::FindFrameIndex(filesRGB, slam_mode, path_to_data,
-                                          utils::FileParserMethod::Recent,
-                                          yamlTime, &fileTimeStart);
+        first_processed_file_index = utils::FindFrameIndex(
+            filesRGB, slam_mode, path_to_data, utils::FileParserMethod::Recent,
+            yamlTime, &fileTimeStart);
     }
     double timeStamp = 0, prevTimeStamp = 0, currTime = fileTimeStart;
-    int i = locRecent;
+    int i = first_processed_file_index;
 
     while (true) {
         if (!b_continue_session) return;
@@ -393,11 +392,9 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
         cv::Mat imRGB, imDepth;
         bool ok = false;
         if (slam_mode == "rgbd") {
-            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth,
-                                 delete_processed_data);
+            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
         } else if (slam_mode == "mono") {
-            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB,
-                                delete_processed_data);
+            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB);
         } else {
             BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         }
@@ -407,6 +404,17 @@ void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
             BOOST_LOG_TRIVIAL(error)
                 << "Failed to load frame at: " << filesRGB[i];
         } else {
+            if (delete_processed_data) {
+                for (int fi = first_processed_file_index;
+                     fi < int(filesRGB.size()) - data_buffer_size; fi++) {
+                    utils::RemoveFile(path_to_data + strRGB + "/" +
+                                      filesRGB[fi] + ".png");
+                    if (slam_mode == "rgbd") {
+                        utils::RemoveFile(path_to_data + strDepth + "/" +
+                                          filesRGB[fi] + ".png");
+                    }
+                }
+            }
             // Pass the image to the SLAM system
             BOOST_LOG_TRIVIAL(debug)
                 << "Passing image to SLAM: " << filesRGB[i];
@@ -462,11 +470,9 @@ void SLAMServiceImpl::ProcessDataOffline(ORB_SLAM3::System *SLAM) {
         cv::Mat imRGB, imDepth;
         bool ok = false;
         if (slam_mode == "rgbd") {
-            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth,
-                                 delete_processed_data);
+            ok = utils::LoadRGBD(path_to_data, filesRGB[i], imRGB, imDepth);
         } else if (slam_mode == "mono") {
-            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB,
-                                delete_processed_data);
+            ok = utils::LoadRGB(path_to_data, filesRGB[i], imRGB);
         } else {
             BOOST_LOG_TRIVIAL(fatal) << "Invalid slam_mode=" << slam_mode;
         }
@@ -621,8 +627,7 @@ void SLAMServiceImpl::SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM) {
 namespace utils {
 // LoadRGB loads in rgb images to be used by ORBSLAM, and
 // returns whether the image was loaded successfully
-bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB,
-             bool delete_processed_data) {
+bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB) {
     // write out the filename for the image
     std::string colorName = path_to_data + strRGB + "/" + filename + ".png";
 
@@ -630,10 +635,6 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB,
     // image
     if (boost::filesystem::exists(colorName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
-        if (delete_processed_data) {
-            utils::RemoveFile(colorName);
-        }
-
         if (imRGB.empty()) return false;
         return true;
     }
@@ -643,7 +644,7 @@ bool LoadRGB(std::string path_to_data, std::string filename, cv::Mat &imRGB,
 // LoadRGBD loads in a rgbd pair of images to be used by ORBSLAM, and
 // returns whether the current pair is okay
 bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
-              cv::Mat &imDepth, bool delete_processed_data) {
+              cv::Mat &imDepth) {
     // write out filenames and paths for each respective image
     std::string colorName = path_to_data + strRGB + "/" + filename + ".png";
     std::string depthName = path_to_data + strDepth + "/" + filename + ".png";
@@ -654,10 +655,6 @@ bool LoadRGBD(std::string path_to_data, std::string filename, cv::Mat &imRGB,
         boost::filesystem::exists(depthName)) {
         imRGB = cv::imread(colorName, cv::IMREAD_COLOR);
         imDepth = cv::imread(depthName, cv::IMREAD_UNCHANGED);
-        if (delete_processed_data) {
-            utils::RemoveFile(colorName);
-            utils::RemoveFile(depthName);
-        }
 
         if (imRGB.empty() || imDepth.empty()) return false;
         return true;
