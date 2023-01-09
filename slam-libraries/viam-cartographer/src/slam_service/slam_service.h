@@ -111,6 +111,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::atomic<bool> optimize_on_start{false};
     std::atomic<bool> use_live_data{false};
     bool delete_processed_data = false;
+    // The size of the buffer has to be the same as
+    // dataBufferSize in RDK's builtin_test.go
+    const int data_buffer_size = 4;
+    int first_processed_file_index = -1;
 
     // -- Cartographer specific config params:
     // MAP_BUILDER.pose_graph
