@@ -52,6 +52,43 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+::grpc::Status SLAMServiceImpl::GetPositionNew(
+    ServerContext *context, const GetPositionNewRequest *request,
+    GetPositionNewResponse *response) {
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        global_pose = latest_global_pose;
+    }
+
+    // Set pose for our response
+    Pose *myPose = response->mutable_pose();
+    myPose->set_x(global_pose.translation().x());
+    myPose->set_y(global_pose.translation().y());
+    myPose->set_z(global_pose.translation().z());
+
+    // Set component_reference for our response
+    // auto *myComponentReference = response->mutable_component_reference();
+    // myComponentReference->set__component_reference(camera_name)
+
+    response->set_component_reference(camera_name)
+
+        // Set extra for our response (currently stores quaternion)
+        google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(
+        global_pose.rotation().w());
+    q->mutable_fields()->operator[]("imag").set_number_value(
+        global_pose.rotation().x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(
+        global_pose.rotation().y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(
+        global_pose.rotation().z());
+
+    return grpc::Status::OK;
+}
+
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
