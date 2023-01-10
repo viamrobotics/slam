@@ -69,9 +69,6 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_y(global_pose.translation().y());
     myPose->set_z(global_pose.translation().z());
 
-    // Set component_reference for our response
-    response->set_component_reference(camera_name);
-
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
@@ -84,6 +81,9 @@ std::atomic<bool> b_continue_session{true};
         global_pose.rotation().y());
     q->mutable_fields()->operator[]("kmag").set_number_value(
         global_pose.rotation().z());
+
+    // Set component_reference for our response
+    response->set_component_reference(camera_name);
 
     return grpc::Status::OK;
 }
