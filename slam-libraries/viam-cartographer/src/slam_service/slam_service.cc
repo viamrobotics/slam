@@ -68,9 +68,6 @@ std::atomic<bool> b_continue_session{true};
     myPose->set_z(global_pose.translation().z());
 
     // Set component_reference for our response
-    // auto *myComponentReference = response->mutable_component_reference();
-    // myComponentReference->set__component_reference(camera_name)
-
     response->set_component_reference(camera_name);
 
     // Set extra for our response (currently stores quaternion)
