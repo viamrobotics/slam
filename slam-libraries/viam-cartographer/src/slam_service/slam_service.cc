@@ -71,10 +71,10 @@ std::atomic<bool> b_continue_session{true};
     // auto *myComponentReference = response->mutable_component_reference();
     // myComponentReference->set__component_reference(camera_name)
 
-    response->set_component_reference(camera_name)
+    response->set_component_reference(camera_name);
 
-        // Set extra for our response (currently stores quaternion)
-        google::protobuf::Struct *q;
+    // Set extra for our response (currently stores quaternion)
+    google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
     q->mutable_fields()->operator[]("real").set_number_value(
