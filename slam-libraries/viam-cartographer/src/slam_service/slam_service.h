@@ -51,8 +51,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                const GetPositionRequest *request,
                                GetPositionResponse *response) override;
 
-    // GetPosition returns the relative pose of the robot w.r.t the "origin"
-    // of the map, along with a reference component.
+    // GetPositionNew returns the relative pose of the robot w.r.t the "origin"
+    // of the map, which is the starting point from where the map was initially
+    // created along with a component reference.
     ::grpc::Status GetPositionNew(ServerContext *context,
                                   const GetPositionNewRequest *request,
                                   GetPositionNewResponse *response) override;
