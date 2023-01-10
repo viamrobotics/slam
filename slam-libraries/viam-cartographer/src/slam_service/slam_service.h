@@ -29,6 +29,8 @@ using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
+using viam::service::slam::v1::GetPositionNewRequest;
+using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::SLAMService;
 
 namespace viam {
@@ -48,6 +50,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetPosition(ServerContext *context,
                                const GetPositionRequest *request,
                                GetPositionResponse *response) override;
+
+    // GetPosition returns the relative pose of the robot w.r.t the "origin"
+    // of the map, along with a reference component.
+    ::grpc::Status GetPositionNew(ServerContext *context,
+                               const GetPositionNewRequest *request,
+                               GetPositionNewResponse *response) override;
 
     // GetMap returns either an image or a pointcloud, depending on the MIME
     // type requested.
