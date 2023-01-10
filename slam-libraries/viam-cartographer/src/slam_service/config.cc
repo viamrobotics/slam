@@ -78,11 +78,6 @@ void ParseAndValidateConfigParams(int argc, char** argv,
             "a true use_live_data value is invalid when no sensors are given");
     }
 
-    // TODO: Remove no use_live_data definition based on sensor list after
-    // integration tests have been updated (See associated JIRA ticket:
-    // https://viam.atlassian.net/browse/RSDK-1625)
-    slamService.use_live_data = !FLAGS_sensors.empty();
-
     // Find the lua files.
     auto programLocation = boost::dll::program_location();
     auto relativePathToLuas = programLocation.parent_path().parent_path();
