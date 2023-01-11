@@ -52,8 +52,6 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-// TODO 01/10/2023: Remove current GetPosition and rename this implementation to
-// GetPosition in PR for RSDK-1066
 ::grpc::Status SLAMServiceImpl::GetPositionNew(
     ServerContext *context, const GetPositionNewRequest *request,
     GetPositionNewResponse *response) {
