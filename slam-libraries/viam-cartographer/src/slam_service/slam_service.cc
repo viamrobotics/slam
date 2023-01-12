@@ -13,6 +13,7 @@
 #include "cartographer/io/submap_painter.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
+#include "cartographer/mapping/value_conversion_tables.h"
 #include "glog/logging.h"
 
 namespace viam {
@@ -245,6 +246,35 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             if (error != "") {
                 throw std::runtime_error(error);
             }
+            // auto testGrid = map_builder.map_builder_->pose_graph()->GetSubmapData(submap_id_pose.id).submap->ToProto(true).mutable_submap_2d();
+            // std::cout << "DO WE HAVE A GRID: " << testGrid.mutable_submap_2d()->has_grid() << std::endl;
+
+            cartographer::mapping::proto::Submap testGrid = map_builder.map_builder_->pose_graph()->GetSubmapData(submap_id_pose.id).submap->ToProto(true);
+            std::cout << "DO WE HAVE A GRID: " << testGrid.mutable_submap_2d()->grid().has_probability_grid_2d() << std::endl;
+            
+            int my_num_x = testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_cell_limits()->num_x_cells();
+            int my_num_y = testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_cell_limits()->num_y_cells();
+            int max_num_x = testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_max()->x();
+            int max_num_y =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_max()->y();
+            double resolution =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->resolution();
+            int box_max_num_x =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->max_x();
+            int box_max_num_y =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->max_y();
+            int box_min_num_x =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->min_x();
+            int box_min_num_y =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->min_y();
+            float min_correspondence_cost = testGrid.mutable_submap_2d()->mutable_grid()->min_correspondence_cost();
+            float max_correspondence_cost = testGrid.mutable_submap_2d()->mutable_grid()->max_correspondence_cost();
+            int cells_size = testGrid.mutable_submap_2d()->mutable_grid()->cells_size();
+
+            for(int i;i<cells_size;i++){
+                int dummy = testGrid.mutable_submap_2d()->mutable_grid()->cells(i);
+
+            }
+            std::cout << "num_x_cells: " << my_num_x << std::endl;
+            std::cout << "num_y_cells: " << my_num_y << std::endl;
+            std::cout << "count cells: " << cells_size << std::endl; 
+            std::cout << "resolution: " << resolution << std::endl; 
+            
+
         }
     }
 
