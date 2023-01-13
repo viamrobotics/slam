@@ -79,7 +79,7 @@ std::atomic<bool> b_continue_session{true};
         currPose = poseGrpc;
     }
 
-    PoseInFrame *responsePose = response->mutable_pose();
+    Pose *responsePose = response->mutable_pose();
     const auto actualPose = currPose.params();
 
     // set pose for our response
