@@ -14,10 +14,10 @@
 using grpc::ServerContext;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
-using viam::service::slam::v1::GetPositionRequest;
-using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
+using viam::service::slam::v1::GetPositionRequest;
+using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
 
 namespace viam {
