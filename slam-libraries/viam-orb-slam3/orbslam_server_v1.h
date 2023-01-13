@@ -30,6 +30,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                const GetPositionRequest *request,
                                GetPositionResponse *response) override;
 
+    ::grpc::Status GetPositionNew(ServerContext *context,
+                                  const GetPositionNewRequest *request,
+                                  GetPositionNewResponse *response) override;
+
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 

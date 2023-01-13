@@ -69,6 +69,47 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+::grpc::Status SLAMServiceImpl::GetPositionNew(
+    ServerContext *context, const GetPositionNewRequest *request,
+    GetPositionNewResponse *response) {
+    Sophus::SE3f currPose;
+    // Copy pose to new location
+    {
+        std::lock_guard<std::mutex> lk(slam_mutex);
+        currPose = poseGrpc;
+    }
+
+    PoseInFrame *responsePose = response->mutable_pose();
+    const auto actualPose = currPose.params();
+
+    // set pose for our response
+    responsePose->set_x(actualPose[4]);
+    responsePose->set_y(actualPose[5]);
+    responsePose->set_z(actualPose[6]);
+
+    // TODO DATA-531: Remove extraction and conversion of quaternion from the
+    // extra field in the response once the Rust spatial math library is
+    // available and the desired math can be implemented on the orbSLAM side
+
+    BOOST_LOG_TRIVIAL(debug)
+        << "Passing robot position: x= " << actualPose[4]
+        << " y= " << actualPose[5] << " z= " << actualPose[6]
+        << " Real= " << actualPose[3] << " I_mag= " << actualPose[0]
+        << " J_mag= " << actualPose[1] << " K_mag= " << actualPose[2];
+
+    google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(actualPose[3]);
+    q->mutable_fields()->operator[]("imag").set_number_value(actualPose[0]);
+    q->mutable_fields()->operator[]("jmag").set_number_value(actualPose[1]);
+    q->mutable_fields()->operator[]("kmag").set_number_value(actualPose[2]);
+
+    response->set_component_reference(camera_name);
+
+    return grpc::Status::OK;
+}
+
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
