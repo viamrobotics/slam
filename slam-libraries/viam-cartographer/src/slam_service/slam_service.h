@@ -176,6 +176,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters depending on the action mode.
     void SetUpMapBuilder();
 
+    cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
+
     // GetLatestJpegMapString paints and returns the latest map as a jpeg string
     // with or without the pose marker depending on the argument value.
     std::string GetLatestJpegMapString(bool add_pose_marker);
@@ -187,6 +189,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // and saves it in a string. It returns a boolean that indicates whether
     // or not the pointcloud string contains any points.
     bool ExtractPointCloudToString(std::string &pointcloud);
+
+    bool GetLatestPointcloudMapString(std::string &pointcloud);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.

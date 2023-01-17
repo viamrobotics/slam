@@ -129,7 +129,8 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+            // pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+            pointcloud_has_points = GetLatestPointcloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
@@ -224,6 +225,89 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 }
 
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
+    
+    cartographer::io::PaintSubmapSlicesResult painted_slices = GetLatestPaintedMapSlices();
+    if (add_pose_marker) {
+        PaintMarker(painted_slices);
+    }
+
+    auto image = io::Image(std::move(painted_slices.surface));
+    return image.WriteJpegToString(50);
+}
+
+bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
+    
+    cartographer::io::PaintSubmapSlicesResult painted_slices = GetLatestPaintedMapSlices();
+    auto painted_surface = painted_slices.surface.get();
+    int width = cairo_image_surface_get_width(painted_surface);
+    int height = cairo_image_surface_get_height(painted_surface);
+    int stride = cairo_image_surface_get_stride(painted_surface);
+    auto format = cairo_image_surface_get_format(painted_surface);
+    bool format_check = format == cartographer::io::kCairoFormat;
+
+    std::cout << "width: " << width << std::endl;
+    std::cout << "height: " << height << std::endl;
+    std::cout << "stride: " << stride << std::endl;
+    std::cout << "format_check: " << format_check << std::endl;
+    std::cout << "format: " << format << std::endl;
+
+    size_t size_data = width*height*4;
+    auto data = cairo_image_surface_get_data(painted_surface);
+
+    std::vector<unsigned char> data_vect(data, data + size_data);
+    
+    std::stringbuf pointcloud_buffer;
+    std::ostream oss(&pointcloud_buffer);
+
+    // Write our PCD file, which is written as a binary.
+    oss << "VERSION .7\n"
+        << "FIELDS x y z rgb\n"
+        << "SIZE 4 4 4 4\n"
+        << "TYPE F F F I\n"
+        << "COUNT 1 1 1 1\n"
+        << "WIDTH " << size_data << "\n"
+        << "HEIGHT " << 1 << "\n"
+        << "VIEWPOINT 0 0 0 1 0 0 0\n"
+        << "POINTS " << size_data << "\n"
+        << "DATA binary\n";
+
+
+
+        // We're only applying the translation of the `global_pose` on the
+        // point cloud here, as opposed to using both the translation and
+        // rotation of the global pose of the trajectory node. The reason for
+        // this seems to be that since the point cloud is already gravity
+        // aligned, the rotational part of the transformation relative to the
+        // world frame is already taken care of.
+
+        // cartographer::sensor::PointCloud global_point_cloud =
+        //     cartographer::sensor::TransformPointCloud(
+        //         local_gravity_aligned_point_cloud,
+        //         cartographer::transform::Rigid3f(
+        //             trajectory_node.data.global_pose.cast<float>()
+        //                 .translation(),
+        //             cartographer::transform::Rigid3f::Quaternion::Identity()));
+        
+        for (int i=0;i<size_data;i=i+4) {
+            int rgb = 0;
+            rgb = rgb | ((int)data_vect[i+1] << 16);
+            rgb = rgb | ((int)data_vect[i+2] << 8);
+            rgb = rgb | ((int)data_vect[i+3] << 0);
+            int pixel_index = i/4;
+            float x_pos = (pixel_index/width)/1000.0;
+            float y_pos = (pixel_index%width)/1000.0;
+            float z_pos = 0;
+            pointcloud_buffer.sputn((const char *)&x_pos, 4);
+            pointcloud_buffer.sputn((const char *)&y_pos, 4);
+            pointcloud_buffer.sputn((const char *)&z_pos, 4);
+            pointcloud_buffer.sputn((const char *)&rgb, 4);
+            // pointcloud_has_points = true;
+        }
+    pointcloud = pointcloud_buffer.str();
+return true;
+}
+
+cartographer::io::PaintSubmapSlicesResult SLAMServiceImpl::GetLatestPaintedMapSlices(){
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
         cartographer::mapping::PoseGraphInterface::SubmapPose>
@@ -252,7 +336,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
         submap_slices;
 
     if (submap_poses.size() == 0) {
-        return "";
+        throw std::runtime_error("No submaps to paint");
     }
 
     for (const auto &&submap_id_pose : submap_poses) {
@@ -291,15 +375,10 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             fetched_texture->width, fetched_texture->height,
             &submap_slice.cairo_data);
     }
-
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-    if (add_pose_marker) {
-        PaintMarker(painted_slices);
-    }
-
-    auto image = io::Image(std::move(painted_slices.surface));
-    return image.WriteJpegToString(50);
+    
+    return painted_slices;
 }
 
 void SLAMServiceImpl::PaintMarker(
@@ -321,7 +400,7 @@ bool SLAMServiceImpl::ExtractPointCloudToString(std::string &pointcloud) {
         trajectory_nodes =
             map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
     }
-
+    GetLatestPointcloudMapString(pointcloud);
     bool pointcloud_has_points = false;
     std::stringbuf pointcloud_buffer;
     std::ostream oss(&pointcloud_buffer);
