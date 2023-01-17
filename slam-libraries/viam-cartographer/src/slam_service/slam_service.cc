@@ -13,6 +13,7 @@
 #include "cartographer/io/submap_painter.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
+#include "cartographer/io/proto_stream.h"
 #include "glog/logging.h"
 
 namespace viam {
@@ -196,28 +197,28 @@ std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetInternalState(ServerContext *context,
     const GetInternalStateRequest *request, GetInternalStateResponse *response) {
-//     // Step 1: Get writer
-//     io::ForwardingProtoStreamWriter writer(
-//       [&chunks](const google::protobuf::Message* proto) -> bool {
-//         if (!proto) {
-//           return true;
-//         }
-//         std::unique_ptr<google::protobuf::Message> p(proto->New());
-//         p->CopyFrom(*proto);
-//         chunks.push(std::move(p));
-//         return true;
-//     });
+    // Step 1: Get writer
+    // cartographer::io::ForwardingProtoStreamWriter writer(
+    //   [&chunks](const google::protobuf::Message* proto) -> bool {
+    //     if (!proto) {
+    //       return true;
+    //     }
+    //     std::unique_ptr<google::protobuf::Message> p(proto->New());
+    //     p->CopyFrom(*proto);
+    //     chunks.push(std::move(p));
+    //     return true;
+    // });
+    
+    // const std::string filename = "temp-SaveLoadState.pbstream";
+    // cartographer::io::ProtoStreamWriter writer(filename);
 
-//     // Step 2: Serialize State
-//     const std::string filename = "temp-LocalizationOnFrozenTrajectory2D.pbstream";
-//     io::ProtoStreamWriter writer(filename);
-//     map_builder->SerializeState(false, %writer); // WritePbStream
-//     if (!ok) {
-//         LOG(ERROR) << "Serializing the internal state failed.";
-//     }
-
-//     // Step 3: Convert writer to bytes
-//     response->internal_state(writer)
+    // Step 3: Convert writer to bytes
+    // SerializedData
+    // std::string buf;
+    std::string buf = map_builder.SaveMapToStream();
+    // std::string buf;
+    // writer->Write(&buf)
+    //response->internal_state(buf)
 
     return grpc::Status::OK;
 }

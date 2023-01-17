@@ -41,6 +41,10 @@ class MapBuilder {
     void SaveMapToFile(bool include_unfinished_submaps,
                        const std::string filename_with_timestamp);
 
+    // SaveMapToStream saves the current map_builder_ state to the pbstream stream
+    // provided.
+    std::string SaveMapToStream();
+
     // SetTrajectoryBuilder sets the trajectory builder options and returns the
     // active trajectory_id.
     int SetTrajectoryBuilder(

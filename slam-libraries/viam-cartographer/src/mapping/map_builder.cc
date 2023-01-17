@@ -16,6 +16,7 @@ namespace viam {
 namespace mapping {
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
+using cartographer::mapping::proto::SerializedData;
 
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
@@ -79,6 +80,24 @@ void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     if (!ok) {
         LOG(ERROR) << "Saving the map to pbstream failed.";
     }
+}
+
+std::string MapBuilder::SaveMapToStream() {
+    std::string buf;
+    const std::string filename = "temp-SaveLoadState.pbstream";
+    cartographer::io::ProtoStreamWriter writer(filename);
+    map_builder_->SerializeState(/*include_unfinished_submaps=*/false, &writer);
+
+    cartographer::mapping::proto::SerializedData proto;
+    writer.WriteProto(proto);
+    bool ok = proto.SerializeToString(&buf);
+    if (!ok) {
+        LOG(ERROR) << "Serializing the map to buffer failed.";
+    }
+
+    writer.Close();
+
+    return buf;
 }
 
 int MapBuilder::SetTrajectoryBuilder(
