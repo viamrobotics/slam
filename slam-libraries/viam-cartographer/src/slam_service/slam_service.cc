@@ -194,6 +194,34 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+::grpc::Status SLAMServiceImpl::GetInternalState(ServerContext *context,
+    const GetInternalStateRequest *request, GetInternalStateResponse *response) {
+//     // Step 1: Get writer
+//     io::ForwardingProtoStreamWriter writer(
+//       [&chunks](const google::protobuf::Message* proto) -> bool {
+//         if (!proto) {
+//           return true;
+//         }
+//         std::unique_ptr<google::protobuf::Message> p(proto->New());
+//         p->CopyFrom(*proto);
+//         chunks.push(std::move(p));
+//         return true;
+//     });
+
+//     // Step 2: Serialize State
+//     const std::string filename = "temp-LocalizationOnFrozenTrajectory2D.pbstream";
+//     io::ProtoStreamWriter writer(filename);
+//     map_builder->SerializeState(false, %writer); // WritePbStream
+//     if (!ok) {
+//         LOG(ERROR) << "Serializing the internal state failed.";
+//     }
+
+//     // Step 3: Convert writer to bytes
+//     response->internal_state(writer)
+
+    return grpc::Status::OK;
+}
+
 void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);

@@ -31,6 +31,8 @@ using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
+using viam::service::slam::v1::GetInternalStateRequest;
+using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::SLAMService;
 
 namespace viam {
@@ -63,7 +65,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // RunSLAM sets up and runs cartographer. It runs cartogapher in
+    // GetInternalState returns the current internal state of the map which is 
+    // a pbstream for cartographer.
+    ::grpc::Status GetInternalState(ServerContext *context, 
+                                const GetInternalStateRequest *request,
+                                GetInternalStateResponse *response) override;
+
+    // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
     // a new map, updating an apriori map, or localizing on an apriori map.
     void RunSLAM();
