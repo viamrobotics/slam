@@ -150,6 +150,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // timestamp of the time when the map is saved.
     void SaveMapWithTimestamp();
 
+    void StartPaintSubmap();
+
+    void StopPaintSubmap();
+
+    // void PaintSubmap();
+
     // GetJpegMap paints the jpeg version of the map and writes the
     // image to the response. Returns a grpc status that reflects
     // whether or not painting the map and writing it to the response
@@ -188,6 +194,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // or not the pointcloud string contains any points.
     bool ExtractPointCloudToString(std::string &pointcloud);
 
+    bool ExtractOccupancyGridToString(std::string &occupancy_grid);
+
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
     void BackupLatestMap();
@@ -210,6 +218,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::shared_mutex optimization_shared_mutex;
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
+    int num_submaps = 0;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
@@ -217,6 +226,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
+    std::thread *thread_paint_submap;
+    // std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
+    //     cache_submap_slices;
+    // cartographer::io::PaintSubmapSlicesResult cache_painted_slices;
+
     // --- The following variables are used exclusively to
     // enable GetMap to send the most recent map out while
     // cartographer works on creating an optimized map.

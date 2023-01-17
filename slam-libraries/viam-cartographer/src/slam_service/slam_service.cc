@@ -130,7 +130,7 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+            pointcloud_has_points = ExtractOccupancyGridToString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
@@ -265,16 +265,33 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             float max_correspondence_cost = testGrid.mutable_submap_2d()->mutable_grid()->max_correspondence_cost();
             int cells_size = testGrid.mutable_submap_2d()->mutable_grid()->cells_size();
 
-            for(int i;i<cells_size;i++){
-                int dummy = testGrid.mutable_submap_2d()->mutable_grid()->cells(i);
+            // for(int i;i<cells_size;i++){
+            //     int dummy = testGrid.mutable_submap_2d()->mutable_grid()->cells(i);
+            // }
+            // std::cout << "num_x_cells: " << my_num_x << std::endl;
+            // std::cout << "num_y_cells: " << my_num_y << std::endl;
+            // std::cout << "count cells: " << cells_size << std::endl; 
+            // // std::cout << "resolution: " << resolution << std::endl; 
+            // std::cout << "box_max_num_x: " << box_max_num_x << std::endl;
+            // std::cout << "box_max_num_y: " << box_max_num_y << std::endl;
+            // std::cout << "box_min_num_x: " << box_min_num_x << std::endl; 
+            // std::cout << "box_min_num_y: " << box_min_num_y << std::endl; 
 
-            }
-            std::cout << "num_x_cells: " << my_num_x << std::endl;
-            std::cout << "num_y_cells: " << my_num_y << std::endl;
-            std::cout << "count cells: " << cells_size << std::endl; 
-            std::cout << "resolution: " << resolution << std::endl; 
+            // Eigen::Array2i offset;
+            // cartographer::mapping::CellLimits cell_limits;
+            // if (known_cells_box_.isEmpty()) {
+            //     *offset = Eigen::Array2i::Zero();
+            //     *limits = CellLimits(1, 1);
+            // }
+            // *offset = known_cells_box_.min().array();
+            // cell_limits = cartographer::mapping::CellLimits(known_cells_box_.sizes().x() + 1,
+            //                     known_cells_box_.sizes().y() + 1);
+
+            // box->set_max_x(known_cells_box().max().x());
+            // box->set_max_y(known_cells_box().max().y());
+            // box->set_min_x(known_cells_box().min().x());
+            // box->set_min_y(known_cells_box().min().y());
             
-
         }
     }
 
@@ -340,6 +357,151 @@ void SLAMServiceImpl::PaintMarker(
         global_pose = latest_global_pose;
     }
     viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
+}
+
+bool SLAMServiceImpl::ExtractOccupancyGridToString(std::string &occupancy_grid){
+    cartographer::mapping::MapById<
+        cartographer::mapping::SubmapId,
+        cartographer::mapping::PoseGraphInterface::SubmapPose>
+        submap_poses;
+    std::map<cartographer::mapping::SubmapId,
+             cartographer::mapping::proto::Submap>
+        submap_protos;
+    long number_points = 0;
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        submap_poses =
+            map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
+
+        
+        for (const auto &&submap_id_pose : submap_poses) {
+            cartographer::mapping::proto::Submap
+                &submap_proto = submap_protos[submap_id_pose.id];
+            // submap_proto = map_builder.map_builder_->pose_graph()->GetSubmapData(submap_id_pose.id).submap->ToResponseProto
+            submap_proto = map_builder.map_builder_->pose_graph()->GetSubmapData(submap_id_pose.id).submap->ToProto(true);
+            std::cout << "DO WE HAVE A GRID: " << submap_proto.mutable_submap_2d()->grid().has_probability_grid_2d() << std::endl;
+            // std::cout << "WHAT SUBMAP IS THIS: " << submap_id_pose.id.submap_index << std::endl;
+            number_points += submap_proto.mutable_submap_2d()->mutable_grid()->cells_size();
+            // int my_num_x = submap_proto.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_cell_limits()->
+            // int my_num_y = testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_cell_limits()->num_y_cells();
+            // int max_num_x = testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_max()->x();
+            // int max_num_y =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->mutable_max()->y();
+            // double resolution =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_limits()->resolution();
+            // int box_max_num_x =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->max_x();
+            // int box_max_num_y =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->max_y();
+            // int box_min_num_x =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->min_x();
+            // int box_min_num_y =  testGrid.mutable_submap_2d()->mutable_grid()->mutable_known_cells_box()->min_y();
+            // float min_correspondence_cost = testGrid.mutable_submap_2d()->mutable_grid()->min_correspondence_cost();
+            // float max_correspondence_cost = testGrid.mutable_submap_2d()->mutable_grid()->max_correspondence_cost();
+            // int cells_size = testGrid.mutable_submap_2d()->mutable_grid()->cells_size();
+
+            // for(int i;i<cells_size;i++){
+            //     int dummy = testGrid.mutable_submap_2d()->mutable_grid()->cells(i);
+            // }
+            // std::cout << "num_x_cells: " << my_num_x << std::endl;
+            // std::cout << "num_y_cells: " << my_num_y << std::endl;
+            // std::cout << "count cells: " << cells_size << std::endl; 
+            // // std::cout << "resolution: " << resolution << std::endl; 
+            // std::cout << "box_max_num_x: " << box_max_num_x << std::endl;
+            // std::cout << "box_max_num_y: " << box_max_num_y << std::endl;
+            // std::cout << "box_min_num_x: " << box_min_num_x << std::endl; 
+            // std::cout << "box_min_num_y: " << box_min_num_y << std::endl; 
+
+            // Eigen::Array2i offset;
+            // cartographer::mapping::CellLimits cell_limits;
+            // if (known_cells_box_.isEmpty()) {
+            //     *offset = Eigen::Array2i::Zero();
+            //     *limits = CellLimits(1, 1);
+            // }
+            // *offset = known_cells_box_.min().array();
+            // cell_limits = cartographer::mapping::CellLimits(known_cells_box_.sizes().x() + 1,
+            //                     known_cells_box_.sizes().y() + 1);
+
+            // box->set_max_x(known_cells_box().max().x());
+            // box->set_max_y(known_cells_box().max().y());
+            // box->set_min_x(known_cells_box().min().x());
+            // box->set_min_y(known_cells_box().min().y());
+            
+        }
+    }
+
+
+    
+
+    std::stringbuf pointcloud_buffer;
+    std::ostream oss(&pointcloud_buffer);
+    // Write our PCD file, which is written as a binary.
+    oss << "VERSION .7\n"
+        << "FIELDS x y z rgb\n"
+        << "SIZE 4 4 4 4\n"
+        << "TYPE F F F I\n"
+        << "COUNT 1 1 1 1\n"
+        << "WIDTH " << number_points << "\n"
+        << "HEIGHT " << 1 << "\n"
+        << "VIEWPOINT 0 0 0 1 0 0 0\n"
+        << "POINTS " << number_points << "\n"
+        << "DATA binary\n";
+    for (const auto &&submap_id_pose : submap_poses) {
+        auto grid_proto = submap_protos[submap_id_pose.id].mutable_submap_2d()->mutable_grid();
+        int x_cells = grid_proto->mutable_limits()->mutable_cell_limits()->num_x_cells();
+        int y_cells = grid_proto->mutable_limits()->mutable_cell_limits()->num_y_cells();
+        double resolution =  grid_proto->mutable_limits()->resolution();
+        int z_cells = 0;
+        double x_pose = submap_protos[submap_id_pose.id].mutable_submap_2d()->local_pose().translation().x();
+        double y_pose = submap_protos[submap_id_pose.id].mutable_submap_2d()->local_pose().translation().y();
+
+
+        for(int i = 0; i < grid_proto->cells_size(); i++){
+            float x_index = (i/x_cells * resolution + x_pose)/1000.0;
+            float y_index = (i%y_cells * resolution + y_pose)/1000.0;
+        
+        // for(int i = 0; i < x_cells-1; i++){
+        //     for(int j = 0; j < y_cells-1; j++){
+                // std::cout << "cell size: " << grid_proto->cells_size() << std::endl;
+                // std::cout << "index: " << i*x_cells+j << std::endl;
+                int clr = grid_proto->cells(i);
+                int rgb = 0;
+                rgb = rgb | (clr << 16);
+                rgb = rgb | (clr << 8);
+                rgb = rgb | (clr << 0);
+                
+                pointcloud_buffer.sputn((const char *)&x_index, 4);
+                pointcloud_buffer.sputn((const char *)&y_index, 4);
+                pointcloud_buffer.sputn((const char *)&z_cells, 4);
+                pointcloud_buffer.sputn((const char *)&rgb, 4);
+        //     }
+        // }
+        }
+        
+        // std::cout << "SUBMAP: " << submap_id_pose.id << std::endl;
+    }
+    std::cout << "number_points: " << number_points << std::endl;
+    std::cout << "big size: " << number_points*16 << std::endl;
+    // for (const Eigen::Array2i& xy_index : XYIndexRangeIterator(cell_limits)) {
+    //         if (!IsKnown(xy_index + offset)) {
+    //             cells.push_back(0 /* unknown log odds value */);
+    //             cells.push_back(0 /* alpha */);
+    //             continue;
+    //         }
+    //         // We would like to add 'delta' but this is not possible using a value and
+    //         // alpha. We use premultiplied alpha, so when 'delta' is positive we can
+    //         // add it by setting 'alpha' to zero. If it is negative, we set 'value' to
+    //         // zero, and use 'alpha' to subtract. This is only correct when the pixel
+    //         // is currently white, so walls will look too gray. This should be hard to
+    //         // detect visually for the user, though.
+    //         const int delta =
+    //             128 - ProbabilityToLogOddsInteger(GetProbability(xy_index + offset));
+    //         const uint8 alpha = delta > 0 ? 0 : -delta;
+    //         const uint8 value = delta > 0 ? delta : 0;
+    //         cells.push_back(value);
+    //         cells.push_back((value || alpha) ? alpha : 1);
+    // }
+
+        
+        occupancy_grid = pointcloud_buffer.str();
+        std::cout << "DO WE HAVE SUBMAPS: " << submap_protos.size() << std::endl;
+        // bool pointcloud_has_points = ExtractPointCloudToString(occupancy_grid);
+        return true;
 }
 
 bool SLAMServiceImpl::ExtractPointCloudToString(std::string &pointcloud) {
@@ -524,6 +686,91 @@ void SLAMServiceImpl::StopSaveMap() {
     }
     thread_save_map_with_timestamp->join();
 }
+
+void SLAMServiceImpl::StopPaintSubmap() {
+    thread_paint_submap->join();
+}
+void SLAMServiceImpl::StartPaintSubmap(){
+    thread_paint_submap->join();
+}
+// void SLAMServiceImpl::PaintSubmap(){
+//     auto check_for_shutdown_interval_usec =
+//         std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
+//     cartographer::mapping::MapById<
+//         cartographer::mapping::SubmapId,
+//         cartographer::mapping::PoseGraphInterface::SubmapPose>
+//         submap_poses;
+//     std::map<cartographer::mapping::SubmapId,
+//             cartographer::mapping::proto::SubmapQuery::Response>
+//     response_protos;
+//     while (b_continue_session) {
+
+//         {
+//             std::lock_guard<std::mutex> lk(map_builder_mutex);
+//         submap_poses =
+//             map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
+//         if(submap_poses.size() > num_submaps){
+//             for (const auto &&submap_id_pose : submap_poses) {
+//                 if(submap_id_pose.id.submap_index > num_submaps){
+//                 cartographer::mapping::proto::SubmapQuery::Response
+//                     &response_proto = response_protos[submap_id_pose.id];
+//                 const std::string error = map_builder.map_builder_->SubmapToProto(
+//                     submap_id_pose.id, &response_proto);
+//                 if (error != "") {
+//                     throw std::runtime_error(error);
+//                 }
+//                 }
+                
+//             }
+//         }
+//         }
+
+//         for (const auto &&submap_id_pose : submap_poses) {
+//             if(submap_id_pose.id.submap_index > num_submaps){
+//             auto submap_textures =
+//                 absl::make_unique<::cartographer::io::SubmapTextures>();
+//             submap_textures->version =
+//                 response_protos[submap_id_pose.id].submap_version();
+//             for (const auto &texture_proto :
+//                 response_protos[submap_id_pose.id].textures()) {
+//                 const std::string compressed_cells(texture_proto.cells().begin(),
+//                                                 texture_proto.cells().end());
+//                 submap_textures->textures.emplace_back(
+//                     ::cartographer::io::SubmapTexture{
+//                         ::cartographer::io::UnpackTextureData(
+//                             compressed_cells, texture_proto.width(),
+//                             texture_proto.height()),
+//                         texture_proto.width(), texture_proto.height(),
+//                         texture_proto.resolution(),
+//                         cartographer::transform::ToRigid3(
+//                             texture_proto.slice_pose())});
+//             }
+
+//             // Prepares SubmapSlice
+//             ::cartographer::io::SubmapSlice &submap_slice =
+//                 cache_submap_slices[submap_id_pose.id];
+//             const auto fetched_texture = submap_textures->textures.begin();
+//             submap_slice.pose = submap_id_pose.data.pose;
+//             submap_slice.width = fetched_texture->width;
+//             submap_slice.height = fetched_texture->height;
+//             submap_slice.slice_pose = fetched_texture->slice_pose;
+//             submap_slice.resolution = fetched_texture->resolution;
+//             submap_slice.cairo_data.clear();
+
+//             submap_slice.surface = ::cartographer::io::DrawTexture(
+//                 fetched_texture->pixels.intensity, fetched_texture->pixels.alpha,
+//                 fetched_texture->width, fetched_texture->height,
+//                 &submap_slice.cairo_data);
+//         }
+//         }
+//         cartographer::io::PaintSubmapSlicesResult painted_slices =
+//         viam::io::PaintSubmapSlices(cache_submap_slices, kPixelSize);
+
+//         cache_painted_slices = painted_slices;
+//         std::this_thread::sleep_for(check_for_shutdown_interval_usec);
+    
+//     }
+// }
 
 void SLAMServiceImpl::SaveMapWithTimestamp() {
     auto check_for_shutdown_interval_usec =
