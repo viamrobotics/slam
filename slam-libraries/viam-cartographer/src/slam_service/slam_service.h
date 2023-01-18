@@ -25,14 +25,14 @@ using grpc::ServerContext;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
+using viam::service::slam::v1::GetInternalStateRequest;
+using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
-using viam::service::slam::v1::GetInternalStateRequest;
-using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::SLAMService;
 
 namespace viam {
@@ -65,11 +65,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // GetInternalState returns the current internal state of the map which is 
+    // GetInternalState returns the current internal state of the map which is
     // a pbstream for cartographer.
-    ::grpc::Status GetInternalState(ServerContext *context, 
-                                const GetInternalStateRequest *request,
-                                GetInternalStateResponse *response) override;
+    ::grpc::Status GetInternalState(
+        ServerContext *context, const GetInternalStateRequest *request,
+        GetInternalStateResponse *response) override;
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
