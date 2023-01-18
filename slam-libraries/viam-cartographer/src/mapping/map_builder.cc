@@ -15,11 +15,12 @@
 namespace viam {
 namespace mapping {
 
-using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 using cartographer::mapping::proto::SerializedData;
 
+using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
+
 double kDuration = 4.;  // Seconds.
 
 std::vector<::cartographer::transform::Rigid3d>
@@ -84,7 +85,7 @@ void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
 
 std::string MapBuilder::SaveMapToStream() {
     std::string buf;
-    const std::string filename = "temp-SaveLoadState.pbstream";
+    const std::string filename = "temp-SaveState.pbstream";
     cartographer::io::ProtoStreamWriter writer(filename);
     map_builder_->SerializeState(/*include_unfinished_submaps=*/false, &writer);
 
