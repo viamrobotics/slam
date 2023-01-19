@@ -83,22 +83,22 @@ void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     }
 }
 
-std::string MapBuilder::SaveMapToStream() {
-    std::string buf;
-    const std::string filename = "temp-SaveState.pbstream";
-    cartographer::io::ProtoStreamWriter writer(filename);
-    map_builder_->SerializeState(/*include_unfinished_submaps=*/false, &writer);
+std::string MapBuilder::SaveMapToStream(const std::string path_to_dir) {
 
-    cartographer::mapping::proto::SerializedData proto;
-    writer.WriteProto(proto);
-    bool ok = proto.SerializeToString(&buf);
-    if (!ok) {
-        LOG(ERROR) << "Serializing the map to buffer failed.";
+    std::string filename = path_to_dir + "/" + "temp.pbstream";
+    SaveMapToFile(false, filename);
+
+    std::ifstream tempFile(filename);
+    std::stringstream bufferStream;
+    bufferStream << tempFile.rdbuf();
+    std::string buffer = bufferStream.str();
+    tempFile.close();
+
+    if (std::remove(filename.c_str()) != 0) {
+        LOG(ERROR) << "Deleting pbstream failed.";
     }
-
-    writer.Close();
-
-    return buf;
+    
+    return buffer;
 }
 
 int MapBuilder::SetTrajectoryBuilder(

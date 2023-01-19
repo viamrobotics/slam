@@ -15,6 +15,7 @@
 #include "cartographer/sensor/internal/voxel_filter.h"
 #include "cartographer/transform/rigid_transform.h"
 #include "cartographer/transform/transform.h"
+#include "cartographer/io/internal/mapping_state_serialization.h"
 
 namespace viam {
 namespace mapping {
@@ -43,7 +44,7 @@ class MapBuilder {
 
     // SaveMapToStream saves the current map_builder_ state to the pbstream
     // stream provided.
-    std::string SaveMapToStream();
+    std::string SaveMapToStream(const std::string filename_with_timestamp);
 
     // SetTrajectoryBuilder sets the trajectory builder options and returns the
     // active trajectory_id.
