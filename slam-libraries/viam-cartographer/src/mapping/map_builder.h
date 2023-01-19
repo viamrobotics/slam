@@ -15,7 +15,6 @@
 #include "cartographer/sensor/internal/voxel_filter.h"
 #include "cartographer/transform/rigid_transform.h"
 #include "cartographer/transform/transform.h"
-#include "cartographer/io/internal/mapping_state_serialization.h"
 
 namespace viam {
 namespace mapping {
