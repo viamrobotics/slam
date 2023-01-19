@@ -14,10 +14,9 @@
 
 namespace viam {
 namespace mapping {
-    
+using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
-
 double kDuration = 4.;  // Seconds.
 
 std::vector<::cartographer::transform::Rigid3d>
@@ -81,7 +80,6 @@ void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
 }
 
 std::string MapBuilder::SaveMapToStream(const std::string path_to_dir) {
-
     std::string filename = path_to_dir + "/" + "temp.pbstream";
     SaveMapToFile(false, filename);
 
@@ -94,7 +92,7 @@ std::string MapBuilder::SaveMapToStream(const std::string path_to_dir) {
     if (std::remove(filename.c_str()) != 0) {
         LOG(ERROR) << "Deleting pbstream failed.";
     }
-    
+
     return buffer;
 }
 

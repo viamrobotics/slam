@@ -200,10 +200,10 @@ std::atomic<bool> b_continue_session{true};
     GetInternalStateResponse *response) {
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        std::string buf = map_builder.SaveMapToStream(path_to_map);        
+        std::string buf = map_builder.SaveMapToStream(path_to_map);
         response->set_internal_state(buf);
         return grpc::Status::OK;
-        }
+    }
 }
 
 void SLAMServiceImpl::BackupLatestMap() {
