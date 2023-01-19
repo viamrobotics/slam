@@ -10,7 +10,6 @@
 #include "../utils/slam_service_helpers.h"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
-#include "cartographer/io/proto_stream.h"
 #include "cartographer/io/submap_painter.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
