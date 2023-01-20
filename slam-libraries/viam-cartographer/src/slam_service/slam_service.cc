@@ -243,6 +243,8 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
     int height = cairo_image_surface_get_height(painted_surface);
     int stride = cairo_image_surface_get_stride(painted_surface);
     auto format = cairo_image_surface_get_format(painted_surface);
+
+    // cartographer format is ARGB32
     bool format_check = format == cartographer::io::kCairoFormat;
 
     std::cout << "width: " << width << std::endl;
@@ -256,22 +258,20 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
 
     std::vector<unsigned char> data_vect(data, data + size_data);
     
-    std::stringbuf pointcloud_buffer;
-    std::ostream oss(&pointcloud_buffer);
+    std::stringbuf data_buffer;
+    // std::ostream oss(&data_buffer);
 
-    // Write our PCD file, which is written as a binary.
-    oss << "VERSION .7\n"
-        << "FIELDS x y z rgb\n"
-        << "SIZE 4 4 4 4\n"
-        << "TYPE F F F I\n"
-        << "COUNT 1 1 1 1\n"
-        << "WIDTH " << size_data << "\n"
-        << "HEIGHT " << 1 << "\n"
-        << "VIEWPOINT 0 0 0 1 0 0 0\n"
-        << "POINTS " << size_data << "\n"
-        << "DATA binary\n";
-
-
+    // // Write our PCD file, which is written as a binary.
+    // oss << "VERSION .7\n"
+    //     << "FIELDS x y z rgb\n"
+    //     << "SIZE 4 4 4 4\n"
+    //     << "TYPE F F F I\n"
+    //     << "COUNT 1 1 1 1\n"
+    //     << "WIDTH " << size_data << "\n"
+    //     << "HEIGHT " << 1 << "\n"
+    //     << "VIEWPOINT 0 0 0 1 0 0 0\n"
+    //     << "POINTS " << size_data << "\n"
+    //     << "DATA binary\n";
 
         // We're only applying the translation of the `global_pose` on the
         // point cloud here, as opposed to using both the translation and
@@ -287,22 +287,47 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         //             trajectory_node.data.global_pose.cast<float>()
         //                 .translation(),
         //             cartographer::transform::Rigid3f::Quaternion::Identity()));
-        
-        for (int i=0;i<size_data;i=i+4) {
+        int num_points = 0;
+        for (int i=0;i<size_data;i=i+4+40) {
             int rgb = 0;
             rgb = rgb | ((int)data_vect[i+1] << 16);
             rgb = rgb | ((int)data_vect[i+2] << 8);
             rgb = rgb | ((int)data_vect[i+3] << 0);
+            // if(rgb == 6710988)
+            // continue;
+            // if((((int)data_vect[i+1] <103)&&((int)data_vect[i+2]<103)&&((int)data_vect[i+3]<103))){
+                // std::cout << "rgb: " << rgb << std::endl;
+                // std::cout << "red: " << (int)data_vect[i+1] << std::endl;
+                // std::cout << "green: " << (int)data_vect[i+2] << std::endl;
+                // std::cout << "blue: " << (int)data_vect[i+3] << std::endl;
+            // }
+            num_points++;
             int pixel_index = i/4;
             float x_pos = (pixel_index/width)/1000.0;
             float y_pos = (pixel_index%width)/1000.0;
             float z_pos = 0;
-            pointcloud_buffer.sputn((const char *)&x_pos, 4);
-            pointcloud_buffer.sputn((const char *)&y_pos, 4);
-            pointcloud_buffer.sputn((const char *)&z_pos, 4);
-            pointcloud_buffer.sputn((const char *)&rgb, 4);
+            data_buffer.sputn((const char *)&x_pos, 4);
+            data_buffer.sputn((const char *)&y_pos, 4);
+            data_buffer.sputn((const char *)&z_pos, 4);
+            data_buffer.sputn((const char *)&rgb, 4);
             // pointcloud_has_points = true;
         }
+
+    std::stringbuf pointcloud_buffer;
+    std::ostream oss(&pointcloud_buffer);
+
+    // Write our PCD file, which is written as a binary.
+    oss << "VERSION .7\n"
+        << "FIELDS x y z rgb\n"
+        << "SIZE 4 4 4 4\n"
+        << "TYPE F F F I\n"
+        << "COUNT 1 1 1 1\n"
+        << "WIDTH " << num_points << "\n"
+        << "HEIGHT " << 1 << "\n"
+        << "VIEWPOINT 0 0 0 1 0 0 0\n"
+        << "POINTS " << num_points << "\n"
+        << "DATA binary\n";
+    oss << data_buffer.str();
     pointcloud = pointcloud_buffer.str();
 return true;
 }
