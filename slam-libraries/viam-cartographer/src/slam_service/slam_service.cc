@@ -252,7 +252,7 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
     std::cout << "stride: " << stride << std::endl;
     std::cout << "format_check: " << format_check << std::endl;
     std::cout << "format: " << format << std::endl;
-
+    // float resolution = .05;
     size_t size_data = width*height*4;
     auto data = cairo_image_surface_get_data(painted_surface);
 
@@ -288,23 +288,26 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         //                 .translation(),
         //             cartographer::transform::Rigid3f::Quaternion::Identity()));
         int num_points = 0;
-        for (int i=0;i<size_data;i=i+4+40) {
+        int scale = size_data*4/100000.f/32.f*4;
+
+        for (int i=0;i<size_data;i=i+4+12) {
             int rgb = 0;
-            rgb = rgb | ((int)data_vect[i+1] << 16);
-            rgb = rgb | ((int)data_vect[i+2] << 8);
-            rgb = rgb | ((int)data_vect[i+3] << 0);
-            // if(rgb == 6710988)
-            // continue;
+            rgb = rgb | ((int)data_vect[i+0] << 16);
+            rgb = rgb | ((int)data_vect[i+1] << 8);
+            rgb = rgb | ((int)data_vect[i+2] << 0);
+            if(rgb == 6710886)
+            continue;
             // if((((int)data_vect[i+1] <103)&&((int)data_vect[i+2]<103)&&((int)data_vect[i+3]<103))){
                 // std::cout << "rgb: " << rgb << std::endl;
+                // std::cout << "alpha: " << (int)data_vect[i] << std::endl;
                 // std::cout << "red: " << (int)data_vect[i+1] << std::endl;
                 // std::cout << "green: " << (int)data_vect[i+2] << std::endl;
                 // std::cout << "blue: " << (int)data_vect[i+3] << std::endl;
             // }
             num_points++;
             int pixel_index = i/4;
-            float x_pos = (pixel_index/width)/1000.0;
-            float y_pos = (pixel_index%width)/1000.0;
+            float x_pos = (pixel_index/width)*kPixelSize;
+            float y_pos = (pixel_index%width)*kPixelSize;
             float z_pos = 0;
             data_buffer.sputn((const char *)&x_pos, 4);
             data_buffer.sputn((const char *)&y_pos, 4);
