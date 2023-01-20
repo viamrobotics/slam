@@ -96,7 +96,8 @@ std::string MapBuilder::SaveMapToStream(const std::string path_to_dir) {
         std::string buffer = bufferStream.str();
         tempFile.close();
     } else {
-        LOG(ERROR) << "Failed to get data from " << filename << " to buffer stream.";
+        LOG(ERROR) << "Failed to get data from " << filename
+                   << " to buffer stream.";
     }
 
     if (std::remove(filename.c_str()) != 0) {
