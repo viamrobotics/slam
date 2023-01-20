@@ -306,8 +306,24 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
             // }
             num_points++;
             int pixel_index = i/4;
-            float x_pos = (pixel_index/width)*kPixelSize;
-            float y_pos = (pixel_index%width)*kPixelSize;
+            //  std::cout << "pixel_index: " << pixel_index << std::endl;
+            int pixel_x = pixel_index/width;
+            int pixel_y = pixel_index%width;
+            float x_pos = pixel_x*kPixelSize/1000.f;
+            float y_pos = pixel_y*kPixelSize/1000.f;
+            if((pixel_index > 1000000) && (pixel_index < 1000300)){
+             std::cout << "pixel_x: " << pixel_x << std::endl;
+            std::cout << "pixel_y: " << pixel_y << std::endl;
+            std::cout << "x_pos: " << x_pos << std::endl;
+            std::cout << "y_pos: " << y_pos << std::endl;   
+            }
+            
+            x_pos = x_pos*1000.f;
+            y_pos = y_pos*1000.f;
+            if((pixel_index > 800000) && (pixel_index < 800030)){
+            std::cout << "YO x_pos: " << x_pos << std::endl;
+            std::cout << "YO y_pos: " << y_pos << std::endl;
+            }
             float z_pos = 0;
             data_buffer.sputn((const char *)&x_pos, 4);
             data_buffer.sputn((const char *)&y_pos, 4);
