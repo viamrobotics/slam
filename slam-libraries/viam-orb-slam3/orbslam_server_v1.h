@@ -14,6 +14,8 @@
 using grpc::ServerContext;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPositionNewRequest;
+using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
@@ -29,6 +31,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetPosition(ServerContext *context,
                                const GetPositionRequest *request,
                                GetPositionResponse *response) override;
+
+    ::grpc::Status GetPositionNew(ServerContext *context,
+                                  const GetPositionNewRequest *request,
+                                  GetPositionNewResponse *response) override;
 
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
