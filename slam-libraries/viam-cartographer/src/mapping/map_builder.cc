@@ -82,17 +82,25 @@ void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
 }
 
 std::string MapBuilder::SaveMapToStream(const std::string path_to_dir) {
-    std::string filename = path_to_dir + "/" + "temp.pbstream";
+    std::string filename = path_to_dir + "/" + "temp_internal_state.pbstream";
     SaveMapToFile(false, filename);
 
     std::ifstream tempFile(filename);
+    if (tempFile.bad()) {
+        LOG(ERROR) << "Failed to open " << filename << "as ifstream obejct.";
+    }
+
+    std::string buffer;
     std::stringstream bufferStream;
-    bufferStream << tempFile.rdbuf();
-    std::string buffer = bufferStream.str();
-    tempFile.close();
+    if (bufferStream << tempFile.rdbuf()) {
+        std::string buffer = bufferStream.str();
+        tempFile.close();
+    } else {
+        LOG(ERROR) << "Failed to get data from " << filename << " to buffer stream.";
+    }
 
     if (std::remove(filename.c_str()) != 0) {
-        LOG(ERROR) << "Deleting pbstream failed.";
+        LOG(ERROR) << "Deleting " << filename << " failed.";
     }
 
     return buffer;
