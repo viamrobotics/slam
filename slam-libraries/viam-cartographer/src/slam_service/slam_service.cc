@@ -244,93 +244,73 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
     int stride = cairo_image_surface_get_stride(painted_surface);
     auto format = cairo_image_surface_get_format(painted_surface);
 
-    // cartographer format is ARGB32
+    // cartographer format is ARGB32(but RGB is still first?)
     bool format_check = format == cartographer::io::kCairoFormat;
 
-    std::cout << "width: " << width << std::endl;
-    std::cout << "height: " << height << std::endl;
-    std::cout << "stride: " << stride << std::endl;
+
+    std::cout << "width_px: " << width << std::endl;
+    std::cout << "height_px: " << height << std::endl;
+    std::cout << "stride_bytes: " << stride << std::endl;
     std::cout << "format_check: " << format_check << std::endl;
     std::cout << "format: " << format << std::endl;
-    // float resolution = .05;
+
+    //total number of bytes, 32 bits per pixel
     size_t size_data = width*height*4;
     auto data = cairo_image_surface_get_data(painted_surface);
 
     std::vector<unsigned char> data_vect(data, data + size_data);
     
     std::stringbuf data_buffer;
-    // std::ostream oss(&data_buffer);
 
-    // // Write our PCD file, which is written as a binary.
-    // oss << "VERSION .7\n"
-    //     << "FIELDS x y z rgb\n"
-    //     << "SIZE 4 4 4 4\n"
-    //     << "TYPE F F F I\n"
-    //     << "COUNT 1 1 1 1\n"
-    //     << "WIDTH " << size_data << "\n"
-    //     << "HEIGHT " << 1 << "\n"
-    //     << "VIEWPOINT 0 0 0 1 0 0 0\n"
-    //     << "POINTS " << size_data << "\n"
-    //     << "DATA binary\n";
+    int num_points = 0;
+    // not working yet, need to reduce resolution to hit 32 MB on our PCD
+    int scale = size_data*4/100000.f/32.f*4;
 
-        // We're only applying the translation of the `global_pose` on the
-        // point cloud here, as opposed to using both the translation and
-        // rotation of the global pose of the trajectory node. The reason for
-        // this seems to be that since the point cloud is already gravity
-        // aligned, the rotational part of the transformation relative to the
-        // world frame is already taken care of.
+    //i=i+4+12, +4 for bytes per pixel, +12 to write every 4th pixel
+    for (int i=0;i<size_data;i=i+4+12) {
+        int rgb = 0;
+        rgb = rgb | ((int)data_vect[i+0] << 16);
+        rgb = rgb | ((int)data_vect[i+1] << 8);
+        rgb = rgb | ((int)data_vect[i+2] << 0);
 
-        // cartographer::sensor::PointCloud global_point_cloud =
-        //     cartographer::sensor::TransformPointCloud(
-        //         local_gravity_aligned_point_cloud,
-        //         cartographer::transform::Rigid3f(
-        //             trajectory_node.data.global_pose.cast<float>()
-        //                 .translation(),
-        //             cartographer::transform::Rigid3f::Quaternion::Identity()));
-        int num_points = 0;
-        int scale = size_data*4/100000.f/32.f*4;
+        //skip pixels that are not in our map(black/past walls)
+        if(rgb == 6710886)
+        continue;
 
-        for (int i=0;i<size_data;i=i+4+12) {
-            int rgb = 0;
-            rgb = rgb | ((int)data_vect[i+0] << 16);
-            rgb = rgb | ((int)data_vect[i+1] << 8);
-            rgb = rgb | ((int)data_vect[i+2] << 0);
-            if(rgb == 6710886)
-            continue;
-            // if((((int)data_vect[i+1] <103)&&((int)data_vect[i+2]<103)&&((int)data_vect[i+3]<103))){
-                // std::cout << "rgb: " << rgb << std::endl;
-                // std::cout << "alpha: " << (int)data_vect[i] << std::endl;
-                // std::cout << "red: " << (int)data_vect[i+1] << std::endl;
-                // std::cout << "green: " << (int)data_vect[i+2] << std::endl;
-                // std::cout << "blue: " << (int)data_vect[i+3] << std::endl;
-            // }
-            num_points++;
-            int pixel_index = i/4;
-            //  std::cout << "pixel_index: " << pixel_index << std::endl;
-            int pixel_x = pixel_index/width;
-            int pixel_y = pixel_index%width;
-            float x_pos = pixel_x*kPixelSize/1000.f;
-            float y_pos = pixel_y*kPixelSize/1000.f;
-            if((pixel_index > 1000000) && (pixel_index < 1000300)){
-             std::cout << "pixel_x: " << pixel_x << std::endl;
-            std::cout << "pixel_y: " << pixel_y << std::endl;
-            std::cout << "x_pos: " << x_pos << std::endl;
-            std::cout << "y_pos: " << y_pos << std::endl;   
-            }
-            
-            x_pos = x_pos*1000.f;
-            y_pos = y_pos*1000.f;
-            if((pixel_index > 800000) && (pixel_index < 800030)){
-            std::cout << "YO x_pos: " << x_pos << std::endl;
-            std::cout << "YO y_pos: " << y_pos << std::endl;
-            }
-            float z_pos = 0;
-            data_buffer.sputn((const char *)&x_pos, 4);
-            data_buffer.sputn((const char *)&y_pos, 4);
-            data_buffer.sputn((const char *)&z_pos, 4);
-            data_buffer.sputn((const char *)&rgb, 4);
-            // pointcloud_has_points = true;
+        num_points++;
+
+        //mod math cuz its the best
+        int pixel_index = i/4;
+        int pixel_x = pixel_index/width;
+        int pixel_y = pixel_index%width;
+
+        //kPixelSize is .01, unsure of units but assumed converts to meters
+        // based on PaintSubmapSlices() and DrawPoseOnSurface()
+        float x_pos = pixel_x*kPixelSize;
+        float y_pos = pixel_y*kPixelSize;
+
+        //Magic number that gets a map to show up
+        float x_pos2 = x_pos/1000.f;
+        float y_pos2 = y_pos/1000.f;
+
+        //debuging
+        if((num_points > 1582734)&&(num_points < 1582739)){
+        std::cout << "pixel_index: " << pixel_index << std::endl;
+        std::cout << "pixel_x: " << pixel_x << std::endl;
+        std::cout << "pixel_y: " << pixel_y << std::endl;
+        std::cout << "x_pos: " << x_pos << std::endl;
+        std::cout << "y_pos: " << y_pos << std::endl;   
+        std::cout << "Working x_pos: " << x_pos2 << std::endl;
+        std::cout << "Working y_pos: " << y_pos2 << std::endl;
         }
+        
+        //write points to buffer, same usage as before
+        float z_pos = 0;
+        data_buffer.sputn((const char *)&x_pos, 4);
+        data_buffer.sputn((const char *)&y_pos, 4);
+        data_buffer.sputn((const char *)&z_pos, 4);
+        data_buffer.sputn((const char *)&rgb, 4);
+    }
 
     std::stringbuf pointcloud_buffer;
     std::ostream oss(&pointcloud_buffer);
