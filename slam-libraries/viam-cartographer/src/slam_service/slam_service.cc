@@ -15,6 +15,10 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>
+
 namespace viam {
 
 std::atomic<bool> b_continue_session{true};
@@ -197,7 +201,25 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetInternalState(
     ServerContext *context, const GetInternalStateRequest *request,
     GetInternalStateResponse *response) {
-    std::string buf = map_builder.SaveMapToStream(path_to_map);
+
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    std::string filename = path_to_map + "/" + "temp_internal_state_" + 
+        boost::uuids::to_string(uuid) + ".pbstream";
+
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        bool ok = map_builder.SaveMapToFile(true, filename);
+    }
+
+    std::string buf;
+    std::string err = map_builder.SaveMapToStream(filename, &buf);
+
+    if (err != "") {
+        std::ostringstream oss;
+            oss << "error during data serialization: " << err;
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+
     response->set_internal_state(buf);
     return grpc::Status::OK;
 }

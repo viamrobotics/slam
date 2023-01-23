@@ -11,6 +11,7 @@
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
 #include "map_builder.h"
+#include <sstream>
 
 namespace viam {
 namespace mapping {
@@ -72,39 +73,57 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
                 << trajectory_ids_pair.second;
 }
 
-void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
+bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
                                const std::string filename_with_timestamp) {
     bool ok = map_builder_->SerializeStateToFile(include_unfinished_submaps,
                                                  filename_with_timestamp);
     if (!ok) {
         LOG(ERROR) << "Saving the map to pbstream failed.";
     }
+    return ok;
 }
 
-std::string MapBuilder::SaveMapToStream(const std::string path_to_dir) {
-    std::string filename = path_to_dir + "/" + "temp_internal_state.pbstream";
-    SaveMapToFile(false, filename);
+std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffer) {
+    std::stringstream error_forwarded;
 
+    bool ok = map_builder_->SerializeStateToFile(false, filename);
+    if (!ok) {
+       error_forwarded << "Failed to save the state as a pbstream.";
+        return error_forwarded.str();
+    }
+    
     std::ifstream tempFile(filename);
     if (tempFile.bad()) {
-        LOG(ERROR) << "Failed to open " << filename << "as ifstream obejct.";
+        error_forwarded << "Failed to open " << filename << " as ifstream object.";
+        TryFileClose(tempFile, &error_forwarded);
+        return error_forwarded.str();
     }
 
-    std::string buffer;
     std::stringstream bufferStream;
     if (bufferStream << tempFile.rdbuf()) {
-        std::string buffer = bufferStream.str();
-        tempFile.close();
+        *buffer = bufferStream.str();
     } else {
-        LOG(ERROR) << "Failed to get data from " << filename
-                   << " to buffer stream.";
+        error_forwarded << "Failed to get data from " << filename << " to buffer stream.";
+        TryFileClose(tempFile, &error_forwarded);
+        return error_forwarded.str();
     }
+
+    TryFileClose(tempFile, &error_forwarded);
 
     if (std::remove(filename.c_str()) != 0) {
-        LOG(ERROR) << "Deleting " << filename << " failed.";
+        error_forwarded << "Failed to delete " << filename;
+        return error_forwarded.str();
     }
 
-    return buffer;
+    return error_forwarded.str();
+}
+
+void MapBuilder::TryFileClose(std::ifstream& tempFile, std::stringstream* error_forwarded) {
+    tempFile.close();
+    if (tempFile.bad()) {
+        *error_forwarded << " File closed failed.";
+    }
+    return;
 }
 
 int MapBuilder::SetTrajectoryBuilder(

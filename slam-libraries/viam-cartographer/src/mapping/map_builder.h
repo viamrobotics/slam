@@ -38,12 +38,17 @@ class MapBuilder {
 
     // SaveMapToFile saves the current map_builder_ state to a pbstream file at
     // the provided path.
-    void SaveMapToFile(bool include_unfinished_submaps,
+    bool SaveMapToFile(bool include_unfinished_submaps,
                        const std::string filename_with_timestamp);
 
     // SaveMapToStream saves the current map_builder_ state to the pbstream
-    // stream provided.
-    std::string SaveMapToStream(const std::string filename_with_timestamp);
+    // stream provided via a temporary pbstream file.
+    std::string SaveMapToStream(const std::string filename_with_timestamp, 
+                        std::string* buffer);
+
+    // TryFileClose attempts to close an opened ifstream, returning an error string
+    // if it fails.
+    void TryFileClose(std::ifstream& file, std::stringstream* error_forwarded);
 
     // SetTrajectoryBuilder sets the trajectory builder options and returns the
     // active trajectory_id.
