@@ -43,11 +43,11 @@ class MapBuilder {
 
     // SaveMapToStream saves the current map_builder_ state to the pbstream
     // stream provided via a temporary pbstream file.
-    std::string SaveMapToStream(const std::string filename_with_timestamp, 
-                        std::string* buffer);
+    std::string SaveMapToStream(const std::string filename_with_timestamp,
+                                std::string* buffer);
 
-    // TryFileClose attempts to close an opened ifstream, returning an error string
-    // if it fails.
+    // TryFileClose attempts to close an opened ifstream, returning an error
+    // string if it fails.
     std::string TryFileClose(std::ifstream& file, std::string filename);
 
     // SetTrajectoryBuilder sets the trajectory builder options and returns the

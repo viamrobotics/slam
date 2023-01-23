@@ -1,6 +1,8 @@
 // This is an experimental integration of cartographer into RDK.
 #include "cartographer/mapping/map_builder.h"
 
+#include <sstream>
+
 #include "../io/file_handler.h"
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
@@ -11,7 +13,6 @@
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
 #include "map_builder.h"
-#include <sstream>
 
 namespace viam {
 namespace mapping {
@@ -83,13 +84,15 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     return ok;
 }
 
-std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffer) {
+std::string MapBuilder::SaveMapToStream(std::string filename,
+                                        std::string* buffer) {
     std::stringstream error_forwarded;
-    
+
     std::ifstream tempFile(filename);
     if (tempFile.bad()) {
-        error_forwarded << "Failed to open " << filename << " as ifstream object.";
-        error_forwarded << TryFileClose(tempFile,filename);
+        error_forwarded << "Failed to open " << filename
+                        << " as ifstream object.";
+        error_forwarded << TryFileClose(tempFile, filename);
         return error_forwarded.str();
     }
 
@@ -97,7 +100,8 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
     if (bufferStream << tempFile.rdbuf()) {
         *buffer = bufferStream.str();
     } else {
-        error_forwarded << "Failed to get data from " << filename << " to buffer stream.";
+        error_forwarded << "Failed to get data from " << filename
+                        << " to buffer stream.";
         error_forwarded << TryFileClose(tempFile, filename);
         return error_forwarded.str();
     }
@@ -112,7 +116,8 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
     return error_forwarded.str();
 }
 
-std::string MapBuilder::TryFileClose(std::ifstream& tempFile, std::string filename) {
+std::string MapBuilder::TryFileClose(std::ifstream& tempFile,
+                                     std::string filename) {
     tempFile.close();
     if (tempFile.bad()) {
         return (" Failed to close ifstream object " + filename);

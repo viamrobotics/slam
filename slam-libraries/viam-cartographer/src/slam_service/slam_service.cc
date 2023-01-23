@@ -1,6 +1,9 @@
 // This is an experimental integration of cartographer into RDK.
 #include "slam_service.h"
 
+#include <boost/uuid/uuid.hpp>             // uuid class
+#include <boost/uuid/uuid_generators.hpp>  // generators
+#include <boost/uuid/uuid_io.hpp>
 #include <iostream>
 #include <string>
 
@@ -14,10 +17,6 @@
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
-
-#include <boost/uuid/uuid.hpp>            // uuid class
-#include <boost/uuid/uuid_generators.hpp> // generators
-#include <boost/uuid/uuid_io.hpp>
 
 namespace viam {
 
@@ -201,10 +200,9 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetInternalState(
     ServerContext *context, const GetInternalStateRequest *request,
     GetInternalStateResponse *response) {
-
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
-    std::string filename = path_to_map + "/" + "temp_internal_state_" + 
-        boost::uuids::to_string(uuid) + ".pbstream";
+    std::string filename = path_to_map + "/" + "temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
 
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -221,7 +219,7 @@ std::atomic<bool> b_continue_session{true};
 
     if (err != "") {
         std::ostringstream oss;
-            oss << "error during data serialization: " << err;
+        oss << "error during data serialization: " << err;
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
