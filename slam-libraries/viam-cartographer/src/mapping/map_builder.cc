@@ -89,7 +89,7 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
     std::ifstream tempFile(filename);
     if (tempFile.bad()) {
         error_forwarded << "Failed to open " << filename << " as ifstream object.";
-        TryFileClose(tempFile,filename, &error_forwarded);
+        error_forwarded << TryFileClose(tempFile,filename);
         return error_forwarded.str();
     }
 
@@ -98,11 +98,11 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
         *buffer = bufferStream.str();
     } else {
         error_forwarded << "Failed to get data from " << filename << " to buffer stream.";
-        TryFileClose(tempFile, filename, &error_forwarded);
+        error_forwarded << TryFileClose(tempFile, filename);
         return error_forwarded.str();
     }
 
-    TryFileClose(tempFile, filename, &error_forwarded);
+    error_forwarded << TryFileClose(tempFile, filename);
 
     if (std::remove(filename.c_str()) != 0) {
         error_forwarded << "Failed to delete " << filename;
@@ -112,13 +112,12 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
     return error_forwarded.str();
 }
 
-void MapBuilder::TryFileClose(std::ifstream& tempFile, std::string filename, 
-    std::stringstream* error_forwarded) {
+std::string MapBuilder::TryFileClose(std::ifstream& tempFile, std::string filename) {
     tempFile.close();
     if (tempFile.bad()) {
-        *error_forwarded << " Failed to close ifstream object " << filename;
+        return (" Failed to close ifstream object " + filename);
     }
-    return;
+    return "";
 }
 
 int MapBuilder::SetTrajectoryBuilder(

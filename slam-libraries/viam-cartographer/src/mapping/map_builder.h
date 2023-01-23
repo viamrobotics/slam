@@ -48,8 +48,7 @@ class MapBuilder {
 
     // TryFileClose attempts to close an opened ifstream, returning an error string
     // if it fails.
-    void TryFileClose(std::ifstream& file, std::string filename, 
-                        std::stringstream* error_forwarded);
+    std::string TryFileClose(std::ifstream& file, std::string filename);
 
     // SetTrajectoryBuilder sets the trajectory builder options and returns the
     // active trajectory_id.
