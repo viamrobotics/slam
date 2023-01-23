@@ -209,6 +209,11 @@ std::atomic<bool> b_continue_session{true};
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         bool ok = map_builder.SaveMapToFile(true, filename);
+        if (!ok) {
+            std::ostringstream oss;
+            oss << "Failed to save the state as a pbstream.";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        }
     }
 
     std::string buf;

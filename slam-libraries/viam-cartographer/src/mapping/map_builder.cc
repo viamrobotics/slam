@@ -85,17 +85,11 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
 
 std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffer) {
     std::stringstream error_forwarded;
-
-    bool ok = map_builder_->SerializeStateToFile(false, filename);
-    if (!ok) {
-       error_forwarded << "Failed to save the state as a pbstream.";
-        return error_forwarded.str();
-    }
     
     std::ifstream tempFile(filename);
     if (tempFile.bad()) {
         error_forwarded << "Failed to open " << filename << " as ifstream object.";
-        TryFileClose(tempFile, &error_forwarded);
+        TryFileClose(tempFile,filename, &error_forwarded);
         return error_forwarded.str();
     }
 
@@ -104,11 +98,11 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
         *buffer = bufferStream.str();
     } else {
         error_forwarded << "Failed to get data from " << filename << " to buffer stream.";
-        TryFileClose(tempFile, &error_forwarded);
+        TryFileClose(tempFile, filename, &error_forwarded);
         return error_forwarded.str();
     }
 
-    TryFileClose(tempFile, &error_forwarded);
+    TryFileClose(tempFile, filename, &error_forwarded);
 
     if (std::remove(filename.c_str()) != 0) {
         error_forwarded << "Failed to delete " << filename;
@@ -118,10 +112,11 @@ std::string MapBuilder::SaveMapToStream(std::string filename, std::string* buffe
     return error_forwarded.str();
 }
 
-void MapBuilder::TryFileClose(std::ifstream& tempFile, std::stringstream* error_forwarded) {
+void MapBuilder::TryFileClose(std::ifstream& tempFile, std::string filename, 
+    std::stringstream* error_forwarded) {
     tempFile.close();
     if (tempFile.bad()) {
-        *error_forwarded << " File closed failed.";
+        *error_forwarded << " Failed to close ifstream object " << filename;
     }
     return;
 }
