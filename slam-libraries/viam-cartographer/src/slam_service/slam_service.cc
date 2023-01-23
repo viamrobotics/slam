@@ -267,7 +267,7 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
     int scale = size_data*4/100000.f/32.f*4;
 
     //i=i+4+12, +4 for bytes per pixel, +12 to write every 4th pixel
-    for (int i=0;i<size_data;i=i+4+12) {
+    for (int i=0;i<size_data;i=i+4+20) {
         int rgb = 0;
         rgb = rgb | ((int)data_vect[i+0] << 16);
         rgb = rgb | ((int)data_vect[i+1] << 8);
@@ -307,8 +307,8 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         //write points to buffer, same usage as before
         float z_pos = 0;
         data_buffer.sputn((const char *)&x_pos, 4);
-        data_buffer.sputn((const char *)&y_pos, 4);
         data_buffer.sputn((const char *)&z_pos, 4);
+        data_buffer.sputn((const char *)&y_pos, 4);
         data_buffer.sputn((const char *)&rgb, 4);
     }
 
