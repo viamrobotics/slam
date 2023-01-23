@@ -289,7 +289,7 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         float x_pos = pixel_x*kPixelSize;
         float y_pos = pixel_y*kPixelSize;
 
-        //Magic number that gets a map to show up
+        //Magic number that gets a map to show up, with kPixelSize totals 100000 scale
         float x_pos2 = x_pos/1000.f;
         float y_pos2 = y_pos/1000.f;
 
