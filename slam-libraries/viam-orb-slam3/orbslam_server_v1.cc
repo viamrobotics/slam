@@ -110,6 +110,86 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMap(
+    ServerContext *context, const GetPointCloudMapRequest *request,
+    GetPointCloudMapResponse *response) {
+    float max = 0;
+    float min = 10000;
+    std::vector<ORB_SLAM3::MapPoint *> actualMap;
+    Sophus::SE3f currPose;
+    {
+        std::lock_guard<std::mutex> lk(slam_mutex);
+        actualMap = currMapPoints;
+        currPose = poseGrpc;
+    }
+
+    if (actualMap.size() == 0) {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "currently no map points exist");
+    }
+
+    // take sparse slam map and convert into a pcd. Orientation of PCD
+    // is wrt the camera (z is coming out of the lens) so may need to
+    // transform.
+
+    std::stringbuf buffer;
+    std::ostream oss(&buffer);
+
+    // write our PCD file. we are writing as a binary
+    oss << "VERSION .7\n"
+        << "FIELDS x y z rgb\n"
+        << "SIZE 4 4 4 4\n"
+        << "TYPE F F F I\n"
+        << "COUNT 1 1 1 1\n"
+        << "WIDTH " << actualMap.size() << "\n"
+        << "HEIGHT " << 1 << "\n"
+        << "VIEWPOINT 0 0 0 1 0 0 0\n"
+        << "POINTS " << actualMap.size() << "\n"
+        << "DATA binary\n";
+
+    // initial loop to determine color bounds for PCD.
+    for (auto p : actualMap) {
+        Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
+        float val = v.y();
+        if (max < val) max = val;
+        if (min > val) min = val;
+    }
+
+    float mid = (max + min) / 2.;
+    float span = max - min;
+    int offsetRGB = 90;
+    int spanRGB = 70;
+    int clr = 0;
+    cv::Mat hsv(1, 1, CV_8UC3, cv::Scalar(255, 255, 255));
+    cv::Mat valRGB2(hsv.size(), hsv.type());
+
+    // write the map with simple rgb colors based off height from the
+    // "ground". Map written as a binary
+    for (auto p : actualMap) {
+        Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
+        float val = v.y();
+        auto ratio = (val - mid) / span;
+
+        clr = (int)(offsetRGB + (ratio * spanRGB));
+
+        cv::Vec3b &color = hsv.at<cv::Vec3b>(cv::Point(0, 0));
+        color[0] = clr;
+        cv::cvtColor(hsv, valRGB2, cv::COLOR_HSV2RGB);
+        cv::Vec3b colorRGB = valRGB2.at<cv::Vec3b>(cv::Point(0, 0));
+
+        int rgb = 0;
+        rgb = rgb | ((int)colorRGB[0] << 16);
+        rgb = rgb | ((int)colorRGB[1] << 8);
+        rgb = rgb | ((int)colorRGB[2] << 0);
+        buffer.sputn((const char *)&v.x(), 4);
+        buffer.sputn((const char *)&v.y(), 4);
+        buffer.sputn((const char *)&v.z(), 4);
+        buffer.sputn((const char *)&rgb, 4);
+    }
+    response->set_point_cloud_pcd(buffer.str());
+    return grpc::Status::OK;
+}
+
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {

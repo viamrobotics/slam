@@ -14,6 +14,8 @@
 using grpc::ServerContext;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPointCloudMapRequest;
+using viam::service::slam::v1::GetPointCloudMapResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -38,6 +40,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
+
+    ::grpc::Status GetPointCloudMap(
+        ServerContext *context, const GetPointCloudMapRequest *request,
+        GetPointCloudMapResponse *response) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
