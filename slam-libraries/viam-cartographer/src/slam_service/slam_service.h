@@ -167,14 +167,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // timestamp of the time when the map is saved.
     void SaveMapWithTimestamp();
 
-    // ConvertSavedMapToStream converted the saved pbstream to a stream and deletes 
-    // the file.
+    // ConvertSavedMapToStream converted the saved pbstream to the passed in
+    // string and deletes the file.
     void ConvertSavedMapToStream(const std::string filename_with_timestamp,
-                                std::string* buffer);
+                                 std::string *buffer);
 
     // TryFileClose attempts to close an opened ifstream, returning an error
     // string if it fails.
-    std::string TryFileClose(std::ifstream& file, std::string filename);
+    std::string TryFileClose(std::ifstream &file, std::string filename);
 
     // GetJpegMap paints the jpeg version of the map and writes the
     // image to the response. Returns a grpc status that reflects

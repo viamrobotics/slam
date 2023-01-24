@@ -41,9 +41,10 @@ class MapBuilder {
     bool SaveMapToFile(bool include_unfinished_submaps,
                        const std::string filename_with_timestamp);
 
-    // SaveMapToStream converted the saved pbstream to a stream and deletes the file.
-    std::string ConvertSavedMapToStream(const std::string filename_with_timestamp,
-                                std::string* buffer);
+    // SaveMapToStream converted the saved pbstream to a stream and deletes the
+    // file.
+    std::string ConvertSavedMapToStream(
+        const std::string filename_with_timestamp, std::string* buffer);
 
     // TryFileClose attempts to close an opened ifstream, returning an error
     // string if it fails.
