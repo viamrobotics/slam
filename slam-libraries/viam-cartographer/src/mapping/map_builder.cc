@@ -84,47 +84,6 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     return ok;
 }
 
-std::string MapBuilder::SaveMapToStream(std::string filename,
-                                        std::string* buffer) {
-    std::stringstream error_forwarded;
-
-    std::ifstream tempFile(filename);
-    if (tempFile.bad()) {
-        error_forwarded << "Failed to open " << filename
-                        << " as ifstream object.";
-        error_forwarded << TryFileClose(tempFile, filename);
-        return error_forwarded.str();
-    }
-
-    std::stringstream bufferStream;
-    if (bufferStream << tempFile.rdbuf()) {
-        *buffer = bufferStream.str();
-    } else {
-        error_forwarded << "Failed to get data from " << filename
-                        << " to buffer stream.";
-        error_forwarded << TryFileClose(tempFile, filename);
-        return error_forwarded.str();
-    }
-
-    error_forwarded << TryFileClose(tempFile, filename);
-
-    if (std::remove(filename.c_str()) != 0) {
-        error_forwarded << "Failed to delete " << filename;
-        return error_forwarded.str();
-    }
-
-    return error_forwarded.str();
-}
-
-std::string MapBuilder::TryFileClose(std::ifstream& tempFile,
-                                     std::string filename) {
-    tempFile.close();
-    if (tempFile.bad()) {
-        return (" Failed to close ifstream object " + filename);
-    }
-    return "";
-}
-
 int MapBuilder::SetTrajectoryBuilder(
     cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
     std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>

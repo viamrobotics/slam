@@ -215,16 +215,53 @@ std::atomic<bool> b_continue_session{true};
     }
 
     std::string buf;
-    std::string err = map_builder.SaveMapToStream(filename, &buf);
-
-    if (err != "") {
+    try  {
+        ConvertSavedMapToStream(filename, &buf);
+        response->set_internal_state(buf);
+    } catch (std::exception &e) {
         std::ostringstream oss;
-        oss << "error during data serialization: " << err;
+        oss << "error during data serialization: " << e.what();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
+}
 
-    response->set_internal_state(buf);
-    return grpc::Status::OK;
+void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
+                                        std::string* buffer) {
+    std::stringstream error_forwarded;
+
+    std::ifstream tempFile(filename);
+    if (tempFile.bad()) {
+        error_forwarded << "Failed to open " << filename
+                        << " as ifstream object.";
+        error_forwarded << TryFileClose(tempFile, filename);
+         throw std::runtime_error(error_forwarded.str());
+    }
+
+    std::stringstream bufferStream;
+    if (bufferStream << tempFile.rdbuf()) {
+        *buffer = bufferStream.str();
+    } else {
+        error_forwarded << "Failed to get data from " << filename
+                        << " to buffer stream.";
+        error_forwarded << TryFileClose(tempFile, filename);
+         throw std::runtime_error(error_forwarded.str());
+    }
+
+    error_forwarded << TryFileClose(tempFile, filename);
+
+    if (std::remove(filename.c_str()) != 0) {
+        error_forwarded << "Failed to delete " << filename;
+         throw std::runtime_error(error_forwarded.str());
+    }
+}
+
+std::string SLAMServiceImpl::TryFileClose(std::ifstream& tempFile,
+                                     std::string filename) {
+    tempFile.close();
+    if (tempFile.bad()) {
+        return (" Failed to close ifstream object " + filename);
+    }
+    return "";
 }
 
 void SLAMServiceImpl::BackupLatestMap() {
