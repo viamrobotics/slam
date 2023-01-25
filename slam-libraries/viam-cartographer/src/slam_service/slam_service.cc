@@ -247,7 +247,12 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
     // cartographer format is ARGB32(but RGB is still first?)
     bool format_check = format == cartographer::io::kCairoFormat;
 
-
+    std::cout << "origin_x: " << painted_slices.origin.x() << std::endl;
+    std::cout << "origin_y: " << painted_slices.origin.y() << std::endl;
+    std::cout << "final_posex: " << latest_global_pose.translation().x() << std::endl;
+    std::cout <<"final_posey: " << latest_global_pose.translation().y() << std::endl;
+    // std::cout << "final_posex_px: " << latest_global_pose.translation().x() / kPixelSize << std::endl;
+    // std::cout <<"final_posey_px: " << latest_global_pose.translation().y() / kPixelSize << std::endl;
     std::cout << "width_px: " << width << std::endl;
     std::cout << "height_px: " << height << std::endl;
     std::cout << "stride_bytes: " << stride << std::endl;
@@ -273,37 +278,38 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         rgb = rgb | ((int)data_vect[i+1] << 8);
         rgb = rgb | ((int)data_vect[i+2] << 0);
 
+        // if(i < 75){
+        //     std::cout << "data[0]: " << (int)data_vect[i+0] << std::endl;
+        //     std::cout << "data[1]: " << (int)data_vect[i+1] << std::endl;
+        //     std::cout << "data[2]: " << (int)data_vect[i+2] << std::endl;
+        //     std::cout << "data[3]: " << (int)data_vect[i+3] << std::endl;
+        //     std::cout << "rgb: " << rgb << std::endl;
+        // }
+        
         //skip pixels that are not in our map(black/past walls)
         if(rgb == 6710886)
         continue;
 
         num_points++;
-
-        //mod math cuz its the best
-        int pixel_index = i/4;
-        int pixel_x = pixel_index/width;
-        int pixel_y = pixel_index%width;
-
-        //kPixelSize is .01, unsure of units but assumed converts to meters
-        // based on PaintSubmapSlices() and DrawPoseOnSurface()
-        float x_pos = pixel_x*kPixelSize;
-        float y_pos = pixel_y*kPixelSize;
-
-        //Magic number that gets a map to show up, with kPixelSize totals 100000 scale
-        float x_pos2 = x_pos/1000.f;
-        float y_pos2 = y_pos/1000.f;
-
-        //debuging
-        if((num_points > 1582734)&&(num_points < 1582739)){
-        std::cout << "pixel_index: " << pixel_index << std::endl;
-        std::cout << "pixel_x: " << pixel_x << std::endl;
-        std::cout << "pixel_y: " << pixel_y << std::endl;
-        std::cout << "x_pos: " << x_pos << std::endl;
-        std::cout << "y_pos: " << y_pos << std::endl;   
-        std::cout << "Working x_pos: " << x_pos2 << std::endl;
-        std::cout << "Working y_pos: " << y_pos2 << std::endl;
-        }
+        // if(num_points < 500){
+        //     std::cout << "data[0]: " << (int)data_vect[i+0] << std::endl;
+        //     std::cout << "data[1]: " << (int)data_vect[i+1] << std::endl;
+        //     std::cout << "data[2]: " << (int)data_vect[i+2] << std::endl;
+        //     std::cout << "data[3]: " << (int)data_vect[i+3] << std::endl;
+        //     std::cout << "rgb: " << rgb << std::endl;
+        // }
         
+        //mod math cuz its the best(REMOVE COMMENT BEFORE MERGE)
+        int pixel_index = i/4;
+        int pixel_x = pixel_index%width;
+        int pixel_y = pixel_index/width;
+
+        // kPixelSize is .01, unsure of units but assumed converts to meters
+        // based on PaintSubmapSlices() and DrawPoseOnSurface()
+        float x_pos = (pixel_x-painted_slices.origin.x())*kPixelSize;
+        // Y is inverted to match output from getPosition()
+        float y_pos = -(pixel_y-painted_slices.origin.y())*kPixelSize;
+
         //write points to buffer, same usage as before
         float z_pos = 0;
         data_buffer.sputn((const char *)&x_pos, 4);
