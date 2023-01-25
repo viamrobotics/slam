@@ -116,11 +116,9 @@ std::atomic<bool> b_continue_session{true};
     float max = 0;
     float min = 10000;
     std::vector<ORB_SLAM3::MapPoint *> actualMap;
-    Sophus::SE3f currPose;
     {
         std::lock_guard<std::mutex> lk(slam_mutex);
         actualMap = currMapPoints;
-        currPose = poseGrpc;
     }
 
     if (actualMap.size() == 0) {
