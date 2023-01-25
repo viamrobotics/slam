@@ -1,6 +1,8 @@
 // This is an experimental integration of cartographer into RDK.
 #include "cartographer/mapping/map_builder.h"
 
+#include <sstream>
+
 #include "../io/file_handler.h"
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
@@ -72,13 +74,14 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
                 << trajectory_ids_pair.second;
 }
 
-void MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
+bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
                                const std::string filename_with_timestamp) {
     bool ok = map_builder_->SerializeStateToFile(include_unfinished_submaps,
                                                  filename_with_timestamp);
     if (!ok) {
         LOG(ERROR) << "Saving the map to pbstream failed.";
     }
+    return ok;
 }
 
 int MapBuilder::SetTrajectoryBuilder(
