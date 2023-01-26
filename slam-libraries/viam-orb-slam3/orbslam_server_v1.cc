@@ -140,7 +140,7 @@ iterates throught all the bytes of the float
 writes each byte to buffer 
 */
 void writeFloatToBufferInBytes(std::string* buffer, float f) {
-    const char * const p = (const char *)(&f);
+    unsigned const char * const p = (unsigned const char *)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
         buffer->push_back(p[i]);
     }
