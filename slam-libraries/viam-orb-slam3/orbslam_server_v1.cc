@@ -139,13 +139,10 @@ casts the float f to a pointer of unsigned bytes
 iterates throught all the bytes of the float
 writes each byte to buffer 
 */
-void writeFloatToBufferInBytes(std::string buffer, float f) {
-    BOOST_LOG_TRIVIAL(debug) << boost::format("writing float: %f, size of float: %d\n") % f % sizeof(float);
+void writeFloatToBufferInBytes(std::string* buffer, float f) {
     const char * const p = (const char *)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
-        BOOST_LOG_TRIVIAL(debug) << boost::format("index: %i as integer: %d\n") % i % p[i];
-        // buffer.sputn((const char *)&v.z(), 4);
-        buffer.push_back(p[i]);
+        buffer->push_back(p[i]);
     }
 }
 
@@ -206,10 +203,10 @@ void writeFloatToBufferInBytes(std::string buffer, float f) {
         rgb = rgb | ((int)colorRGB[1] << 8);
         rgb = rgb | ((int)colorRGB[2] << 0);
 
-        writeFloatToBufferInBytes(buffer, v.x());
-        writeFloatToBufferInBytes(buffer, v.y());
-        writeFloatToBufferInBytes(buffer, v.z());
-        writeFloatToBufferInBytes(buffer, rgb);
+        writeFloatToBufferInBytes(&buffer, v.x());
+        writeFloatToBufferInBytes(&buffer, v.y());
+        writeFloatToBufferInBytes(&buffer, v.z());
+        writeFloatToBufferInBytes(&buffer, rgb);
     }
     response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
