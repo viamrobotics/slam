@@ -136,12 +136,24 @@ std::string pcdHeader(int mapSize) {
 
 /*
 casts the float f to a pointer of unsigned bytes
-iterates throught all the bytes of the float
+iterates throught all the bytes of f
 writes each byte to buffer 
 */
 void writeFloatToBufferInBytes(std::string* buffer, float f) {
     unsigned const char * const p = (unsigned const char *)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer->push_back(p[i]);
+    }
+}
+
+/*
+casts the uint32_t f to a pointer of unsigned bytes
+iterates throught all the bytes of f
+writes each byte to buffer 
+*/
+void writeIntUnsignedToBufferInBytes(std::string* buffer, uint32_t f) {
+    unsigned const char * const p = (unsigned const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(uint32_t); ++i) {
         buffer->push_back(p[i]);
     }
 }
@@ -198,7 +210,7 @@ void writeFloatToBufferInBytes(std::string* buffer, float f) {
         cv::cvtColor(hsv, valRGB2, cv::COLOR_HSV2RGB);
         cv::Vec3b colorRGB = valRGB2.at<cv::Vec3b>(cv::Point(0, 0));
 
-        int rgb = 0;
+        uint32_t rgb = 0;
         rgb = rgb | ((int)colorRGB[0] << 16);
         rgb = rgb | ((int)colorRGB[1] << 8);
         rgb = rgb | ((int)colorRGB[2] << 0);
@@ -206,7 +218,7 @@ void writeFloatToBufferInBytes(std::string* buffer, float f) {
         writeFloatToBufferInBytes(&buffer, v.x());
         writeFloatToBufferInBytes(&buffer, v.y());
         writeFloatToBufferInBytes(&buffer, v.z());
-        writeFloatToBufferInBytes(&buffer, rgb);
+        writeIntUnsignedToBufferInBytes(&buffer, rgb);
     }
     response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
