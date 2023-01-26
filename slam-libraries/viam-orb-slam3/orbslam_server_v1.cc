@@ -161,8 +161,6 @@ void writeIntUnsignedToBufferInBytes(std::string* buffer, uint32_t f) {
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
-    float max = 0;
-    float min = 10000;
     std::vector<ORB_SLAM3::MapPoint *> actualMap;
     {
         std::lock_guard<std::mutex> lk(slam_mutex);
@@ -170,55 +168,20 @@ void writeIntUnsignedToBufferInBytes(std::string* buffer, uint32_t f) {
     }
 
     if (actualMap.size() == 0) {
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                            "currently no map points exist");
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, "currently no map points exist");
     }
 
-    // take sparse slam map and convert into a pcd. Orientation of PCD
-    // is wrt the camera (z is coming out of the lens) so may need to
-    // transform.
+    // Take sparse slam map and convert into a pcd.
+    // uses right hand rule
+    // z is in the direction the camera is facing.
     std::string buffer = pcdHeader(actualMap.size());
 
-
-    // initial loop to determine color bounds for PCD.
+    // write the map in binary format
     for (auto p : actualMap) {
         Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-        float val = v.y();
-        if (max < val) max = val;
-        if (min > val) min = val;
-    }
-
-    float mid = (max + min) / 2.;
-    float span = max - min;
-    int offsetRGB = 90;
-    int spanRGB = 70;
-    int clr = 0;
-    cv::Mat hsv(1, 1, CV_8UC3, cv::Scalar(255, 255, 255));
-    cv::Mat valRGB2(hsv.size(), hsv.type());
-
-    // write the map with simple rgb colors based off height from the
-    // "ground". Map written as a binary
-    for (auto p : actualMap) {
-        Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-        float val = v.y();
-        auto ratio = (val - mid) / span;
-
-        clr = (int)(offsetRGB + (ratio * spanRGB));
-
-        cv::Vec3b &color = hsv.at<cv::Vec3b>(cv::Point(0, 0));
-        color[0] = clr;
-        cv::cvtColor(hsv, valRGB2, cv::COLOR_HSV2RGB);
-        cv::Vec3b colorRGB = valRGB2.at<cv::Vec3b>(cv::Point(0, 0));
-
-        uint32_t rgb = 0;
-        rgb = rgb | ((int)colorRGB[0] << 16);
-        rgb = rgb | ((int)colorRGB[1] << 8);
-        rgb = rgb | ((int)colorRGB[2] << 0);
-
         writeFloatToBufferInBytes(&buffer, v.x());
         writeFloatToBufferInBytes(&buffer, v.y());
         writeFloatToBufferInBytes(&buffer, v.z());
-        writeIntUnsignedToBufferInBytes(&buffer, rgb);
     }
     response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
