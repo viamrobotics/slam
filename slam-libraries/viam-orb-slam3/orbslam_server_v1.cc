@@ -24,21 +24,42 @@ using viam::common::v1::PoseInFrame;
 #define MAX_COLOR_VALUE 255
 const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
-const std::string HEADERTEMPLATE = "VERSION .7\n"
-                                   "FIELDS x y z\n"
-                                   // NOTE: If a float is more than 4 bytes
-                                   // on a given platform
-                                   // this size will be inaccurate
-                                   "SIZE 4 4 4\n"
-                                   "TYPE F F F\n"
-                                   "COUNT 1 1 1\n"
-                                   "WIDTH %d\n"
-                                   "HEIGHT 1\n"
-                                   "VIEWPOINT 0 0 0 1 0 0 0\n"
-                                   "POINTS %d\n"
-                                   "DATA binary\n";
+const std::string HEADERTEMPLATE =
+    "VERSION .7\n"
+    "FIELDS x y z\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4\n"
+    "TYPE F F F\n"
+    "COUNT 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
 
 namespace viam {
+
+/*
+applies the mapSize to the HEADERTEMPLATE
+returning the pcd header as a string
+*/
+std::string pcdHeader(int mapSize) {
+    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+/*
+casts the float f to a pointer of unsigned bytes
+iterates throught all the bytes of f
+writes each byte to buffer
+*/
+void writeFloatToBufferInBytes(std::string *buffer, float f) {
+    unsigned const char *const p = (unsigned const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer->push_back(p[i]);
+    }
+}
 
 std::atomic<bool> b_continue_session{true};
 
@@ -125,39 +146,6 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-
-/*
-applies the mapSize to the HEADERTEMPLATE
-returning the pcd header as a string
-*/
-std::string pcdHeader(int mapSize) {
-    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
-}
-
-/*
-casts the float f to a pointer of unsigned bytes
-iterates throught all the bytes of f
-writes each byte to buffer 
-*/
-void writeFloatToBufferInBytes(std::string* buffer, float f) {
-    unsigned const char * const p = (unsigned const char *)(&f);
-    for (std::size_t i = 0; i < sizeof(float); ++i) {
-        buffer->push_back(p[i]);
-    }
-}
-
-/*
-casts the uint32_t f to a pointer of unsigned bytes
-iterates throught all the bytes of f
-writes each byte to buffer 
-*/
-void writeIntUnsignedToBufferInBytes(std::string* buffer, uint32_t f) {
-    unsigned const char * const p = (unsigned const char *)(&f);
-    for (std::size_t i = 0; i < sizeof(uint32_t); ++i) {
-        buffer->push_back(p[i]);
-    }
-}
-
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
@@ -168,7 +156,8 @@ void writeIntUnsignedToBufferInBytes(std::string* buffer, uint32_t f) {
     }
 
     if (actualMap.size() == 0) {
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, "currently no map points exist");
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "currently no map points exist");
     }
 
     // Take sparse slam map and convert into a pcd.
