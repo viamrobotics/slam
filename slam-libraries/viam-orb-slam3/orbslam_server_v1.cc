@@ -25,13 +25,13 @@ using viam::common::v1::PoseInFrame;
 const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
 const std::string HEADERTEMPLATE = "VERSION .7\n"
-                                   "FIELDS x y z rgb\n"
+                                   "FIELDS x y z\n"
                                    // NOTE: If a float is more than 4 bytes
                                    // on a given platform
                                    // this size will be inaccurate
-                                   "SIZE 4 4 4 4\n"
-                                   "TYPE F F F I\n"
-                                   "COUNT 1 1 1 1\n"
+                                   "SIZE 4 4 4\n"
+                                   "TYPE F F F\n"
+                                   "COUNT 1 1 1\n"
                                    "WIDTH %d\n"
                                    "HEIGHT 1\n"
                                    "VIEWPOINT 0 0 0 1 0 0 0\n"
