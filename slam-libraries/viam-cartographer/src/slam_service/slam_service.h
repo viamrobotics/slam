@@ -190,7 +190,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // or not the pointcloud string contains any points.
     bool ExtractPointCloudToString(std::string &pointcloud);
 
-    bool GetLatestPointcloudMapString(std::string &pointcloud);
+    // GetLatestPointCloudMapString paints and returns the latest map as a pcd string with probability estimates written to the color channel
+    bool GetLatestPointCloudMapString(std::string &pointcloud);
+
+    // For a given color channel convert the scale from 102-255 to 100-0
+    int ViamColorToProbability(int color);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.

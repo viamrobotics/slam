@@ -129,8 +129,8 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            // pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
-            pointcloud_has_points = GetLatestPointcloudMapString(pointcloud_map);
+            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+            // pointcloud_has_points = GetLatestPointCloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
@@ -235,29 +235,12 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     return image.WriteJpegToString(50);
 }
 
-bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
+bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     
     cartographer::io::PaintSubmapSlicesResult painted_slices = GetLatestPaintedMapSlices();
     auto painted_surface = painted_slices.surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    int stride = cairo_image_surface_get_stride(painted_surface);
-    auto format = cairo_image_surface_get_format(painted_surface);
-
-    // cartographer format is ARGB32(but RGB is still first?)
-    bool format_check = format == cartographer::io::kCairoFormat;
-
-    std::cout << "origin_x: " << painted_slices.origin.x() << std::endl;
-    std::cout << "origin_y: " << painted_slices.origin.y() << std::endl;
-    std::cout << "final_posex: " << latest_global_pose.translation().x() << std::endl;
-    std::cout <<"final_posey: " << latest_global_pose.translation().y() << std::endl;
-    // std::cout << "final_posex_px: " << latest_global_pose.translation().x() / kPixelSize << std::endl;
-    // std::cout <<"final_posey_px: " << latest_global_pose.translation().y() / kPixelSize << std::endl;
-    std::cout << "width_px: " << width << std::endl;
-    std::cout << "height_px: " << height << std::endl;
-    std::cout << "stride_bytes: " << stride << std::endl;
-    std::cout << "format_check: " << format_check << std::endl;
-    std::cout << "format: " << format << std::endl;
 
     //total number of bytes, 32 bits per pixel
     size_t size_data = width*height*4;
@@ -268,38 +251,31 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
     std::stringbuf data_buffer;
 
     int num_points = 0;
-    // not working yet, need to reduce resolution to hit 32 MB on our PCD
-    int scale = size_data*4/100000.f/32.f*4;
 
-    //i=i+4+12, +4 for bytes per pixel, +12 to write every 4th pixel
-    for (int i=0;i<size_data;i=i+4+20) {
+    // Reduce resolution based off number of pixels. Output is pixels to skip
+    int scaleFactor = 4;
+    int scale = size_data/100000.f/32.f/scaleFactor;
+    
+    // Loop to filter unwanted data and reduce resolution
+    for (int i=0;i<size_data;i=i+scale*4) {
         int rgb = 0;
         rgb = rgb | ((int)data_vect[i+0] << 16);
         rgb = rgb | ((int)data_vect[i+1] << 8);
         rgb = rgb | ((int)data_vect[i+2] << 0);
-
-        // if(i < 75){
-        //     std::cout << "data[0]: " << (int)data_vect[i+0] << std::endl;
-        //     std::cout << "data[1]: " << (int)data_vect[i+1] << std::endl;
-        //     std::cout << "data[2]: " << (int)data_vect[i+2] << std::endl;
-        //     std::cout << "data[3]: " << (int)data_vect[i+3] << std::endl;
-        //     std::cout << "rgb: " << rgb << std::endl;
-        // }
         
         //skip pixels that are not in our map(black/past walls)
+        // this value represents [102,102,102]
         if(rgb == 6710886)
         continue;
 
-        num_points++;
-        // if(num_points < 500){
-        //     std::cout << "data[0]: " << (int)data_vect[i+0] << std::endl;
-        //     std::cout << "data[1]: " << (int)data_vect[i+1] << std::endl;
-        //     std::cout << "data[2]: " << (int)data_vect[i+2] << std::endl;
-        //     std::cout << "data[3]: " << (int)data_vect[i+3] << std::endl;
-        //     std::cout << "rgb: " << rgb << std::endl;
-        // }
+        //Determine probability based off color pixel
+        int prob = ViamColorToProbability((int)data_vect[i+2]);
         
-        //mod math cuz its the best(REMOVE COMMENT BEFORE MERGE)
+        if(prob == 0)
+        continue;
+        
+        num_points++;
+        
         int pixel_index = i/4;
         int pixel_x = pixel_index%width;
         int pixel_y = pixel_index/width;
@@ -309,13 +285,14 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         float x_pos = (pixel_x-painted_slices.origin.x())*kPixelSize;
         // Y is inverted to match output from getPosition()
         float y_pos = -(pixel_y-painted_slices.origin.y())*kPixelSize;
-
-        //write points to buffer, same usage as before
+        // 2D SLAM so Z is set to 0
         float z_pos = 0;
+
+        //rotating coordinates to match slam service expectation(XZ plane)
         data_buffer.sputn((const char *)&x_pos, 4);
         data_buffer.sputn((const char *)&z_pos, 4);
         data_buffer.sputn((const char *)&y_pos, 4);
-        data_buffer.sputn((const char *)&rgb, 4);
+        data_buffer.sputn((const char *)&prob, 4);
     }
 
     std::stringbuf pointcloud_buffer;
@@ -332,9 +309,22 @@ bool SLAMServiceImpl::GetLatestPointcloudMapString(std::string &pointcloud) {
         << "VIEWPOINT 0 0 0 1 0 0 0\n"
         << "POINTS " << num_points << "\n"
         << "DATA binary\n";
+
+    // writes data buffer to the pointcloud string
     oss << data_buffer.str();
     pointcloud = pointcloud_buffer.str();
 return true;
+}
+
+int SLAMServiceImpl::ViamColorToProbability(int color){
+    int maxVal = 255;
+    int minVal = 102;
+    int maxProb = 100;
+    int minProb = 0;
+    int prob = (color - maxVal)*(maxProb-minProb)/(minVal-maxVal) + minProb;
+    if(prob < minProb) return minProb;
+    if(prob > maxProb) return maxProb;
+    return prob;
 }
 
 cartographer::io::PaintSubmapSlicesResult SLAMServiceImpl::GetLatestPaintedMapSlices(){
@@ -430,7 +420,6 @@ bool SLAMServiceImpl::ExtractPointCloudToString(std::string &pointcloud) {
         trajectory_nodes =
             map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
     }
-    GetLatestPointcloudMapString(pointcloud);
     bool pointcloud_has_points = false;
     std::stringbuf pointcloud_buffer;
     std::ostream oss(&pointcloud_buffer);
