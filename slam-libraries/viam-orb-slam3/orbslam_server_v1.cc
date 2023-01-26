@@ -5,6 +5,7 @@
 #include <cfenv>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -13,6 +14,7 @@
 #pragma STDC FENV_ACCESS ON
 
 using namespace boost::filesystem;
+using boost::format;
 using google::protobuf::Struct;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
@@ -22,6 +24,16 @@ using viam::common::v1::PoseInFrame;
 #define MAX_COLOR_VALUE 255
 const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
+const std::string HEADERTEMPLATE = "VERSION .7\n"
+                                   "FIELDS x y z rgb\n"
+                                   "SIZE 4 4 4 4\n"
+                                   "TYPE F F F I\n"
+                                   "COUNT 1 1 1 1\n"
+                                   "WIDTH %d\n"
+                                   "HEIGHT 1\n"
+                                   "VIEWPOINT 0 0 0 1 0 0 0\n"
+                                   "POINTS %d\n"
+                                   "DATA binary\n";
 
 namespace viam {
 
@@ -110,6 +122,11 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+
+std::string pcdHeader(int mapSize) {
+    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
@@ -129,21 +146,9 @@ std::atomic<bool> b_continue_session{true};
     // take sparse slam map and convert into a pcd. Orientation of PCD
     // is wrt the camera (z is coming out of the lens) so may need to
     // transform.
-
-    std::stringbuf buffer;
-    std::ostream oss(&buffer);
+    std::string buffer = pcdHeader(actualMap.size());
 
     // write our PCD file. we are writing as a binary
-    oss << "VERSION .7\n"
-        << "FIELDS x y z rgb\n"
-        << "SIZE 4 4 4 4\n"
-        << "TYPE F F F I\n"
-        << "COUNT 1 1 1 1\n"
-        << "WIDTH " << actualMap.size() << "\n"
-        << "HEIGHT " << 1 << "\n"
-        << "VIEWPOINT 0 0 0 1 0 0 0\n"
-        << "POINTS " << actualMap.size() << "\n"
-        << "DATA binary\n";
 
     // initial loop to determine color bounds for PCD.
     for (auto p : actualMap) {
@@ -179,12 +184,12 @@ std::atomic<bool> b_continue_session{true};
         rgb = rgb | ((int)colorRGB[0] << 16);
         rgb = rgb | ((int)colorRGB[1] << 8);
         rgb = rgb | ((int)colorRGB[2] << 0);
-        buffer.sputn((const char *)&v.x(), 4);
-        buffer.sputn((const char *)&v.y(), 4);
-        buffer.sputn((const char *)&v.z(), 4);
-        buffer.sputn((const char *)&rgb, 4);
+        buffer.push_back(v.x());
+        buffer.push_back(v.y());
+        buffer.push_back(v.z());
+        buffer.push_back(rgb);
     }
-    response->set_point_cloud_pcd(buffer.str());
+    response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
 }
 
