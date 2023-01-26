@@ -166,9 +166,9 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
-            // pointcloud_has_points =
-            // GetLatestPointCloudMapString(pointcloud_map);
+            // pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+            pointcloud_has_points =
+            GetLatestPointCloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
