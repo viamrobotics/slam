@@ -140,8 +140,10 @@ iterates throught all the bytes of the float
 writes each byte to buffer 
 */
 void writeFloatToBufferInBytes(std::string buffer, float f) {
+    BOOST_LOG_TRIVIAL(debug) << "writing float: " << f << "\nsize of float: " << sizeof(float);
     unsigned char const * const p = (unsigned char const *)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
+        BOOST_LOG_TRIVIAL(debug) << "index " << i << " as integer: " << p[i] << "\n";
         buffer.push_back(p[i]);
     }
 }
