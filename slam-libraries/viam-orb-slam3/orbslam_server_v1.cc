@@ -26,6 +26,9 @@ const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
 const std::string HEADERTEMPLATE = "VERSION .7\n"
                                    "FIELDS x y z rgb\n"
+                                   // NOTE: If a float is more than 4 bytes
+                                   // on a given platform
+                                   // this size will be inaccurate
                                    "SIZE 4 4 4 4\n"
                                    "TYPE F F F I\n"
                                    "COUNT 1 1 1 1\n"
@@ -123,8 +126,24 @@ std::atomic<bool> b_continue_session{true};
 }
 
 
+/*
+applies the mapSize to the HEADERTEMPLATE
+returning the pcd header as a string
+*/
 std::string pcdHeader(int mapSize) {
     return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+/*
+casts the float f to a pointer of unsigned bytes
+iterates throught all the bytes of the float
+writes each byte to buffer 
+*/
+void writeFloatToBufferInBytes(std::string buffer, float f) {
+    unsigned char const * const p = (unsigned char const *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
 }
 
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
@@ -148,7 +167,6 @@ std::string pcdHeader(int mapSize) {
     // transform.
     std::string buffer = pcdHeader(actualMap.size());
 
-    // write our PCD file. we are writing as a binary
 
     // initial loop to determine color bounds for PCD.
     for (auto p : actualMap) {
@@ -184,10 +202,11 @@ std::string pcdHeader(int mapSize) {
         rgb = rgb | ((int)colorRGB[0] << 16);
         rgb = rgb | ((int)colorRGB[1] << 8);
         rgb = rgb | ((int)colorRGB[2] << 0);
-        buffer.push_back(v.x());
-        buffer.push_back(v.y());
-        buffer.push_back(v.z());
-        buffer.push_back(rgb);
+
+        writeFloatToBufferInBytes(buffer, v.x());
+        writeFloatToBufferInBytes(buffer, v.y());
+        writeFloatToBufferInBytes(buffer, v.z());
+        writeFloatToBufferInBytes(buffer, rgb);
     }
     response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
