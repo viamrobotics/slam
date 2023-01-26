@@ -25,8 +25,12 @@ using grpc::ServerContext;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
+using viam::service::slam::v1::GetInternalStateRequest;
+using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPositionNewRequest;
+using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
@@ -49,12 +53,25 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                const GetPositionRequest *request,
                                GetPositionResponse *response) override;
 
+    // GetPositionNew returns the relative pose of the robot w.r.t the "origin"
+    // of the map, which is the starting point from where the map was initially
+    // created along with a component reference.
+    ::grpc::Status GetPositionNew(ServerContext *context,
+                                  const GetPositionNewRequest *request,
+                                  GetPositionNewResponse *response) override;
+
     // GetMap returns either an image or a pointcloud, depending on the MIME
     // type requested.
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // RunSLAM sets up and runs cartographer. It runs cartogapher in
+    // GetInternalState returns the current internal state of the map which is
+    // a pbstream for cartographer.
+    ::grpc::Status GetInternalState(
+        ServerContext *context, const GetInternalStateRequest *request,
+        GetInternalStateResponse *response) override;
+
+    // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
     // a new map, updating an apriori map, or localizing on an apriori map.
     void RunSLAM();
@@ -149,6 +166,15 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // SaveMapWithTimestamp saves maps with a filename that includes the
     // timestamp of the time when the map is saved.
     void SaveMapWithTimestamp();
+
+    // ConvertSavedMapToStream converted the saved pbstream to the passed in
+    // string and deletes the file.
+    void ConvertSavedMapToStream(const std::string filename_with_timestamp,
+                                 std::string *buffer);
+
+    // TryFileClose attempts to close an opened ifstream, returning an error
+    // string if it fails.
+    std::string TryFileClose(std::ifstream &file, std::string filename);
 
     // GetJpegMap paints the jpeg version of the map and writes the
     // image to the response. Returns a grpc status that reflects

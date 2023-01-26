@@ -1,6 +1,9 @@
 // This is an experimental integration of cartographer into RDK.
 #include "slam_service.h"
 
+#include <boost/uuid/uuid.hpp>             // uuid class
+#include <boost/uuid/uuid_generators.hpp>  // generators
+#include <boost/uuid/uuid_io.hpp>
 #include <iostream>
 #include <string>
 
@@ -48,6 +51,40 @@ std::atomic<bool> b_continue_session{true};
         global_pose.rotation().y());
     q->mutable_fields()->operator[]("kmag").set_number_value(
         global_pose.rotation().z());
+
+    return grpc::Status::OK;
+}
+
+::grpc::Status SLAMServiceImpl::GetPositionNew(
+    ServerContext *context, const GetPositionNewRequest *request,
+    GetPositionNewResponse *response) {
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        global_pose = latest_global_pose;
+    }
+
+    // Set pose for our response
+    Pose *myPose = response->mutable_pose();
+    myPose->set_x(global_pose.translation().x());
+    myPose->set_y(global_pose.translation().y());
+    myPose->set_z(global_pose.translation().z());
+
+    // Set extra for our response (currently stores quaternion)
+    google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(
+        global_pose.rotation().w());
+    q->mutable_fields()->operator[]("imag").set_number_value(
+        global_pose.rotation().x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(
+        global_pose.rotation().y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(
+        global_pose.rotation().z());
+
+    // Set component_reference for our response
+    response->set_component_reference(camera_name);
 
     return grpc::Status::OK;
 }
@@ -160,6 +197,74 @@ std::atomic<bool> b_continue_session{true};
         oss << "error writing pointcloud to response " << e.what();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
+}
+
+::grpc::Status SLAMServiceImpl::GetInternalState(
+    ServerContext *context, const GetInternalStateRequest *request,
+    GetInternalStateResponse *response) {
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    std::string filename = path_to_map + "/" + "temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
+
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        bool ok = map_builder.SaveMapToFile(true, filename);
+        if (!ok) {
+            std::ostringstream oss;
+            oss << "Failed to save the state as a pbstream.";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        }
+    }
+
+    std::string buf;
+    try {
+        ConvertSavedMapToStream(filename, &buf);
+        response->set_internal_state(buf);
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error during data serialization: " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+    return grpc::Status::OK;
+}
+
+void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
+                                              std::string *buffer) {
+    std::stringstream error_forwarded;
+
+    std::ifstream tempFile(filename);
+    if (tempFile.bad()) {
+        error_forwarded << "Failed to open " << filename
+                        << " as ifstream object.";
+        error_forwarded << TryFileClose(tempFile, filename);
+        throw std::runtime_error(error_forwarded.str());
+    }
+
+    std::stringstream bufferStream;
+    if (bufferStream << tempFile.rdbuf()) {
+        *buffer = bufferStream.str();
+    } else {
+        error_forwarded << "Failed to get data from " << filename
+                        << " to buffer stream.";
+        error_forwarded << TryFileClose(tempFile, filename);
+        throw std::runtime_error(error_forwarded.str());
+    }
+
+    error_forwarded << TryFileClose(tempFile, filename);
+
+    if (std::remove(filename.c_str()) != 0) {
+        error_forwarded << "Failed to delete " << filename;
+        throw std::runtime_error(error_forwarded.str());
+    }
+}
+
+std::string SLAMServiceImpl::TryFileClose(std::ifstream &tempFile,
+                                          std::string filename) {
+    tempFile.close();
+    if (tempFile.bad()) {
+        return (" Failed to close ifstream object " + filename);
+    }
+    return "";
 }
 
 void SLAMServiceImpl::BackupLatestMap() {
