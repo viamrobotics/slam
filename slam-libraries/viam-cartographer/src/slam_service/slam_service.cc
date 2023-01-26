@@ -130,7 +130,8 @@ std::atomic<bool> b_continue_session{true};
             // that the optimization is not ongoing and we can grab the newest
             // map
             pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
-            // pointcloud_has_points = GetLatestPointCloudMapString(pointcloud_map);
+            // pointcloud_has_points =
+            // GetLatestPointCloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
@@ -225,8 +226,8 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 }
 
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
-    
-    cartographer::io::PaintSubmapSlicesResult painted_slices = GetLatestPaintedMapSlices();
+    cartographer::io::PaintSubmapSlicesResult painted_slices =
+        GetLatestPaintedMapSlices();
     if (add_pose_marker) {
         PaintMarker(painted_slices);
     }
@@ -236,59 +237,57 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
 }
 
 bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
-    
-    cartographer::io::PaintSubmapSlicesResult painted_slices = GetLatestPaintedMapSlices();
+    cartographer::io::PaintSubmapSlicesResult painted_slices =
+        GetLatestPaintedMapSlices();
     auto painted_surface = painted_slices.surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
 
-    //total number of bytes, 32 bits per pixel
-    size_t size_data = width*height*4;
+    // total number of bytes, 32 bits per pixel
+    size_t size_data = width * height * 4;
     auto data = cairo_image_surface_get_data(painted_surface);
 
     std::vector<unsigned char> data_vect(data, data + size_data);
-    
+
     std::stringbuf data_buffer;
 
     int num_points = 0;
 
     // Reduce resolution based off number of pixels. Output is pixels to skip
     int scaleFactor = 4;
-    int scale = size_data/100000.f/32.f/scaleFactor;
-    
-    // Loop to filter unwanted data and reduce resolution
-    for (int i=0;i<size_data;i=i+scale*4) {
-        int rgb = 0;
-        rgb = rgb | ((int)data_vect[i+0] << 16);
-        rgb = rgb | ((int)data_vect[i+1] << 8);
-        rgb = rgb | ((int)data_vect[i+2] << 0);
-        
-        //skip pixels that are not in our map(black/past walls)
-        // this value represents [102,102,102]
-        if(rgb == 6710886)
-        continue;
+    int scale = size_data / 100000.f / 32.f / scaleFactor;
 
-        //Determine probability based off color pixel
-        int prob = ViamColorToProbability((int)data_vect[i+2]);
-        
-        if(prob == 0)
-        continue;
-        
+    // Loop to filter unwanted data and reduce resolution
+    for (int i = 0; i < size_data; i = i + scale * 4) {
+        int rgb = 0;
+        rgb = rgb | ((int)data_vect[i + 0] << 16);
+        rgb = rgb | ((int)data_vect[i + 1] << 8);
+        rgb = rgb | ((int)data_vect[i + 2] << 0);
+
+        // skip pixels that are not in our map(black/past walls)
+        //  this value represents [102,102,102]
+        if (rgb == 6710886) continue;
+
+        // Determine probability based off color pixel
+        int prob = ViamColorToProbability((int)data_vect[i + 2]);
+
+        if (prob == 0) continue;
+
         num_points++;
-        
-        int pixel_index = i/4;
-        int pixel_x = pixel_index%width;
-        int pixel_y = pixel_index/width;
+
+        int pixel_index = i / 4;
+        int pixel_x = pixel_index % width;
+        int pixel_y = pixel_index / width;
 
         // kPixelSize is .01, unsure of units but assumed converts to meters
         // based on PaintSubmapSlices() and DrawPoseOnSurface()
-        float x_pos = (pixel_x-painted_slices.origin.x())*kPixelSize;
+        float x_pos = (pixel_x - painted_slices.origin.x()) * kPixelSize;
         // Y is inverted to match output from getPosition()
-        float y_pos = -(pixel_y-painted_slices.origin.y())*kPixelSize;
+        float y_pos = -(pixel_y - painted_slices.origin.y()) * kPixelSize;
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
 
-        //rotating coordinates to match slam service expectation(XZ plane)
+        // rotating coordinates to match slam service expectation(XZ plane)
         data_buffer.sputn((const char *)&x_pos, 4);
         data_buffer.sputn((const char *)&z_pos, 4);
         data_buffer.sputn((const char *)&y_pos, 4);
@@ -313,21 +312,23 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     // writes data buffer to the pointcloud string
     oss << data_buffer.str();
     pointcloud = pointcloud_buffer.str();
-return true;
+    return true;
 }
 
-int SLAMServiceImpl::ViamColorToProbability(int color){
+int SLAMServiceImpl::ViamColorToProbability(int color) {
     int maxVal = 255;
     int minVal = 102;
     int maxProb = 100;
     int minProb = 0;
-    int prob = (color - maxVal)*(maxProb-minProb)/(minVal-maxVal) + minProb;
-    if(prob < minProb) return minProb;
-    if(prob > maxProb) return maxProb;
+    int prob =
+        (color - maxVal) * (maxProb - minProb) / (minVal - maxVal) + minProb;
+    if (prob < minProb) return minProb;
+    if (prob > maxProb) return maxProb;
     return prob;
 }
 
-cartographer::io::PaintSubmapSlicesResult SLAMServiceImpl::GetLatestPaintedMapSlices(){
+cartographer::io::PaintSubmapSlicesResult
+SLAMServiceImpl::GetLatestPaintedMapSlices() {
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
         cartographer::mapping::PoseGraphInterface::SubmapPose>
@@ -397,7 +398,7 @@ cartographer::io::PaintSubmapSlicesResult SLAMServiceImpl::GetLatestPaintedMapSl
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-    
+
     return painted_slices;
 }
 
