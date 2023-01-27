@@ -14,7 +14,6 @@
 #pragma STDC FENV_ACCESS ON
 
 using namespace boost::filesystem;
-using boost::format;
 using google::protobuf::Struct;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
@@ -24,6 +23,7 @@ using viam::common::v1::PoseInFrame;
 #define MAX_COLOR_VALUE 255
 const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
+namespace viam {
 const auto HEADERTEMPLATE =
     "VERSION .7\n"
     "FIELDS x y z\n"
@@ -39,7 +39,6 @@ const auto HEADERTEMPLATE =
     "POINTS %d\n"
     "DATA binary\n";
 
-namespace viam {
 
 std::atomic<bool> b_continue_session{true};
 
@@ -1028,7 +1027,7 @@ applies the mapSize to the HEADERTEMPLATE
 returning the pcd header as a string
 */
 std::string PcdHeader(int mapSize) {
-    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+    return str(boost::format(viam::HEADERTEMPLATE) % mapSize % mapSize);
 }
 
 /*

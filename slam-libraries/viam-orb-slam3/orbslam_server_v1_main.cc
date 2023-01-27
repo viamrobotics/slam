@@ -24,6 +24,7 @@ void exit_loop_handler(int s) {
 }
 
 int main(int argc, char **argv) {
+    static_assert(sizeof(float) == 4 && CHAR_BIT == 8, "32 bit float & 8 bit char is assumed");
     // TODO: change inputs to match args from rdk
     // https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-179
     struct sigaction sigHandler;

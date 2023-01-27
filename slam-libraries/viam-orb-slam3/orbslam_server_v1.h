@@ -146,5 +146,10 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name);
 // Removes data file
 void RemoveFile(std::string file_path);
 
+std::string PcdHeader(int mapSize);
+
+void WriteFloatToBufferInBytes(std::string &buffer, float f);
+
+
 }  // namespace utils
 }  // namespace viam
