@@ -1,6 +1,6 @@
 // This is an experimental integration of orbslam into RDK.
 #include "orbslam_server_v1.h"
-
+#include <cstdint>
 #include <algorithm>
 #include <cfenv>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
@@ -24,7 +24,7 @@ using viam::common::v1::PoseInFrame;
 #define MAX_COLOR_VALUE 255
 const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
-const std::string HEADERTEMPLATE =
+const auto HEADERTEMPLATE =
     "VERSION .7\n"
     "FIELDS x y z\n"
     // NOTE: If a float is more than 4 bytes
@@ -50,14 +50,14 @@ std::string pcdHeader(int mapSize) {
 }
 
 /*
-casts the float f to a pointer of unsigned bytes
-iterates throught all the bytes of f
-writes each byte to buffer
+casts the float f to a pointer of unsigned 8 bit bytes
+iterates throught all the 8 bit bytes of f
+writes each 8 bit bytes to buffer
 */
-void writeFloatToBufferInBytes(std::string *buffer, float f) {
-    unsigned const char *const p = (unsigned const char *)(&f);
+void writeFloatToBufferInBytes(std::string &buffer, float f) {
+    auto p = (const uint8_t*)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
-        buffer->push_back(p[i]);
+        buffer.push_back(p[i]);
     }
 }
 
@@ -160,17 +160,13 @@ std::atomic<bool> b_continue_session{true};
                             "currently no map points exist");
     }
 
-    // Take sparse slam map and convert into a pcd.
-    // uses right hand rule
-    // z is in the direction the camera is facing.
-    std::string buffer = pcdHeader(actualMap.size());
+    auto buffer = pcdHeader(actualMap.size());
 
-    // write the map in binary format
     for (auto p : actualMap) {
         Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-        writeFloatToBufferInBytes(&buffer, v.x());
-        writeFloatToBufferInBytes(&buffer, v.y());
-        writeFloatToBufferInBytes(&buffer, v.z());
+        writeFloatToBufferInBytes(buffer, v.x());
+        writeFloatToBufferInBytes(buffer, v.y());
+        writeFloatToBufferInBytes(buffer, v.z());
     }
     response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
