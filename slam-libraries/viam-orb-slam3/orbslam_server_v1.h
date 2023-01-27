@@ -44,11 +44,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     /*
       For a given GetPointCloudMapRequest
       Returns a GetPointCloudMapResponse containing a sparse
-      slam map as a Binary PCD file
+      slam map as Binary PCD
 
-      Map uses:
-      1. right hand rule
-      2. z axis is in the direction the camera is facing
+      Map uses z axis is in the direction the camera is facing
     */
     ::grpc::Status GetPointCloudMap(
         ServerContext *context, const GetPointCloudMapRequest *request,

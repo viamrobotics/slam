@@ -41,26 +41,6 @@ const auto HEADERTEMPLATE =
 
 namespace viam {
 
-/*
-applies the mapSize to the HEADERTEMPLATE
-returning the pcd header as a string
-*/
-std::string pcdHeader(int mapSize) {
-    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
-}
-
-/*
-casts the float f to a pointer of unsigned 8 bit bytes
-iterates throught all the 8 bit bytes of f
-writes each 8 bit bytes to buffer
-*/
-void writeFloatToBufferInBytes(std::string &buffer, float f) {
-    auto p = (const char *)(&f);
-    for (std::size_t i = 0; i < sizeof(float); ++i) {
-        buffer.push_back(p[i]);
-    }
-}
-
 std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
@@ -160,13 +140,13 @@ std::atomic<bool> b_continue_session{true};
                             "currently no map points exist");
     }
 
-    auto buffer = pcdHeader(actualMap.size());
+    auto buffer = utils::PcdHeader(actualMap.size());
 
     for (auto p : actualMap) {
         Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
-        writeFloatToBufferInBytes(buffer, v.x());
-        writeFloatToBufferInBytes(buffer, v.y());
-        writeFloatToBufferInBytes(buffer, v.z());
+        utils::WriteFloatToBufferInBytes(buffer, v.x());
+        utils::WriteFloatToBufferInBytes(buffer, v.y());
+        utils::WriteFloatToBufferInBytes(buffer, v.z());
     }
     response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
@@ -1041,6 +1021,26 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
                   std::gmtime(&t));
     // Save the current atlas map in *.osa style
     return path_to_dir + "/" + camera_name + "_data_" + timestamp + ".osa";
+}
+
+/*
+applies the mapSize to the HEADERTEMPLATE
+returning the pcd header as a string
+*/
+std::string PcdHeader(int mapSize) {
+    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+/*
+casts the float f to a pointer of unsigned 8 bit bytes
+iterates throught all the 8 bit bytes of f
+writes each 8 bit bytes to buffer
+*/
+void WriteFloatToBufferInBytes(std::string &buffer, float f) {
+    auto p = (const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
 }
 
 }  // namespace utils
