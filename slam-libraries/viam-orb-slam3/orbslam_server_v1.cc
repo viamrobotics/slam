@@ -39,7 +39,6 @@ const auto HEADERTEMPLATE =
     "POINTS %d\n"
     "DATA binary\n";
 
-
 std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,

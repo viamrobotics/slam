@@ -150,6 +150,5 @@ std::string PcdHeader(int mapSize);
 
 void WriteFloatToBufferInBytes(std::string &buffer, float f);
 
-
 }  // namespace utils
 }  // namespace viam
