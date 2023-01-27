@@ -1,8 +1,9 @@
 // This is an experimental integration of orbslam into RDK.
 #include "orbslam_server_v1.h"
-#include <cstdint>
+
 #include <algorithm>
 #include <cfenv>
+#include <cstdint>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -55,7 +56,7 @@ iterates throught all the 8 bit bytes of f
 writes each 8 bit bytes to buffer
 */
 void writeFloatToBufferInBytes(std::string &buffer, float f) {
-    auto p = (const uint8_t*)(&f);
+    auto p = (const uint8_t *)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
         buffer.push_back(p[i]);
     }
