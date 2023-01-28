@@ -38,7 +38,7 @@ using viam::service::slam::v1::SLAMService;
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
-static const float maximumBitLimit = 3200000; 
+static const float maximumBitLimit = 3200000;
 static const int defaultRGBValue = 102;
 extern std::atomic<bool> b_continue_session;
 
@@ -204,7 +204,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters depending on the action mode.
     void SetUpMapBuilder();
 
-    // GetLatestPaintedMapSlices paints and returns the current map of Cartographer
+    // GetLatestPaintedMapSlices paints and returns the current map of
+    // Cartographer
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
 
     // GetLatestJpegMapString paints and returns the latest map as a jpeg string

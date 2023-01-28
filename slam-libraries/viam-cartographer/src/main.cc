@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
     sigaction(SIGTERM, &sigHandler, NULL);
     sigaction(SIGINT, &sigHandler, NULL);
 
-    static_assert(sizeof(float) == 4 && CHAR_BIT == 8, "32 bit float & 8 bit char is assumed");
+    static_assert(sizeof(float) == 4 && CHAR_BIT == 8,
+                  "32 bit float & 8 bit char is assumed");
 
     viam::SLAMServiceImpl slamService;
     viam::config::ParseAndValidateConfigParams(argc, argv, slamService);

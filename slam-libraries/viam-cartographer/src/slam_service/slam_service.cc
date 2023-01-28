@@ -334,7 +334,7 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     try {
         cartographer::io::PaintSubmapSlicesResult painted_slices =
-        GetLatestPaintedMapSlices();
+            GetLatestPaintedMapSlices();
     } catch (std::exception &e) {
         // jpeg will be empty which captures the same error
         return "";
@@ -350,10 +350,9 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
 }
 
 bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
-
     try {
         cartographer::io::PaintSubmapSlicesResult painted_slices =
-        GetLatestPaintedMapSlices();
+            GetLatestPaintedMapSlices();
     } catch (std::exception &e) {
         // pointcloud will be empty which captures the error
         return false;
@@ -377,23 +376,26 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     float scaleFactor = .5;
 
     // Reduce resolution based off number of pixels. Output is pixels to skip
-    // Ideally should be between 5 and 15, but depends on the resolution of the original image
+    // Ideally should be between 5 and 15, but depends on the resolution of the
+    // original image
     int scale = size_data / maximumBitLimit * scaleFactor;
 
     std::string data_buffer;
 
-    // Loop to filter unwanted data and reduce resolution. Increments multiplied by 4 to represent 4 bytes per pixel
+    // Loop to filter unwanted data and reduce resolution. Increments multiplied
+    // by 4 to represent 4 bytes per pixel
     for (int i = 0; i < size_data; i += scale * 4) {
-
         // skip pixels that are not in our map(black/past walls)
         // this check represents [102,102,102]
-        if(((int)data_vect[i + 0] == defaultRGBValue) && ((int)data_vect[i + 1] == defaultRGBValue) && ((int)data_vect[i + 2] == defaultRGBValue))
-        continue;
-        
+        if (((int)data_vect[i + 0] == defaultRGBValue) &&
+            ((int)data_vect[i + 1] == defaultRGBValue) &&
+            ((int)data_vect[i + 2] == defaultRGBValue))
+            continue;
+
         // Determine probability based off color pixel
         int prob = ViamColorToProbability((int)data_vect[i + 2]);
         if (prob == 0) continue;
-        
+
         num_points++;
 
         int pixel_index = i / 4;
@@ -415,7 +417,7 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     }
 
     // Write our PCD file, which is written as a binary.
-    pointcloud = viam::utils::pcdHeader(num_points,true);
+    pointcloud = viam::utils::pcdHeader(num_points, true);
 
     // writes data buffer to the pointcloud string
     pointcloud += data_buffer;
