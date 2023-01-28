@@ -215,11 +215,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // PaintMarker paints the latest global pose on the painted slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
 
-    // ExtractPointCloudToString extracts the pointcloud from the map builder
-    // and saves it in a string. It returns a boolean that indicates whether
-    // or not the pointcloud string contains any points.
-    bool ExtractPointCloudToString(std::string &pointcloud);
-
     // GetLatestPointCloudMapString paints and returns the latest map as a pcd
     // string with probability estimates written to the color field
     bool GetLatestPointCloudMapString(std::string &pointcloud);
