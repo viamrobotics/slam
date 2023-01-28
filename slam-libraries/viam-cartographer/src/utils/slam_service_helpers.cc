@@ -4,6 +4,9 @@
 #include <string>
 
 #include "../io/file_handler.h"
+#include <boost/format.hpp>
+
+using boost::format;
 
 namespace viam {
 
@@ -74,6 +77,28 @@ std::string GetLatestMapFilename(std::string path_to_map) {
 
     return latest_map_filename;
 }
+
+std::string pcdHeader(int mapSize, bool hasColor) {
+    if(hasColor)
+    return str(boost::format(HEADERTEMPLATECOLOR) % mapSize % mapSize);
+    else
+    return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+void writeFloatToBufferInBytes(std::string &buffer, float f) {
+    auto p = (const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
+}
+
+void writeIntToBufferInBytes(std::string &buffer, int d) {
+    auto p = (const char *)(&d);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
+}
+
 
 }  // namespace utils
 }  // namespace viam

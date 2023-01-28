@@ -332,6 +332,13 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 }
 
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
+    try {
+        cartographer::io::PaintSubmapSlicesResult painted_slices =
+        GetLatestPaintedMapSlices();
+    } catch (std::exception &e) {
+        // jpeg will be empty which captures the same error
+        return "";
+    }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         GetLatestPaintedMapSlices();
     if (add_pose_marker) {
@@ -343,49 +350,56 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
 }
 
 bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
+
+    try {
+        cartographer::io::PaintSubmapSlicesResult painted_slices =
+        GetLatestPaintedMapSlices();
+    } catch (std::exception &e) {
+        // pointcloud will be empty which captures the error
+        return false;
+    }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         GetLatestPaintedMapSlices();
     auto painted_surface = painted_slices.surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-
-    // total number of bytes, 32 bits per pixel
-    size_t size_data = width * height * 4;
     auto data = cairo_image_surface_get_data(painted_surface);
+
+    // total number of bytes in image (4 bytes per pixel)
+    int size_data = width * height * 4;
 
     std::vector<unsigned char> data_vect(data, data + size_data);
 
-    std::stringbuf data_buffer;
-
     int num_points = 0;
 
-    // Reduce resolution based off number of pixels. Output is pixels to skip
-    int scaleFactor = 4;
-    int scale = size_data / 100000.f / 32.f / scaleFactor;
+    // scaling factor to ensure number of pixels is within required size
+    // do not set to 0
+    float scaleFactor = .5;
 
-    // Loop to filter unwanted data and reduce resolution
-    for (int i = 0; i < size_data; i = i + scale * 4) {
-        int rgb = 0;
-        rgb = rgb | ((int)data_vect[i + 0] << 16);
-        rgb = rgb | ((int)data_vect[i + 1] << 8);
-        rgb = rgb | ((int)data_vect[i + 2] << 0);
+    // Reduce resolution based off number of pixels. Output is pixels to skip
+    // Ideally should be between 5 and 15, but depends on the resolution of the original image
+    int scale = size_data / maximumBitLimit * scaleFactor;
+
+    std::string data_buffer;
+
+    // Loop to filter unwanted data and reduce resolution. Increments multiplied by 4 to represent 4 bytes per pixel
+    for (int i = 0; i < size_data; i += scale * 4) {
 
         // skip pixels that are not in our map(black/past walls)
-        //  this value represents [102,102,102]
-        if (rgb == 6710886) continue;
-
+        // this check represents [102,102,102]
+        if(((int)data_vect[i + 0] == defaultRGBValue) && ((int)data_vect[i + 1] == defaultRGBValue) && ((int)data_vect[i + 2] == defaultRGBValue))
+        continue;
+        
         // Determine probability based off color pixel
         int prob = ViamColorToProbability((int)data_vect[i + 2]);
-
         if (prob == 0) continue;
-
+        
         num_points++;
 
         int pixel_index = i / 4;
         int pixel_x = pixel_index % width;
         int pixel_y = pixel_index / width;
 
-        // kPixelSize is .01, unsure of units but assumed converts to meters
         // based on PaintSubmapSlices() and DrawPoseOnSurface()
         float x_pos = (pixel_x - painted_slices.origin.x()) * kPixelSize;
         // Y is inverted to match output from getPosition()
@@ -394,30 +408,17 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
         float z_pos = 0;
 
         // rotating coordinates to match slam service expectation(XZ plane)
-        data_buffer.sputn((const char *)&x_pos, 4);
-        data_buffer.sputn((const char *)&z_pos, 4);
-        data_buffer.sputn((const char *)&y_pos, 4);
-        data_buffer.sputn((const char *)&prob, 4);
+        viam::utils::writeFloatToBufferInBytes(data_buffer, x_pos);
+        viam::utils::writeFloatToBufferInBytes(data_buffer, z_pos);
+        viam::utils::writeFloatToBufferInBytes(data_buffer, y_pos);
+        viam::utils::writeIntToBufferInBytes(data_buffer, prob);
     }
 
-    std::stringbuf pointcloud_buffer;
-    std::ostream oss(&pointcloud_buffer);
-
     // Write our PCD file, which is written as a binary.
-    oss << "VERSION .7\n"
-        << "FIELDS x y z rgb\n"
-        << "SIZE 4 4 4 4\n"
-        << "TYPE F F F I\n"
-        << "COUNT 1 1 1 1\n"
-        << "WIDTH " << num_points << "\n"
-        << "HEIGHT " << 1 << "\n"
-        << "VIEWPOINT 0 0 0 1 0 0 0\n"
-        << "POINTS " << num_points << "\n"
-        << "DATA binary\n";
+    pointcloud = viam::utils::pcdHeader(num_points,true);
 
     // writes data buffer to the pointcloud string
-    oss << data_buffer.str();
-    pointcloud = pointcloud_buffer.str();
+    pointcloud += data_buffer;
     return true;
 }
 
@@ -426,8 +427,7 @@ int SLAMServiceImpl::ViamColorToProbability(int color) {
     int minVal = 102;
     int maxProb = 100;
     int minProb = 0;
-    int prob =
-        (color - maxVal) * (maxProb - minProb) / (minVal - maxVal) + minProb;
+    int prob = (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
     if (prob < minProb) return minProb;
     if (prob > maxProb) return maxProb;
     return prob;

@@ -38,6 +38,8 @@ using viam::service::slam::v1::SLAMService;
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
+static const float maximumBitLimit = 3200000; 
+static const int defaultRGBValue = 102;
 extern std::atomic<bool> b_continue_session;
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
@@ -202,6 +204,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters depending on the action mode.
     void SetUpMapBuilder();
 
+    // GetLatestPaintedMapSlices paints and returns the current map of Cartographer
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
 
     // GetLatestJpegMapString paints and returns the latest map as a jpeg string
@@ -217,7 +220,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     bool ExtractPointCloudToString(std::string &pointcloud);
 
     // GetLatestPointCloudMapString paints and returns the latest map as a pcd
-    // string with probability estimates written to the color channel
+    // string with probability estimates written to the color field
     bool GetLatestPointCloudMapString(std::string &pointcloud);
 
     // For a given color channel convert the scale from 102-255 to 100-0
