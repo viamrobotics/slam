@@ -166,8 +166,6 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            // pointcloud_has_points =
-            // ExtractPointCloudToString(pointcloud_map);
             pointcloud_has_points =
                 GetLatestPointCloudMapString(pointcloud_map);
         } else {
@@ -273,7 +271,7 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
     bool pointcloud_map_has_points_tmp =
-        ExtractPointCloudToString(pointcloud_map_tmp);
+        GetLatestPointCloudMapString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
@@ -516,70 +514,6 @@ void SLAMServiceImpl::PaintMarker(
         global_pose = latest_global_pose;
     }
     viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
-}
-
-bool SLAMServiceImpl::ExtractPointCloudToString(std::string &pointcloud) {
-    cartographer::mapping::MapById<cartographer::mapping::NodeId,
-                                   cartographer::mapping::TrajectoryNode>
-        trajectory_nodes;
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        trajectory_nodes =
-            map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
-    }
-    bool pointcloud_has_points = false;
-    std::stringbuf pointcloud_buffer;
-    std::ostream oss(&pointcloud_buffer);
-
-    long number_points = 0;
-    for (const auto &&trajectory_node : trajectory_nodes) {
-        auto point_cloud = trajectory_node.data.constant_data
-                               ->filtered_gravity_aligned_point_cloud;
-        number_points += point_cloud.size();
-    }
-
-    // Write our PCD file, which is written as a binary.
-    oss << "VERSION .7\n"
-        << "FIELDS x y z rgb\n"
-        << "SIZE 4 4 4 4\n"
-        << "TYPE F F F I\n"
-        << "COUNT 1 1 1 1\n"
-        << "WIDTH " << number_points << "\n"
-        << "HEIGHT " << 1 << "\n"
-        << "VIEWPOINT 0 0 0 1 0 0 0\n"
-        << "POINTS " << number_points << "\n"
-        << "DATA binary\n";
-
-    for (const auto &&trajectory_node : trajectory_nodes) {
-        cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
-            trajectory_node.data.constant_data
-                ->filtered_gravity_aligned_point_cloud;
-
-        // We're only applying the translation of the `global_pose` on the
-        // point cloud here, as opposed to using both the translation and
-        // rotation of the global pose of the trajectory node. The reason for
-        // this seems to be that since the point cloud is already gravity
-        // aligned, the rotational part of the transformation relative to the
-        // world frame is already taken care of.
-        cartographer::sensor::PointCloud global_point_cloud =
-            cartographer::sensor::TransformPointCloud(
-                local_gravity_aligned_point_cloud,
-                cartographer::transform::Rigid3f(
-                    trajectory_node.data.global_pose.cast<float>()
-                        .translation(),
-                    cartographer::transform::Rigid3f::Quaternion::Identity()));
-
-        for (auto &&point : global_point_cloud) {
-            int rgb = 0;
-            pointcloud_buffer.sputn((const char *)&point.position[1], 4);
-            pointcloud_buffer.sputn((const char *)&point.position[2], 4);
-            pointcloud_buffer.sputn((const char *)&point.position[0], 4);
-            pointcloud_buffer.sputn((const char *)&rgb, 4);
-            pointcloud_has_points = true;
-        }
-    }
-    pointcloud = pointcloud_buffer.str();
-    return pointcloud_has_points;
 }
 
 void SLAMServiceImpl::RunSLAM() {
