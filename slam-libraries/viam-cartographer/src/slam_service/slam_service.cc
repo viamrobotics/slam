@@ -635,6 +635,12 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             return;
         }
 
+        // Breakout without svaing if you aren't in offline mode or haven't 
+        // finished processing the data
+        if (!b_continue_session) {
+            break;
+        }
+
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SaveMapToFile(true, filename_with_timestamp);
     }
