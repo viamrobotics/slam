@@ -38,8 +38,9 @@ using viam::service::slam::v1::SLAMService;
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
-static const float maximumBitLimit = 3200000;
+static const float maximumGRPCByteLimit = 3200000;
 static const int defaultRGBValue = 102;
+static const int jpegQuality = 50;
 extern std::atomic<bool> b_continue_session;
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
@@ -213,11 +214,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string GetLatestJpegMapString(bool add_pose_marker);
 
     // PaintMarker paints the latest global pose on the painted slices.
-    void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
+    void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
     // GetLatestPointCloudMapString paints and returns the latest map as a pcd
     // string with probability estimates written to the color field
-    bool GetLatestPointCloudMapString(std::string &pointcloud);
+    void GetLatestPointCloudMapString(std::string &pointcloud);
 
     // For a given color channel convert the scale from 102-255 to 100-0
     int ViamColorToProbability(int color);

@@ -156,7 +156,6 @@ std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(const GetMapRequest *request,
                                                  GetMapResponse *response) {
-    bool pointcloud_has_points = false;
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -166,13 +165,11 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            pointcloud_has_points =
-                GetLatestPointCloudMapString(pointcloud_map);
+            GetLatestPointCloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
             std::lock_guard<std::mutex> lk(viam_response_mutex);
-            pointcloud_has_points = latest_pointcloud_map_has_points;
             pointcloud_map = latest_pointcloud_map;
         }
     } catch (std::exception &e) {
@@ -184,7 +181,7 @@ std::atomic<bool> b_continue_session{true};
     // Write the pointcloud map string to the response
     try {
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
-        if (!pointcloud_has_points) {
+        if (pointcloud_map.empty()) {
             LOG(ERROR) << "map pointcloud does not have points yet";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "map pointcloud does not have points yet");
@@ -270,13 +267,11 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
-    bool pointcloud_map_has_points_tmp =
-        GetLatestPointCloudMapString(pointcloud_map_tmp);
+    GetLatestPointCloudMapString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
     latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
-    latest_pointcloud_map_has_points = pointcloud_map_has_points_tmp;
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
 }
 
@@ -330,34 +325,33 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 }
 
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
+    
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices = nullptr;
     try {
-        cartographer::io::PaintSubmapSlicesResult painted_slices =
-            GetLatestPaintedMapSlices();
+        painted_slices = std::make_unique<cartographer::io::PaintSubmapSlicesResult>(GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        // jpeg will be empty which captures the same error
+        // jpeg will be empty which captures the error
         return "";
     }
-    cartographer::io::PaintSubmapSlicesResult painted_slices =
-        GetLatestPaintedMapSlices();
     if (add_pose_marker) {
-        PaintMarker(painted_slices);
+        PaintMarker(painted_slices.get());
     }
 
-    auto image = io::Image(std::move(painted_slices.surface));
-    return image.WriteJpegToString(50);
+    auto image = io::Image(std::move(painted_slices->surface));
+    return image.WriteJpegToString(jpegQuality);
 }
 
-bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
+void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
+
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices = nullptr;
     try {
-        cartographer::io::PaintSubmapSlicesResult painted_slices =
-            GetLatestPaintedMapSlices();
+        painted_slices = std::make_unique<cartographer::io::PaintSubmapSlicesResult>(GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // pointcloud will be empty which captures the error
-        return false;
+        return;
     }
-    cartographer::io::PaintSubmapSlicesResult painted_slices =
-        GetLatestPaintedMapSlices();
-    auto painted_surface = painted_slices.surface.get();
+
+    auto painted_surface = painted_slices->surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
     auto data = cairo_image_surface_get_data(painted_surface);
@@ -376,7 +370,7 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     // Reduce resolution based off number of pixels. Output is pixels to skip
     // Ideally should be between 5 and 15, but depends on the resolution of the
     // original image
-    int scale = size_data / maximumBitLimit * scaleFactor;
+    int scale = size_data / maximumGRPCByteLimit * scaleFactor;
 
     std::string data_buffer;
 
@@ -401,9 +395,9 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
         int pixel_y = pixel_index / width;
 
         // based on PaintSubmapSlices() and DrawPoseOnSurface()
-        float x_pos = (pixel_x - painted_slices.origin.x()) * kPixelSize;
+        float x_pos = (pixel_x - painted_slices->origin.x()) * kPixelSize;
         // Y is inverted to match output from getPosition()
-        float y_pos = -(pixel_y - painted_slices.origin.y()) * kPixelSize;
+        float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
 
@@ -419,7 +413,7 @@ bool SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
 
     // writes data buffer to the pointcloud string
     pointcloud += data_buffer;
-    return true;
+    return;
 }
 
 int SLAMServiceImpl::ViamColorToProbability(int color) {
@@ -509,13 +503,13 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
 }
 
 void SLAMServiceImpl::PaintMarker(
-    cartographer::io::PaintSubmapSlicesResult &painted_slices) {
+    cartographer::io::PaintSubmapSlicesResult *painted_slices) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-    viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
+    viam::io::DrawPoseOnSurface(painted_slices, global_pose, kPixelSize);
 }
 
 void SLAMServiceImpl::RunSLAM() {
