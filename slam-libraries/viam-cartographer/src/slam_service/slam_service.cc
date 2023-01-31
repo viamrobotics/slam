@@ -635,7 +635,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             return;
         }
 
-        // Breakout without svaing if you aren't in offline mode or haven't 
+        // Breakout without saving if you are not in offline mode or have not
         // finished processing the data
         if (!b_continue_session) {
             break;
