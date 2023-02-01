@@ -325,10 +325,12 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 }
 
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
-    
-    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices = nullptr;
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
+        nullptr;
     try {
-        painted_slices = std::make_unique<cartographer::io::PaintSubmapSlicesResult>(GetLatestPaintedMapSlices());
+        painted_slices =
+            std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
+                GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // jpeg will be empty which captures the error
         LOG(INFO) << "Error creating jpeg map: No submaps available";
@@ -343,10 +345,12 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
 }
 
 void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
-
-    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices = nullptr;
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
+        nullptr;
     try {
-        painted_slices = std::make_unique<cartographer::io::PaintSubmapSlicesResult>(GetLatestPaintedMapSlices());
+        painted_slices =
+            std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
+                GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // pointcloud will be empty which captures the error
         LOG(INFO) << "Error creating pcd map: No submaps available";
@@ -371,11 +375,11 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
 
     int num_points = 0;
 
-    // Sample the image based off number of pixels. Output is number pixels to skip
-    // Ideally should be between 5 and 15, but depends on the resolution of the
-    // original image
+    // Sample the image based off number of pixels. Output is number pixels to
+    // skip Ideally should be between 5 and 15, but depends on the resolution of
+    // the original image
     int skip_count = size_data / maximumGRPCByteLimit * samplingFactor;
-    if(skip_count == 0){
+    if (skip_count == 0) {
         skip_count = 1;
     }
 
@@ -428,7 +432,8 @@ unsigned char ViamColorToProbability(unsigned char color) {
     unsigned char minVal = defaultCairosEmptyPaintedSlice;
     unsigned char maxProb = 100;
     unsigned char minProb = 0;
-    unsigned char prob = (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
+    unsigned char prob =
+        (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
     return prob = std::min(std::max(prob, minProb), maxProb);
 }
 
