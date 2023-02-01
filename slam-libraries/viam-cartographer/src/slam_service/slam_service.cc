@@ -333,7 +333,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // jpeg will be empty which captures the error
-        LOG(INFO) << "Error creating jpeg map: No submaps available";
+        LOG(INFO) << "Error creating jpeg map: " << e.what();
         return "";
     }
     if (add_pose_marker) {
@@ -353,8 +353,14 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // pointcloud will be empty which captures the error
-        LOG(INFO) << "Error creating pcd map: No submaps available";
-        return;
+        if(e.what() == "No submaps to paint"){
+            LOG(INFO) << "Error creating pcd map: " << e.what();
+            return;
+        }else{
+            LOG(ERROR) << "Error creating pcd map: " << e.what();
+            throw std::runtime_error(e.what());
+        }
+        
     }
 
     auto painted_surface = painted_slices->surface.get();
@@ -376,7 +382,7 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     int num_points = 0;
 
     // Sample the image based off number of pixels. Output is number pixels to
-    // skip Ideally should be between 5 and 15, but depends on the resolution of
+    // skip. Ideally should be between 5 and 15, but depends on the resolution of
     // the original image
     int skip_count = size_data / maximumGRPCByteLimit * samplingFactor;
     if (skip_count == 0) {
@@ -405,7 +411,7 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
         int pixel_x = pixel_index % width;
         int pixel_y = pixel_index / width;
 
-        // based on PaintSubmapSlices() and DrawPoseOnSurface()
+        // convert pixel location to pointcloud point in meters
         float x_pos = (pixel_x - painted_slices->origin.x()) * kPixelSize;
         // Y is inverted to match output from getPosition()
         float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
@@ -462,6 +468,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             }
         }
     }
+    throw std::runtime_error("No submaps to paint");
 
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
