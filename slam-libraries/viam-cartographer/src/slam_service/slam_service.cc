@@ -623,6 +623,11 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             }
         }
 
+        // Breakout without saving if the session has ended
+        if (!b_continue_session) {
+            break;
+        }
+
         const std::string filename_with_timestamp =
             viam::io::MakeFilenameWithTimestamp(path_to_map);
 
@@ -633,12 +638,6 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             }
             LOG(INFO) << "Finished saving final optimized map";
             return;
-        }
-
-        // Breakout without saving if you are not in offline mode or have not
-        // finished processing the data
-        if (!b_continue_session) {
-            break;
         }
 
         std::lock_guard<std::mutex> lk(map_builder_mutex);
