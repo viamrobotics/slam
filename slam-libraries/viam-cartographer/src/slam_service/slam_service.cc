@@ -623,6 +623,11 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             }
         }
 
+        // Breakout without saving if the session has ended
+        if (!b_continue_session) {
+            break;
+        }
+
         const std::string filename_with_timestamp =
             viam::io::MakeFilenameWithTimestamp(path_to_map);
 
