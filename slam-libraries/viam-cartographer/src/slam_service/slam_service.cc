@@ -331,6 +331,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
         painted_slices = std::make_unique<cartographer::io::PaintSubmapSlicesResult>(GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // jpeg will be empty which captures the error
+        LOG(INFO) << "Error creating jpeg map: No submaps available";
         return "";
     }
     if (add_pose_marker) {
@@ -348,44 +349,50 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
         painted_slices = std::make_unique<cartographer::io::PaintSubmapSlicesResult>(GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         // pointcloud will be empty which captures the error
+        LOG(INFO) << "Error creating pcd map: No submaps available";
         return;
     }
 
     auto painted_surface = painted_slices->surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
+    // all pixels from the painted surface in RGBA format
     auto data = cairo_image_surface_get_data(painted_surface);
 
     // total number of bytes in image (4 bytes per pixel)
     int size_data = width * height * 4;
 
+    // each pixel contains 4 bytes of information in RGBA format
+    // data_vect[i + 0] is the R channel
+    // data_vect[i + 1] is the B channel
+    // data_vect[i + 2] is the G channel
+    // data_vect[i + 3] is the A channel
     std::vector<unsigned char> data_vect(data, data + size_data);
 
     int num_points = 0;
 
-    // scaling factor to ensure number of pixels is within required size
-    // do not set to 0
-    float scaleFactor = .5;
-
-    // Reduce resolution based off number of pixels. Output is pixels to skip
+    // Sample the image based off number of pixels. Output is number pixels to skip
     // Ideally should be between 5 and 15, but depends on the resolution of the
     // original image
-    int scale = size_data / maximumGRPCByteLimit * scaleFactor;
+    int skip_count = size_data / maximumGRPCByteLimit * samplingFactor;
+    if(skip_count == 0){
+        skip_count = 1;
+    }
 
     std::string data_buffer;
 
-    // Loop to filter unwanted data and reduce resolution. Increments multiplied
+    // Loop to sample data and reduce resolution. Increments multiplied
     // by 4 to represent 4 bytes per pixel
-    for (int i = 0; i < size_data; i += scale * 4) {
+    for (int i = 0; i < size_data; i += skip_count * 4) {
         // skip pixels that are not in our map(black/past walls)
         // this check represents [102,102,102]
-        if (((int)data_vect[i + 0] == defaultRGBValue) &&
-            ((int)data_vect[i + 1] == defaultRGBValue) &&
-            ((int)data_vect[i + 2] == defaultRGBValue))
+        if ((data_vect[i + 0] == defaultCairosEmptyPaintedSlice) &&
+            (data_vect[i + 1] == defaultCairosEmptyPaintedSlice) &&
+            (data_vect[i + 2] == defaultCairosEmptyPaintedSlice))
             continue;
 
         // Determine probability based off color pixel
-        int prob = ViamColorToProbability((int)data_vect[i + 2]);
+        int prob = viam::ViamColorToProbability((int)data_vect[i + 2]);
         if (prob == 0) continue;
 
         num_points++;
@@ -416,15 +423,13 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     return;
 }
 
-int SLAMServiceImpl::ViamColorToProbability(int color) {
-    int maxVal = 255;
-    int minVal = 102;
-    int maxProb = 100;
-    int minProb = 0;
-    int prob = (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
-    if (prob < minProb) return minProb;
-    if (prob > maxProb) return maxProb;
-    return prob;
+unsigned char ViamColorToProbability(unsigned char color) {
+    unsigned char maxVal = CHAR_MAX;
+    unsigned char minVal = defaultCairosEmptyPaintedSlice;
+    unsigned char maxProb = 100;
+    unsigned char minProb = 0;
+    unsigned char prob = (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
+    return prob = std::min(std::max(prob, minProb), maxProb);
 }
 
 cartographer::io::PaintSubmapSlicesResult

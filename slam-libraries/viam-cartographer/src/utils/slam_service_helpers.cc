@@ -6,8 +6,6 @@
 
 #include "../io/file_handler.h"
 
-using boost::format;
-
 namespace viam {
 
 std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
@@ -94,7 +92,7 @@ void writeFloatToBufferInBytes(std::string &buffer, float f) {
 
 void writeIntToBufferInBytes(std::string &buffer, int d) {
     auto p = (const char *)(&d);
-    for (std::size_t i = 0; i < sizeof(float); ++i) {
+    for (std::size_t i = 0; i < sizeof(int); ++i) {
         buffer.push_back(p[i]);
     }
 }

@@ -28,10 +28,10 @@ int main(int argc, char** argv) {
     sigaction(SIGTERM, &sigHandler, NULL);
     sigaction(SIGINT, &sigHandler, NULL);
 
-    static_assert(sizeof(float) == 4 && CHAR_BIT == 8,
+    static_assert((sizeof(float) == 4) && (CHAR_BIT == 8) && (sizeof(int) == 4),
                   "32 bit float & 8 bit char is assumed");
-    static_assert(sizeof(int) == 4 && CHAR_BIT == 8,
-                  "32 bit int & 8 bit char is assumed");
+    // static_assert(sizeof(int) == 4 && CHAR_BIT == 8,
+    //               "32 bit int & 8 bit char is assumed");
 
     viam::SLAMServiceImpl slamService;
     viam::config::ParseAndValidateConfigParams(argc, argv, slamService);
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     // Increasing the gRPC max message size from the default value of 4MB to
     // 32MB, to match the limit that is set in RDK. This is necessary for
     // transmitting large pointclouds.
-    builder.SetMaxSendMessageSize(32 * 1024 * 1024);
+    builder.SetMaxSendMessageSize((int) viam::maximumGRPCByteLimit);
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server

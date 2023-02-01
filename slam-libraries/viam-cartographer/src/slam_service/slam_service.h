@@ -38,14 +38,23 @@ using viam::service::slam::v1::SLAMService;
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
-static const float maximumGRPCByteLimit = 3200000;
-static const int defaultRGBValue = 102;
+
+// rgb value representing no input from a Cario pained map
+static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
+// byte limit on GRPC, used to help determine sampling skip_count
+static const float maximumGRPCByteLimit = 32 * 1024 * 1024;
+// coeffient to adjust the skip count for the PCD to ensure the file is within grpc limitations
+static const float samplingFactor = 5;
+
 extern std::atomic<bool> b_continue_session;
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
+
+// For a given color channel convert the scale from 102-255 to 100-0. This is an initial solution for extracting probability information from cartographer
+unsigned char ViamColorToProbability(unsigned char color);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -219,9 +228,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // GetLatestPointCloudMapString paints and returns the latest map as a pcd
     // string with probability estimates written to the color field
     void GetLatestPointCloudMapString(std::string &pointcloud);
-
-    // For a given color channel convert the scale from 102-255 to 100-0
-    int ViamColorToProbability(int color);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
