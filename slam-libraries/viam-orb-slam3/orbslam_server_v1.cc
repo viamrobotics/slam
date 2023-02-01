@@ -5,6 +5,7 @@
 #include <cfenv>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -22,8 +23,21 @@ using viam::common::v1::PoseInFrame;
 #define MAX_COLOR_VALUE 255
 const std::string strRGB = "/rgb";
 const std::string strDepth = "/depth";
-
 namespace viam {
+const auto HEADERTEMPLATE =
+    "VERSION .7\n"
+    "FIELDS x y z\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4\n"
+    "TYPE F F F\n"
+    "COUNT 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
 
 std::atomic<bool> b_continue_session{true};
 
@@ -107,6 +121,32 @@ std::atomic<bool> b_continue_session{true};
 
     response->set_component_reference(camera_name);
 
+    return grpc::Status::OK;
+}
+
+::grpc::Status SLAMServiceImpl::GetPointCloudMap(
+    ServerContext *context, const GetPointCloudMapRequest *request,
+    GetPointCloudMapResponse *response) {
+    std::vector<ORB_SLAM3::MapPoint *> actualMap;
+    {
+        std::lock_guard<std::mutex> lk(slam_mutex);
+        actualMap = currMapPoints;
+    }
+
+    if (actualMap.size() == 0) {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "currently no map points exist");
+    }
+
+    auto buffer = utils::PcdHeader(actualMap.size());
+
+    for (auto p : actualMap) {
+        Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
+        utils::WriteFloatToBufferInBytes(buffer, v.x());
+        utils::WriteFloatToBufferInBytes(buffer, v.y());
+        utils::WriteFloatToBufferInBytes(buffer, v.z());
+    }
+    response->set_point_cloud_pcd(buffer);
     return grpc::Status::OK;
 }
 
@@ -979,6 +1019,26 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name) {
                   std::gmtime(&t));
     // Save the current atlas map in *.osa style
     return path_to_dir + "/" + camera_name + "_data_" + timestamp + ".osa";
+}
+
+/*
+applies the mapSize to the HEADERTEMPLATE
+returning the pcd header as a string
+*/
+std::string PcdHeader(int mapSize) {
+    return str(boost::format(viam::HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+/*
+casts the float f to a pointer of unsigned 8 bit bytes
+iterates throught all the 8 bit bytes of f
+writes each 8 bit bytes to buffer
+*/
+void WriteFloatToBufferInBytes(std::string &buffer, float f) {
+    auto p = (const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
 }
 
 }  // namespace utils

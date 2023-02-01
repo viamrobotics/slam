@@ -14,6 +14,8 @@
 using grpc::ServerContext;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPointCloudMapRequest;
+using viam::service::slam::v1::GetPointCloudMapResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -38,6 +40,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
+
+    /*
+      For a given GetPointCloudMapRequest
+      Returns a GetPointCloudMapResponse containing a sparse
+      slam map as Binary PCD
+
+      Map uses z axis is in the direction the camera is facing
+    */
+    ::grpc::Status GetPointCloudMap(
+        ServerContext *context, const GetPointCloudMapRequest *request,
+        GetPointCloudMapResponse *response) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
@@ -132,6 +145,10 @@ string MakeFilenameWithTimestamp(string path_to_dir, string camera_name);
 
 // Removes data file
 void RemoveFile(std::string file_path);
+
+std::string PcdHeader(int mapSize);
+
+void WriteFloatToBufferInBytes(std::string &buffer, float f);
 
 }  // namespace utils
 }  // namespace viam
