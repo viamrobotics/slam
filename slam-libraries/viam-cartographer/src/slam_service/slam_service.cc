@@ -332,7 +332,6 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        // jpeg will be empty which captures the error
         LOG(INFO) << "Error creating jpeg map: " << e.what();
         return "";
     }
@@ -352,7 +351,6 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        // pointcloud will be empty which captures the error
         if(e.what() == "No submaps to paint"){
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
@@ -384,7 +382,7 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     // Sample the image based off number of pixels. Output is number pixels to
     // skip. Ideally should be between 5 and 15, but depends on the resolution of
     // the original image
-    int skip_count = size_data / maximumGRPCByteLimit * samplingFactor;
+    int skip_count = (size_data / (float)maximumGRPCByteLimit) * samplingFactor;
     if (skip_count == 0) {
         skip_count = 1;
     }
@@ -468,7 +466,6 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             }
         }
     }
-    throw std::runtime_error("No submaps to paint");
 
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;

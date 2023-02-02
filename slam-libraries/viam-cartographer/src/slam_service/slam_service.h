@@ -43,7 +43,7 @@ static const int checkForShutdownIntervalMicroseconds = 1e5;
 static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
 // byte limit on GRPC, used to help determine sampling skip_count
-static const float maximumGRPCByteLimit = 32 * 1024 * 1024;
+static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations
 static const float samplingFactor = 5;
@@ -54,7 +54,7 @@ using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 
-// For a given color channel convert the scale from 102-255 to 100-0. This is an
+// For a given color channel convert the scale from the given 102-255 range to 100-0. This is an
 // initial solution for extracting probability information from cartographer
 unsigned char ViamColorToProbability(unsigned char color);
 

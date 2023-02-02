@@ -67,7 +67,7 @@ writes each 8 bit bytes to buffer
 void writeIntToBufferInBytes(std::string& buffer, int d);
 
 /*
-applies the mapSize to the HEADERTEMPLATE
+applies the mapSize to the header template
 returning the pcd header as a string
 */
 std::string pcdHeader(int mapSize, bool hasColor);
