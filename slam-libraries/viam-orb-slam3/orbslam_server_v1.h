@@ -12,6 +12,8 @@
 #include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
+using viam::service::slam::v1::GetInternalStateRequest;
+using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPointCloudMapRequest;
@@ -20,8 +22,6 @@ using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
-using viam::service::slam::v1::GetInternalStateRequest;
-using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::SLAMService;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
@@ -55,9 +55,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         ServerContext *context, const GetPointCloudMapRequest *request,
         GetPointCloudMapResponse *response) override;
 
-   ::grpc::Status GetInternalState(ServerContext *context,
-                                       const GetInternalStateRequest *request,
-                                       GetInternalStateResponse *response) override;
+    ::grpc::Status GetInternalState(
+        ServerContext *context, const GetInternalStateRequest *request,
+        GetInternalStateResponse *response) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
@@ -73,9 +73,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     void StopSaveAtlasAsOsa();
 
-    void SetSlam(ORB_SLAM3::System* s);
+    void SetSlam(ORB_SLAM3::System *s);
     bool ArchiveSlam(std::stringbuf &buffer);
-
 
     string path_to_data;
     string path_to_map;
@@ -99,14 +98,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     int n_key_frames = 0;
     int curr_map_id = 0;
 
-
    private:
     void SaveAtlasAsOsaWithTimestamp(ORB_SLAM3::System *SLAM);
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_atlas_as_osa_with_timestamp;
 
-    ORB_SLAM3::System* slam;
+    ORB_SLAM3::System *slam;
     std::mutex slam_mutex;
     Sophus::SE3f poseGrpc;
     std::vector<ORB_SLAM3::MapPoint *> currMapPoints;

@@ -425,10 +425,9 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-::grpc::Status SLAMServiceImpl::GetInternalState(ServerContext *context,
-                                       const GetInternalStateRequest *request,
-                                       GetInternalStateResponse *response) {
-
+::grpc::Status SLAMServiceImpl::GetInternalState(
+    ServerContext *context, const GetInternalStateRequest *request,
+    GetInternalStateResponse *response) {
     std::stringbuf buffer;
     bool success = ArchiveSlam(buffer);
     if (success) {
@@ -444,7 +443,7 @@ std::atomic<bool> b_continue_session{true};
 // which only exists b/c we only have one class
 // for both the data thread(s) & GRPC server & the
 // fact that it takes a while to fully initialize
-// the slam algo (longer than we want to wait to 
+// the slam algo (longer than we want to wait to
 // boot the GRPC server, so as to not hit timeouts
 // in RDK).
 // In the future there should be a class that initializes
@@ -453,9 +452,7 @@ std::atomic<bool> b_continue_session{true};
 // It only exists so that ArchiveSlam (called by the
 // GRPC handlers) can get access to the slam object
 // to call DumpOsa.
-void SLAMServiceImpl::SetSlam(ORB_SLAM3::System* s) {
-    slam = s;
-}
+void SLAMServiceImpl::SetSlam(ORB_SLAM3::System *s) { slam = s; }
 
 bool SLAMServiceImpl::ArchiveSlam(std::stringbuf &buffer) {
     // I belive this is the right place to put this mutex as
