@@ -465,7 +465,6 @@ bool SLAMServiceImpl::ArchiveSlam(std::stringbuf &buffer) {
         BOOST_LOG_TRIVIAL(debug) << "ArchiveSlam slam is NULL";
         return false;
     }
-    BOOST_LOG_TRIVIAL(debug) << "ArchiveSlam slam is NOT NULL";
     slam->DumpOsa(buffer);
     return true;
 }
