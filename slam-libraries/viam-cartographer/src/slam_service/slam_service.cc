@@ -166,7 +166,7 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            GetLatestPointCloudMapString(pointcloud_map);
+            GetLatestSampledPointCloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
@@ -268,7 +268,7 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
-    GetLatestPointCloudMapString(pointcloud_map_tmp);
+    GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
@@ -344,7 +344,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     return image.WriteJpegToString(jpegQuality);
 }
 
-void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
+void SLAMServiceImpl::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
     std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
         nullptr;
     try {
@@ -380,9 +380,11 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     int num_points = 0;
 
     // Sample the image based off number of pixels. Output is number pixels to
-    // skip. Ideally should be between 5 and 15, but depends on the resolution
-    // of the original image
-    int skip_count = (size_data / maximumGRPCByteLimit) * pixelBytetoPCDByte *
+    // skip. skip_count will reduce the size of the PCD to under 32 MB, with 
+    // additional tuning provided by the samplingFactor. If the PCD would 
+    // already be smaller than 32MB, do not sample the image. 
+    // When moving to streaming this behavior may change
+    int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
                      samplingFactor;
     if (skip_count == 0) {
         skip_count = 1;
