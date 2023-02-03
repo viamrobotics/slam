@@ -189,6 +189,7 @@ int main(int argc, char **argv) {
     }
     // slamService.ProcessDataForTesting(SLAM.get());
 
+    slamService.SetSlam(nullptr);
     SLAM->Shutdown();
     BOOST_LOG_TRIVIAL(info) << "System shutdown";
 
