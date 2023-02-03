@@ -361,7 +361,7 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
             return;
         }else{
             LOG(ERROR) << "Error creating pcd map: " << e.what();
-            throw std::runtime_error(e.what());
+            throw e;
         }
         
     }
@@ -387,11 +387,11 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     // Sample the image based off number of pixels. Output is number pixels to
     // skip. Ideally should be between 5 and 15, but depends on the resolution of
     // the original image
-    int skip_count = (size_data / (float)maximumGRPCByteLimit) * samplingFactor;
+    int skip_count = (size_data / (float)maximumGRPCByteLimit) * pixelBytetoPCDByte * samplingFactor;
     if (skip_count == 0) {
         skip_count = 1;
     }
-
+    
     std::string data_buffer;
 
     // Loop to sample data and reduce resolution. Increments multiplied
