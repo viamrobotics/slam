@@ -440,9 +440,9 @@ std::atomic<bool> b_continue_session{true};
 }
 
 // TODO: This is an antipattern, which only exists b/c:
-// 1. we only have one class for both the data thread(s) 
+// 1. we only have one class for both the data thread(s)
 //    & GRPC server
-// 2. we will hit the RDK timeout if we wait for the SLAM 
+// 2. we will hit the RDK timeout if we wait for the SLAM
 //    algo to fully boot before booting the GRPC server
 // In the future there should be a separate class from the
 // GRPC server, whose constructor initializes the slam object
