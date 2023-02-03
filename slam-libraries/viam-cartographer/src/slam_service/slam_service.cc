@@ -79,14 +79,10 @@ std::atomic<bool> b_continue_session{true};
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(
-        rotated_quat.w());
-    q->mutable_fields()->operator[]("imag").set_number_value(
-        rotated_quat.x());
-    q->mutable_fields()->operator[]("jmag").set_number_value(
-        rotated_quat.y());
-    q->mutable_fields()->operator[]("kmag").set_number_value(
-        rotated_quat.z());
+    q->mutable_fields()->operator[]("real").set_number_value(rotated_quat.w());
+    q->mutable_fields()->operator[]("imag").set_number_value(rotated_quat.x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(rotated_quat.y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(rotated_quat.z());
 
     // Set component_reference for our response
     response->set_component_reference(camera_name);
@@ -384,9 +380,10 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     int num_points = 0;
 
     // Sample the image based off number of pixels. Output is number pixels to
-    // skip. Ideally should be between 5 and 15, but depends on the resolution of
-    // the original image
-    int skip_count = (size_data / maximumGRPCByteLimit) * pixelBytetoPCDByte * samplingFactor;
+    // skip. Ideally should be between 5 and 15, but depends on the resolution
+    // of the original image
+    int skip_count = (size_data / maximumGRPCByteLimit) * pixelBytetoPCDByte *
+                     samplingFactor;
     if (skip_count == 0) {
         skip_count = 1;
     }

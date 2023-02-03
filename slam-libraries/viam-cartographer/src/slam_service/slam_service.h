@@ -49,7 +49,7 @@ static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // grpc limitations. Increase if expecting dense feature rich maps
 static const int samplingFactor = 1;
 // conversion to number of bytes used in colored PCD encoding
-static const int pixelBytetoPCDByte = 16/4;
+static const int pixelBytetoPCDByte = 16 / 4;
 // quaternion to rotate axes to the XZ plane
 static const Eigen::Quaterniond pcdRotation(M_PI / 2, 1, 0, 0);
 
