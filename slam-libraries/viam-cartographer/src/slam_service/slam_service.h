@@ -10,12 +10,12 @@
 #include <shared_mutex>
 #include <string>
 
-#include "Eigen/Core"
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
 #include "../io/submap_painter.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
+#include "Eigen/Core"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -51,7 +51,7 @@ static const int samplingFactor = 1;
 // conversion to number of bytes used in colored PCD encoding
 static const int pixelBytetoPCDByte = 16/4;
 // quaternion to rotate axes to the XZ plane
-static const Eigen::Quaterniond pcdRotation(M_PI/2,1,0,0);
+static const Eigen::Quaterniond pcdRotation(M_PI / 2, 1, 0, 0);
 
 extern std::atomic<bool> b_continue_session;
 
@@ -59,8 +59,9 @@ using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 
-// For a given color channel convert the scale from the given 102-255 range to 100-0. This is an
-// initial solution for extracting probability information from cartographer
+// For a given color channel convert the scale from the given 102-255 range to
+// 100-0. This is an initial solution for extracting probability information
+// from cartographer
 unsigned char ViamColorToProbability(unsigned char color);
 
 class SLAMServiceImpl final : public SLAMService::Service {

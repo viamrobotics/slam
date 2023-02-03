@@ -66,8 +66,8 @@ std::atomic<bool> b_continue_session{true};
     }
 
     // rotate pose to XZ plane
-    auto rotated_vector = pcdRotation*global_pose.translation();
-    auto rotated_quat = global_pose.rotation()*pcdRotation;
+    auto rotated_vector = pcdRotation * global_pose.translation();
+    auto rotated_quat = global_pose.rotation() * pcdRotation;
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
@@ -356,14 +356,13 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        if(e.what() == "No submaps to paint"){
+        if (e.what() == "No submaps to paint") {
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
-        }else{
+        } else {
             LOG(ERROR) << "Error creating pcd map: " << e.what();
             throw e;
         }
-        
     }
 
     auto painted_surface = painted_slices->surface.get();
@@ -391,7 +390,7 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     if (skip_count == 0) {
         skip_count = 1;
     }
-    
+
     std::string data_buffer;
 
     // Loop to sample data and reduce resolution. Increments multiplied
