@@ -30,10 +30,6 @@ std::atomic<bool> b_continue_session{true};
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-   
-    // Rotate pose to XZ plane
-    auto rotated_vector = pcdRotation*global_pose.translation();
-    auto rotated_quat = global_pose.rotation()*pcdRotation;
 
     // Setup mapping of pose message to the response. NOTE not using
     // inFrame->set_reference_frame
@@ -41,21 +37,21 @@ std::atomic<bool> b_continue_session{true};
     Pose *myPose = inFrame->mutable_pose();
 
     // Set pose for our response
-    myPose->set_x(rotated_vector.x());
-    myPose->set_y(rotated_vector.y());
-    myPose->set_z(rotated_vector.z());
+    myPose->set_x(global_pose.translation().x());
+    myPose->set_y(global_pose.translation().y());
+    myPose->set_z(global_pose.translation().z());
 
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
     q->mutable_fields()->operator[]("real").set_number_value(
-        rotated_quat.w());
+        global_pose.rotation().w());
     q->mutable_fields()->operator[]("imag").set_number_value(
-        rotated_quat.x());
+        global_pose.rotation().x());
     q->mutable_fields()->operator[]("jmag").set_number_value(
-        rotated_quat.y());
+        global_pose.rotation().y());
     q->mutable_fields()->operator[]("kmag").set_number_value(
-        rotated_quat.z());
+        global_pose.rotation().z());
 
     return grpc::Status::OK;
 }
@@ -75,22 +71,22 @@ std::atomic<bool> b_continue_session{true};
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
-    myPose->set_x(global_pose.translation().x());
-    myPose->set_y(global_pose.translation().y());
-    myPose->set_z(global_pose.translation().z());
+    myPose->set_x(rotated_vector.x());
+    myPose->set_y(rotated_vector.y());
+    myPose->set_z(rotated_vector.z());
 
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
     q->mutable_fields()->operator[]("real").set_number_value(
-        global_pose.rotation().w());
+        rotated_quat.w());
     q->mutable_fields()->operator[]("imag").set_number_value(
-        global_pose.rotation().x());
+        rotated_quat.x());
     q->mutable_fields()->operator[]("jmag").set_number_value(
-        global_pose.rotation().y());
+        rotated_quat.y());
     q->mutable_fields()->operator[]("kmag").set_number_value(
-        global_pose.rotation().z());
+        rotated_quat.z());
 
     // Set component_reference for our response
     response->set_component_reference(camera_name);
