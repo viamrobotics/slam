@@ -386,7 +386,7 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     // Sample the image based off number of pixels. Output is number pixels to
     // skip. Ideally should be between 5 and 15, but depends on the resolution of
     // the original image
-    int skip_count = (size_data / (float)maximumGRPCByteLimit) * pixelBytetoPCDByte * samplingFactor;
+    int skip_count = (size_data / maximumGRPCByteLimit) * pixelBytetoPCDByte * samplingFactor;
     if (skip_count == 0) {
         skip_count = 1;
     }
