@@ -30,27 +30,32 @@ std::atomic<bool> b_continue_session{true};
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
+   
+    // Rotate pose to XZ plane
+    auto rotated_vector = pcdRotation*global_pose.translation();
+    auto rotated_quat = global_pose.rotation()*pcdRotation;
+
     // Setup mapping of pose message to the response. NOTE not using
     // inFrame->set_reference_frame
     PoseInFrame *inFrame = response->mutable_pose();
     Pose *myPose = inFrame->mutable_pose();
 
     // Set pose for our response
-    myPose->set_x(global_pose.translation().x());
-    myPose->set_y(global_pose.translation().y());
-    myPose->set_z(global_pose.translation().z());
+    myPose->set_x(rotated_vector.x());
+    myPose->set_y(rotated_vector.y());
+    myPose->set_z(rotated_vector.z());
 
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
     q->mutable_fields()->operator[]("real").set_number_value(
-        global_pose.rotation().w());
+        rotated_quat.w());
     q->mutable_fields()->operator[]("imag").set_number_value(
-        global_pose.rotation().x());
+        rotated_quat.x());
     q->mutable_fields()->operator[]("jmag").set_number_value(
-        global_pose.rotation().y());
+        rotated_quat.y());
     q->mutable_fields()->operator[]("kmag").set_number_value(
-        global_pose.rotation().z());
+        rotated_quat.z());
 
     return grpc::Status::OK;
 }
@@ -63,6 +68,10 @@ std::atomic<bool> b_continue_session{true};
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
+
+    // rotate pose to XZ plane
+    auto rotated_vector = pcdRotation*global_pose.translation();
+    auto rotated_quat = global_pose.rotation()*pcdRotation;
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();

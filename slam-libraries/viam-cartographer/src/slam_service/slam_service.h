@@ -10,6 +10,7 @@
 #include <shared_mutex>
 #include <string>
 
+#include "Eigen/Core"
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
 #include "../io/submap_painter.h"
@@ -47,6 +48,8 @@ static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations
 static const float samplingFactor = 5;
+// quaternion to rotate axes to the XZ plane
+static const Eigen::Quaterniond pcdRotation(M_PI/2,1,0,0);
 
 extern std::atomic<bool> b_continue_session;
 
