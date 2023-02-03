@@ -30,10 +30,10 @@ std::atomic<bool> b_continue_session{true};
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-   
+
     // Rotate pose to XZ plane
-    auto rotated_vector = pcdRotation*global_pose.translation();
-    auto rotated_quat = global_pose.rotation()*pcdRotation;
+    auto rotated_vector = pcdRotation * global_pose.translation();
+    auto rotated_quat = global_pose.rotation() * pcdRotation;
 
     // Setup mapping of pose message to the response. NOTE not using
     // inFrame->set_reference_frame
@@ -48,14 +48,10 @@ std::atomic<bool> b_continue_session{true};
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(
-        rotated_quat.w());
-    q->mutable_fields()->operator[]("imag").set_number_value(
-        rotated_quat.x());
-    q->mutable_fields()->operator[]("jmag").set_number_value(
-        rotated_quat.y());
-    q->mutable_fields()->operator[]("kmag").set_number_value(
-        rotated_quat.z());
+    q->mutable_fields()->operator[]("real").set_number_value(rotated_quat.w());
+    q->mutable_fields()->operator[]("imag").set_number_value(rotated_quat.x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(rotated_quat.y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(rotated_quat.z());
 
     return grpc::Status::OK;
 }
@@ -70,8 +66,8 @@ std::atomic<bool> b_continue_session{true};
     }
 
     // rotate pose to XZ plane
-    auto rotated_vector = pcdRotation*global_pose.translation();
-    auto rotated_quat = global_pose.rotation()*pcdRotation;
+    auto rotated_vector = pcdRotation * global_pose.translation();
+    auto rotated_quat = global_pose.rotation() * pcdRotation;
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
@@ -360,14 +356,13 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        if(e.what() == "No submaps to paint"){
+        if (e.what() == "No submaps to paint") {
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
-        }else{
+        } else {
             LOG(ERROR) << "Error creating pcd map: " << e.what();
             throw std::runtime_error(e.what());
         }
-        
     }
 
     auto painted_surface = painted_slices->surface.get();
@@ -389,8 +384,8 @@ void SLAMServiceImpl::GetLatestPointCloudMapString(std::string &pointcloud) {
     int num_points = 0;
 
     // Sample the image based off number of pixels. Output is number pixels to
-    // skip. Ideally should be between 5 and 15, but depends on the resolution of
-    // the original image
+    // skip. Ideally should be between 5 and 15, but depends on the resolution
+    // of the original image
     int skip_count = (size_data / (float)maximumGRPCByteLimit) * samplingFactor;
     if (skip_count == 0) {
         skip_count = 1;
