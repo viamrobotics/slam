@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
     sigaction(SIGINT, &sigHandler, NULL);
 
     viam::SLAMServiceImpl slamService;
+    slamService.SetSlam(nullptr);
 
     try {
         const vector<string> args(argv + 1, argv + argc);

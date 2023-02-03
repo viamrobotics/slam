@@ -449,7 +449,10 @@ std::atomic<bool> b_continue_session{true};
 // so that the SLAM pointer can never be null.
 // SetSlam only exists so that ArchiveSlam will have access
 // to the SLAM object when called by the GRPC handlers.
-void SLAMServiceImpl::SetSlam(ORB_SLAM3::System *s) { slam = s; }
+void SLAMServiceImpl::SetSlam(ORB_SLAM3::System *s) {
+    std::lock_guard<std::mutex> lk(slam_mutex);
+    slam = s;
+}
 
 bool SLAMServiceImpl::ArchiveSlam(std::stringbuf &buffer) {
     std::lock_guard<std::mutex> lk(slam_mutex);

@@ -37,6 +37,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
                                const GetPositionRequest *request,
                                GetPositionResponse *response) override;
 
+    // For a given GetPositionNewRequest
+    // Returns a GetPositionNewResponse containing
+    // the current pose and component_reference of the SLAM
+    // sensor.
     ::grpc::Status GetPositionNew(ServerContext *context,
                                   const GetPositionNewRequest *request,
                                   GetPositionNewResponse *response) override;
@@ -44,17 +48,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    /*
-      For a given GetPointCloudMapRequest
-      Returns a GetPointCloudMapResponse containing a sparse
-      slam map as Binary PCD
-
-      Map uses z axis is in the direction the camera is facing
-    */
+    // For a given GetPointCloudMapRequest
+    // Returns a GetPointCloudMapResponse containing a sparse
+    // slam map as Binary PCD
+    // Map uses z axis is in the direction the camera is facing
     ::grpc::Status GetPointCloudMap(
         ServerContext *context, const GetPointCloudMapRequest *request,
         GetPointCloudMapResponse *response) override;
 
+    // For a given GetInternalStateRequest
+    // Returns a GetInternalStateResponse containing
+    // the internal state of the SLAM algorithm
+    // required to continue mapping/localization
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
