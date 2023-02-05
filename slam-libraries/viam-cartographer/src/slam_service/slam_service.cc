@@ -344,7 +344,8 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     return image.WriteJpegToString(jpegQuality);
 }
 
-void SLAMServiceImpl::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
+void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
+    std::string &pointcloud) {
     std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
         nullptr;
     try {
@@ -380,9 +381,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(std::string &pointclou
     int num_points = 0;
 
     // Sample the image based off number of pixels. Output is number pixels to
-    // skip. skip_count will reduce the size of the PCD to under 32 MB, with 
-    // additional tuning provided by the samplingFactor. If the PCD would 
-    // already be smaller than 32MB, do not sample the image. 
+    // skip. skip_count will reduce the size of the PCD to under 32 MB, with
+    // additional tuning provided by the samplingFactor. If the PCD would
+    // already be smaller than 32MB, do not sample the image.
     // When moving to streaming this behavior may change
     int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
                      samplingFactor;
