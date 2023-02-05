@@ -51,7 +51,7 @@ static const int samplingFactor = 1;
 // conversion to number of bytes used in colored PCD encoding
 static const int pixelBytetoPCDByte = 16 / 4;
 // quaternion to rotate axes to the XZ plane
-static const Eigen::Quaterniond pcdRotation(M_PI / 2, 1, 0, 0);
+static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
 
 extern std::atomic<bool> b_continue_session;
 

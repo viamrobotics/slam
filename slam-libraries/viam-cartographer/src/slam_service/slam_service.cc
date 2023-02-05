@@ -65,9 +65,9 @@ std::atomic<bool> b_continue_session{true};
         global_pose = latest_global_pose;
     }
 
-    // rotate pose to XZ plane
+    // rotate pose to XZ plane. Additional angle offset is used for oritentation to ensure real world value is consistent
     auto rotated_vector = pcdRotation * global_pose.translation();
-    auto rotated_quat = global_pose.rotation() * pcdRotation;
+    auto rotated_quat = pcdRotation * global_pose.rotation() * pcdRotation;
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
