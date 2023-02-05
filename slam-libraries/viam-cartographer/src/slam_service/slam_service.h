@@ -53,8 +53,9 @@ static const int pixelBytetoPCDByte = 16 / 4;
 // quaternion to rotate axes to the XZ plane
 static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
 // static offset quaternion so orientation matches physical intuition
-// this will result in rotations occuring within the y axis, to match 2D mapping in the XZ plane
-static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0); 
+// this will result in rotations occuring within the y axis, to match 2D mapping
+// in the XZ plane
+static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0);
 
 extern std::atomic<bool> b_continue_session;
 
