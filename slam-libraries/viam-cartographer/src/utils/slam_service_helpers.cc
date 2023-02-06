@@ -1,5 +1,6 @@
 #include "slam_service_helpers.h"
 
+#include <boost/format.hpp>
 #include <chrono>
 #include <string>
 
@@ -7,7 +8,7 @@
 
 namespace viam {
 
-std::ostream& operator<<(std::ostream& os, const ActionMode& action_mode) {
+std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
     std::string action_mode_str;
     if (action_mode == ActionMode::MAPPING) {
         action_mode_str = "mapping";
@@ -73,6 +74,27 @@ std::string GetLatestMapFilename(std::string path_to_map) {
     }
 
     return latest_map_filename;
+}
+
+std::string pcdHeader(int mapSize, bool hasColor) {
+    if (hasColor)
+        return str(boost::format(HEADERTEMPLATECOLOR) % mapSize % mapSize);
+    else
+        return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+void writeFloatToBufferInBytes(std::string &buffer, float f) {
+    auto p = (const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
+}
+
+void writeIntToBufferInBytes(std::string &buffer, int d) {
+    auto p = (const char *)(&d);
+    for (std::size_t i = 0; i < sizeof(int); ++i) {
+        buffer.push_back(p[i]);
+    }
 }
 
 }  // namespace utils

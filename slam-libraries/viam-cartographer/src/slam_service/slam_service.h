@@ -15,6 +15,7 @@
 #include "../io/submap_painter.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
+#include "Eigen/Core"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -40,11 +41,34 @@ using viam::service::slam::v1::SLAMService;
 namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
+
+// This RGB value represents "no input" from a Cario pained map
+static const unsigned char defaultCairosEmptyPaintedSlice = 102;
+static const int jpegQuality = 50;
+// Byte limit on GRPC, used to help determine sampling skip_count
+static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
+// Coeffient to adjust the skip count for the PCD to ensure the file is within
+// grpc limitations. Increase the value if you expect dense feature-rich maps
+static const int samplingFactor = 1;
+// Conversion to number of bytes used in colored PCD encoding
+static const int pixelBytetoPCDByte = 16 / 4;
+// Quaternion to rotate axes to the XZ plane
+static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
+// Static offset quaternion, so orientation matches physical intuition.
+// This will result in rotations occurring within the y axis to match 2D mapping
+// in the XZ plane
+static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0);
+
 extern std::atomic<bool> b_continue_session;
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
+
+// For a given color channel convert the scale from the given 102-255 range to
+// 100-0. This is an initial solution for extracting probability information
+// from cartographer
+unsigned char ViamColorToProbability(unsigned char color);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -209,17 +233,23 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // parameters depending on the action mode.
     void SetUpMapBuilder();
 
+    // GetLatestPaintedMapSlices paints and returns the current map of
+    // Cartographer
+    cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
+
     // GetLatestJpegMapString paints and returns the latest map as a jpeg string
     // with or without the pose marker depending on the argument value.
     std::string GetLatestJpegMapString(bool add_pose_marker);
 
     // PaintMarker paints the latest global pose on the painted slices.
-    void PaintMarker(cartographer::io::PaintSubmapSlicesResult &painted_slices);
+    void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
-    // ExtractPointCloudToString extracts the pointcloud from the map builder
-    // and saves it in a string. It returns a boolean that indicates whether
-    // or not the pointcloud string contains any points.
-    bool ExtractPointCloudToString(std::string &pointcloud);
+    // GetLatestSampledPointCloudMapString paints and returns the latest map as
+    // a pcd string with probability estimates written to the color field. The
+    // pcd is generated from PaintedMapSlices() and sampled to fit the 32 MB
+    // limit on gRPC messages. The sampled behavior may change when moving to
+    // streamed point clouds
+    void GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.

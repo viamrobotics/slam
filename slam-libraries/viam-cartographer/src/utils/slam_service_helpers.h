@@ -13,6 +13,36 @@ std::ostream& operator<<(std::ostream& os, const ActionMode& action_mode);
 
 namespace utils {
 
+const auto HEADERTEMPLATE =
+    "VERSION .7\n"
+    "FIELDS x y z\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4\n"
+    "TYPE F F F\n"
+    "COUNT 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
+
+const auto HEADERTEMPLATECOLOR =
+    "VERSION .7\n"
+    "FIELDS x y z rgb\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4 4\n"
+    "TYPE F F F I\n"
+    "COUNT 1 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
+
 // DetermineActionMode determines the action mode the slam service runs in,
 // which is either mapping, updating, or localizing.
 ActionMode DetermineActionMode(std::string path_to_map,
@@ -21,6 +51,20 @@ ActionMode DetermineActionMode(std::string path_to_map,
 // GetLatestMapFilename gets the latest map filename that is
 // located in path_to_map.
 std::string GetLatestMapFilename(std::string path_to_map);
+
+// Casts the float f to a pointer of unsigned 8-bit bytes,
+// iterates through all the 8-bit bytes of f, and
+// writes each 8-bit byte to the buffer.
+void writeFloatToBufferInBytes(std::string& buffer, float f);
+
+// Casts the integer d to a pointer of unsigned 8-bit bytes,
+// iterates through all the 8-bit bytes of d, and
+// writes each 8-bit byte to the buffer.
+void writeIntToBufferInBytes(std::string& buffer, int d);
+
+// Applies the mapSize to the header template and
+// returns the pcd header as a string.
+std::string pcdHeader(int mapSize, bool hasColor);
 
 }  // namespace utils
 }  // namespace viam

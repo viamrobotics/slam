@@ -30,6 +30,7 @@ std::atomic<bool> b_continue_session{true};
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
+
     // Setup mapping of pose message to the response. NOTE not using
     // inFrame->set_reference_frame
     PoseInFrame *inFrame = response->mutable_pose();
@@ -64,24 +65,26 @@ std::atomic<bool> b_continue_session{true};
         global_pose = latest_global_pose;
     }
 
+    // Rotate pose to XZ plane. Additional angle offset is used so rotations
+    // occur along the Y axis, to match the XZ plane
+    auto rotated_vector = pcdRotation * global_pose.translation();
+    auto rotated_quat =
+        pcdOffsetRotation * global_pose.rotation() * pcdRotation;
+
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
-    myPose->set_x(global_pose.translation().x());
-    myPose->set_y(global_pose.translation().y());
-    myPose->set_z(global_pose.translation().z());
+    myPose->set_x(rotated_vector.x());
+    myPose->set_y(rotated_vector.y());
+    myPose->set_z(rotated_vector.z());
 
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(
-        global_pose.rotation().w());
-    q->mutable_fields()->operator[]("imag").set_number_value(
-        global_pose.rotation().x());
-    q->mutable_fields()->operator[]("jmag").set_number_value(
-        global_pose.rotation().y());
-    q->mutable_fields()->operator[]("kmag").set_number_value(
-        global_pose.rotation().z());
+    q->mutable_fields()->operator[]("real").set_number_value(rotated_quat.w());
+    q->mutable_fields()->operator[]("imag").set_number_value(rotated_quat.x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(rotated_quat.y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(rotated_quat.z());
 
     // Set component_reference for our response
     response->set_component_reference(camera_name);
@@ -164,7 +167,6 @@ std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(const GetMapRequest *request,
                                                  GetMapResponse *response) {
-    bool pointcloud_has_points = false;
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -174,12 +176,11 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            pointcloud_has_points = ExtractPointCloudToString(pointcloud_map);
+            GetLatestSampledPointCloudMapString(pointcloud_map);
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
             std::lock_guard<std::mutex> lk(viam_response_mutex);
-            pointcloud_has_points = latest_pointcloud_map_has_points;
             pointcloud_map = latest_pointcloud_map;
         }
     } catch (std::exception &e) {
@@ -191,7 +192,7 @@ std::atomic<bool> b_continue_session{true};
     // Write the pointcloud map string to the response
     try {
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
-        if (!pointcloud_has_points) {
+        if (pointcloud_map.empty()) {
             LOG(ERROR) << "map pointcloud does not have points yet";
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "map pointcloud does not have points yet");
@@ -277,13 +278,11 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
-    bool pointcloud_map_has_points_tmp =
-        ExtractPointCloudToString(pointcloud_map_tmp);
+    GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
     latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
-    latest_pointcloud_map_has_points = pointcloud_map_has_points_tmp;
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
 }
 
@@ -337,6 +336,127 @@ void SLAMServiceImpl::SetUpMapBuilder() {
 }
 
 std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
+        nullptr;
+    try {
+        painted_slices =
+            std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
+                GetLatestPaintedMapSlices());
+    } catch (std::exception &e) {
+        LOG(INFO) << "Error creating jpeg map: " << e.what();
+        return "";
+    }
+    if (add_pose_marker) {
+        PaintMarker(painted_slices.get());
+    }
+
+    auto image = io::Image(std::move(painted_slices->surface));
+    return image.WriteJpegToString(jpegQuality);
+}
+
+void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
+    std::string &pointcloud) {
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
+        nullptr;
+    try {
+        painted_slices =
+            std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
+                GetLatestPaintedMapSlices());
+    } catch (std::exception &e) {
+        if (e.what() == "No submaps to paint") {
+            LOG(INFO) << "Error creating pcd map: " << e.what();
+            return;
+        } else {
+            LOG(ERROR) << "Error creating pcd map: " << e.what();
+            throw e;
+        }
+    }
+
+    auto painted_surface = painted_slices->surface.get();
+    int width = cairo_image_surface_get_width(painted_surface);
+    int height = cairo_image_surface_get_height(painted_surface);
+    // Get all pixels from the painted surface in RGBA format
+    auto data = cairo_image_surface_get_data(painted_surface);
+
+    // Total number of bytes in image (4 bytes per pixel)
+    int size_data = width * height * 4;
+
+    // Each pixel contains 4 bytes of information in RGBA format
+    // data_vect[i + 0] is the R channel
+    // data_vect[i + 1] is the B channel
+    // data_vect[i + 2] is the G channel
+    // data_vect[i + 3] is the A channel
+    std::vector<unsigned char> data_vect(data, data + size_data);
+
+    int num_points = 0;
+
+    // Sample the image based on the number of pixels. Output is the number of
+    // pixels to skip. skip_count will reduce the size of the PCD to under 32
+    // MB, with additional tuning provided by the samplingFactor. If the PCD
+    //  would already be smaller than 32MB, do not sample the image.
+    // When moving to streaming this behavior may change.
+    int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
+                     samplingFactor;
+    if (skip_count == 0) {
+        skip_count = 1;
+    }
+
+    std::string data_buffer;
+
+    // Loop to sample data and reduce resolution. Increments multiplied
+    // by 4 to represent 4 bytes per pixel
+    for (int i = 0; i < size_data; i += skip_count * 4) {
+        // skip pixels that are not in our map(black/past walls)
+        // this check represents [102,102,102]
+        if ((data_vect[i + 0] == defaultCairosEmptyPaintedSlice) &&
+            (data_vect[i + 1] == defaultCairosEmptyPaintedSlice) &&
+            (data_vect[i + 2] == defaultCairosEmptyPaintedSlice))
+            continue;
+
+        // Determine probability based on color pixel
+        int prob = viam::ViamColorToProbability((int)data_vect[i + 2]);
+        if (prob == 0) continue;
+
+        num_points++;
+
+        int pixel_index = i / 4;
+        int pixel_x = pixel_index % width;
+        int pixel_y = pixel_index / width;
+
+        // Convert pixel location to pointcloud point in meters
+        float x_pos = (pixel_x - painted_slices->origin.x()) * kPixelSize;
+        // Y is inverted to match output from getPosition()
+        float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
+        // 2D SLAM so Z is set to 0
+        float z_pos = 0;
+
+        // Rotating coordinates to match slam service expectation (XZ plane)
+        viam::utils::writeFloatToBufferInBytes(data_buffer, x_pos);
+        viam::utils::writeFloatToBufferInBytes(data_buffer, z_pos);
+        viam::utils::writeFloatToBufferInBytes(data_buffer, y_pos);
+        viam::utils::writeIntToBufferInBytes(data_buffer, prob);
+    }
+
+    // Write our PCD file, which is written as a binary.
+    pointcloud = viam::utils::pcdHeader(num_points, true);
+
+    // Writes data buffer to the pointcloud string
+    pointcloud += data_buffer;
+    return;
+}
+
+unsigned char ViamColorToProbability(unsigned char color) {
+    unsigned char maxVal = CHAR_MAX;
+    unsigned char minVal = defaultCairosEmptyPaintedSlice;
+    unsigned char maxProb = 100;
+    unsigned char minProb = 0;
+    unsigned char prob =
+        (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
+    return prob = std::min(std::max(prob, minProb), maxProb);
+}
+
+cartographer::io::PaintSubmapSlicesResult
+SLAMServiceImpl::GetLatestPaintedMapSlices() {
     cartographer::mapping::MapById<
         cartographer::mapping::SubmapId,
         cartographer::mapping::PoseGraphInterface::SubmapPose>
@@ -365,7 +485,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
         submap_slices;
 
     if (submap_poses.size() == 0) {
-        return "";
+        throw std::runtime_error("No submaps to paint");
     }
 
     for (const auto &&submap_id_pose : submap_poses) {
@@ -404,90 +524,20 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             fetched_texture->width, fetched_texture->height,
             &submap_slice.cairo_data);
     }
-
     cartographer::io::PaintSubmapSlicesResult painted_slices =
         viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
-    if (add_pose_marker) {
-        PaintMarker(painted_slices);
-    }
 
-    auto image = io::Image(std::move(painted_slices.surface));
-    return image.WriteJpegToString(50);
+    return painted_slices;
 }
 
 void SLAMServiceImpl::PaintMarker(
-    cartographer::io::PaintSubmapSlicesResult &painted_slices) {
+    cartographer::io::PaintSubmapSlicesResult *painted_slices) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-    viam::io::DrawPoseOnSurface(&painted_slices, global_pose, kPixelSize);
-}
-
-bool SLAMServiceImpl::ExtractPointCloudToString(std::string &pointcloud) {
-    cartographer::mapping::MapById<cartographer::mapping::NodeId,
-                                   cartographer::mapping::TrajectoryNode>
-        trajectory_nodes;
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        trajectory_nodes =
-            map_builder.map_builder_->pose_graph()->GetTrajectoryNodes();
-    }
-
-    bool pointcloud_has_points = false;
-    std::stringbuf pointcloud_buffer;
-    std::ostream oss(&pointcloud_buffer);
-
-    long number_points = 0;
-    for (const auto &&trajectory_node : trajectory_nodes) {
-        auto point_cloud = trajectory_node.data.constant_data
-                               ->filtered_gravity_aligned_point_cloud;
-        number_points += point_cloud.size();
-    }
-
-    // Write our PCD file, which is written as a binary.
-    oss << "VERSION .7\n"
-        << "FIELDS x y z rgb\n"
-        << "SIZE 4 4 4 4\n"
-        << "TYPE F F F I\n"
-        << "COUNT 1 1 1 1\n"
-        << "WIDTH " << number_points << "\n"
-        << "HEIGHT " << 1 << "\n"
-        << "VIEWPOINT 0 0 0 1 0 0 0\n"
-        << "POINTS " << number_points << "\n"
-        << "DATA binary\n";
-
-    for (const auto &&trajectory_node : trajectory_nodes) {
-        cartographer::sensor::PointCloud local_gravity_aligned_point_cloud =
-            trajectory_node.data.constant_data
-                ->filtered_gravity_aligned_point_cloud;
-
-        // We're only applying the translation of the `global_pose` on the
-        // point cloud here, as opposed to using both the translation and
-        // rotation of the global pose of the trajectory node. The reason for
-        // this seems to be that since the point cloud is already gravity
-        // aligned, the rotational part of the transformation relative to the
-        // world frame is already taken care of.
-        cartographer::sensor::PointCloud global_point_cloud =
-            cartographer::sensor::TransformPointCloud(
-                local_gravity_aligned_point_cloud,
-                cartographer::transform::Rigid3f(
-                    trajectory_node.data.global_pose.cast<float>()
-                        .translation(),
-                    cartographer::transform::Rigid3f::Quaternion::Identity()));
-
-        for (auto &&point : global_point_cloud) {
-            int rgb = 0;
-            pointcloud_buffer.sputn((const char *)&point.position[1], 4);
-            pointcloud_buffer.sputn((const char *)&point.position[2], 4);
-            pointcloud_buffer.sputn((const char *)&point.position[0], 4);
-            pointcloud_buffer.sputn((const char *)&rgb, 4);
-            pointcloud_has_points = true;
-        }
-    }
-    pointcloud = pointcloud_buffer.str();
-    return pointcloud_has_points;
+    viam::io::DrawPoseOnSurface(painted_slices, global_pose, kPixelSize);
 }
 
 void SLAMServiceImpl::RunSLAM() {
