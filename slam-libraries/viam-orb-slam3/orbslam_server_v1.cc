@@ -425,6 +425,45 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+::grpc::Status SLAMServiceImpl::GetInternalState(
+    ServerContext *context, const GetInternalStateRequest *request,
+    GetInternalStateResponse *response) {
+    std::stringbuf buffer;
+    bool success = ArchiveSlam(buffer);
+    if (success) {
+        response->set_internal_state(buffer.str());
+        return grpc::Status::OK;
+    } else {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "SLAM is not yet initialized");
+    }
+}
+
+// TODO: This is an antipattern, which only exists b/c:
+// 1. we only have one class for both the data thread(s)
+//    & GRPC server
+// 2. we will hit the RDK timeout if we wait for the SLAM
+//    algo to fully boot before booting the GRPC server
+// In the future there should be a separate class from the
+// GRPC server, whose constructor initializes the slam object
+// so that the SLAM pointer can never be null.
+// SetSlam only exists so that ArchiveSlam will have access
+// to the SLAM object when called by the GRPC handlers.
+void SLAMServiceImpl::SetSlam(ORB_SLAM3::System *s) {
+    std::lock_guard<std::mutex> lk(slam_mutex);
+    slam = s;
+}
+
+bool SLAMServiceImpl::ArchiveSlam(std::stringbuf &buffer) {
+    std::lock_guard<std::mutex> lk(slam_mutex);
+    if (slam == nullptr) {
+        BOOST_LOG_TRIVIAL(debug) << "ArchiveSlam slam is NULL";
+        return false;
+    }
+    slam->DumpOsa(buffer);
+    return true;
+}
+
 void SLAMServiceImpl::ProcessDataOnline(ORB_SLAM3::System *SLAM) {
     std::vector<std::string> filesRGB = utils::ListFilesInDirectoryForCamera(
         path_to_data + strRGB, ".png", camera_name);
