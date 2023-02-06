@@ -29,6 +29,8 @@ using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPointCloudMapRequest;
+using viam::service::slam::v1::GetPointCloudMapResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -64,6 +66,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // type requested.
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
+
+    // GetPointCloudMap returns the current sampled pointcloud derived from the painted map, using probability estimates
+    ::grpc::Status GetPointCloudMap(ServerContext *context,
+                                    const GetPointCloudMapRequest *request,
+                                    GetPointCloudMapResponse *response) override;
 
     // GetInternalState returns the current internal state of the map which is
     // a pbstream for cartographer.
@@ -183,11 +190,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetJpegMap(const GetMapRequest *request,
                               GetMapResponse *response);
 
-    // GetPointCloudMap writes the pointcloud version of the map to
+    // GetCurrentPointCloudMap writes the pointcloud version of the map to
     // the response. Returns a grpc status that reflects
     // whether or not writing the map to the response
     // was successful.
-    ::grpc::Status GetPointCloudMap(const GetMapRequest *request,
+    ::grpc::Status GetCurrentPointCloudMap(const GetMapRequest *request,
                                     GetMapResponse *response);
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory

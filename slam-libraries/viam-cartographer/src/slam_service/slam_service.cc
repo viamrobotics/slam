@@ -89,6 +89,14 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMap(ServerContext *context,
+                                       const GetPointCloudMapRequest *request,
+                                       GetPointCloudMapResponse *response) {
+
+    // return grpc::Status::OK;
+    return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "currently no map exists yet");
+}                                    
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
@@ -98,7 +106,7 @@ std::atomic<bool> b_continue_session{true};
     if (mime_type == "image/jpeg") {
         return GetJpegMap(request, response);
     } else if (mime_type == "pointcloud/pcd") {
-        return GetPointCloudMap(request, response);
+        return GetCurrentPointCloudMap(request, response);
     } else {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             "mime_type should be \"image/jpeg\" or "
@@ -154,7 +162,7 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
-::grpc::Status SLAMServiceImpl::GetPointCloudMap(const GetMapRequest *request,
+::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(const GetMapRequest *request,
                                                  GetMapResponse *response) {
     bool pointcloud_has_points = false;
     std::string pointcloud_map;
