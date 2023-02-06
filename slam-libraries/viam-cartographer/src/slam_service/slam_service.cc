@@ -96,10 +96,47 @@ std::atomic<bool> b_continue_session{true};
                                        const GetPointCloudMapRequest *request,
                                        GetPointCloudMapResponse *response) {
 
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    try {
+        std::shared_lock optimization_lock{optimization_shared_mutex,
+                                           std::defer_lock};
+        if (optimization_lock.try_lock()) {
+            // We are able to lock the optimization_shared_mutex, which means
+            // that the optimization is not ongoing and we can grab the newest
+            // map
+            GetLatestSampledPointCloudMapString(pointcloud_map);
+        } else {
+            // We couldn't lock the mutex which means the optimization process
+            // locked it and we need to use the backed up latest map
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            pointcloud_map = latest_pointcloud_map;
+        }
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error encoding pointcloud " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+
+    // Write the pointcloud map string to the response
+    try {
+        if (pointcloud_map.empty()) {
+            LOG(ERROR) << "map pointcloud does not have points yet";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "map pointcloud does not have points yet");
+        }
+        response->set_point_cloud_pcd(pointcloud_map);
+        return grpc::Status::OK;
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error writing pointcloud to response " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
     // return grpc::Status::OK;
     return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                "currently no map exists yet");
-}                                    
+                                "currently working on map endpoint");
+}  
+
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
