@@ -382,9 +382,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
 
     int num_points = 0;
 
-    // Sample the image based on the number of pixels. Output is the number of 
-    // pixels to skip. skip_count will reduce the size of the PCD to under 32 MB, 
-    // with additional tuning provided by the samplingFactor. If the PCD
+    // Sample the image based on the number of pixels. Output is the number of
+    // pixels to skip. skip_count will reduce the size of the PCD to under 32
+    // MB, with additional tuning provided by the samplingFactor. If the PCD
     //  would already be smaller than 32MB, do not sample the image.
     // When moving to streaming this behavior may change.
     int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
