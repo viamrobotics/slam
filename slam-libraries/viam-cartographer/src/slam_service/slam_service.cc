@@ -113,9 +113,11 @@ std::atomic<bool> b_continue_session{true};
             pointcloud_map = latest_pointcloud_map;
         }
     } catch (std::exception &e) {
-        std::ostringstream oss;
-        oss << "error encoding pointcloud " << e.what();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+            LOG(ERROR) << "error creating pcd map: " << e.what();
+            std::ostringstream oss;
+            viam::b_continue_session = false;     
+            oss << "error creating pcd map: " << e.what();
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());   
     }
 
     // Write the pointcloud map string to the response
@@ -187,7 +189,8 @@ std::atomic<bool> b_continue_session{true};
         }
     } catch (std::exception &e) {
         std::ostringstream oss;
-        oss << "error encoding image " << e.what();
+        oss << "error encoding image: " << e.what();
+        viam::b_continue_session = false;     
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
@@ -223,6 +226,7 @@ std::atomic<bool> b_continue_session{true};
     } catch (std::exception &e) {
         std::ostringstream oss;
         oss << "error encoding pointcloud " << e.what();
+        viam::b_continue_session = false;
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
@@ -380,8 +384,16 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        LOG(INFO) << "Error creating jpeg map: " << e.what();
-        return "";
+        if (e.what() == errorNoSubmaps) {
+            LOG(INFO) << "Error creating jpeg map: " << e.what();
+            return "";
+        } else {
+            
+            std::string errorLog = "Error writing submap to proto: ";
+            errorLog += e.what();
+            LOG(ERROR) << errorLog;
+            throw std::runtime_error(errorLog);
+        }
     }
     if (add_pose_marker) {
         PaintMarker(painted_slices.get());
@@ -400,12 +412,15 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        if (e.what() == "No submaps to paint") {
+        if (e.what() == errorNoSubmaps) {
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
         } else {
-            LOG(ERROR) << "Error creating pcd map: " << e.what();
-            throw e;
+            
+            std::string errorLog = "Error writing submap to proto: ";
+            errorLog += e.what();
+            LOG(ERROR) << errorLog;
+            throw std::runtime_error(errorLog);
         }
     }
 
@@ -520,9 +535,9 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
 
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
-
+        
     if (submap_poses.size() == 0) {
-        throw std::runtime_error("No submaps to paint");
+        throw std::runtime_error(errorNoSubmaps);
     }
 
     for (const auto &&submap_id_pose : submap_poses) {

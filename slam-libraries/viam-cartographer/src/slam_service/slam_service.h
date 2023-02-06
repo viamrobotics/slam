@@ -58,6 +58,8 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
 // This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0);
+// Error log for when no submaps exist
+static const std::string errorNoSubmaps = "No submaps to paint";
 
 extern std::atomic<bool> b_continue_session;
 
