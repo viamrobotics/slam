@@ -65,7 +65,7 @@ std::atomic<bool> b_continue_session{true};
         global_pose = latest_global_pose;
     }
 
-    // rotate pose to XZ plane. Additional angle offset is used so rotations
+    // Rotate pose to XZ plane. Additional angle offset is used so rotations
     // occur along the Y axis, to match the XZ plane
     auto rotated_vector = pcdRotation * global_pose.translation();
     auto rotated_quat =
@@ -367,13 +367,13 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     auto painted_surface = painted_slices->surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    // all pixels from the painted surface in RGBA format
+    // Get all pixels from the painted surface in RGBA format
     auto data = cairo_image_surface_get_data(painted_surface);
 
-    // total number of bytes in image (4 bytes per pixel)
+    // Total number of bytes in image (4 bytes per pixel)
     int size_data = width * height * 4;
 
-    // each pixel contains 4 bytes of information in RGBA format
+    // Each pixel contains 4 bytes of information in RGBA format
     // data_vect[i + 0] is the R channel
     // data_vect[i + 1] is the B channel
     // data_vect[i + 2] is the G channel
@@ -382,11 +382,11 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
 
     int num_points = 0;
 
-    // Sample the image based off number of pixels. Output is number pixels to
-    // skip. skip_count will reduce the size of the PCD to under 32 MB, with
-    // additional tuning provided by the samplingFactor. If the PCD would
-    // already be smaller than 32MB, do not sample the image.
-    // When moving to streaming this behavior may change
+    // Sample the image based on the number of pixels. Output is the number of 
+    // pixels to skip. skip_count will reduce the size of the PCD to under 32 MB, 
+    // with additional tuning provided by the samplingFactor. If the PCD
+    //  would already be smaller than 32MB, do not sample the image.
+    // When moving to streaming this behavior may change.
     int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
                      samplingFactor;
     if (skip_count == 0) {
@@ -405,7 +405,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             (data_vect[i + 2] == defaultCairosEmptyPaintedSlice))
             continue;
 
-        // Determine probability based off color pixel
+        // Determine probability based on color pixel
         int prob = viam::ViamColorToProbability((int)data_vect[i + 2]);
         if (prob == 0) continue;
 
@@ -415,14 +415,14 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         int pixel_x = pixel_index % width;
         int pixel_y = pixel_index / width;
 
-        // convert pixel location to pointcloud point in meters
+        // Convert pixel location to pointcloud point in meters
         float x_pos = (pixel_x - painted_slices->origin.x()) * kPixelSize;
         // Y is inverted to match output from getPosition()
         float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
 
-        // rotating coordinates to match slam service expectation(XZ plane)
+        // Rotating coordinates to match slam service expectation (XZ plane)
         viam::utils::writeFloatToBufferInBytes(data_buffer, x_pos);
         viam::utils::writeFloatToBufferInBytes(data_buffer, z_pos);
         viam::utils::writeFloatToBufferInBytes(data_buffer, y_pos);
@@ -432,7 +432,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     // Write our PCD file, which is written as a binary.
     pointcloud = viam::utils::pcdHeader(num_points, true);
 
-    // writes data buffer to the pointcloud string
+    // Writes data buffer to the pointcloud string
     pointcloud += data_buffer;
     return;
 }

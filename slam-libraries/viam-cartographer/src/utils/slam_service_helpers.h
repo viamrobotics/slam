@@ -52,24 +52,18 @@ ActionMode DetermineActionMode(std::string path_to_map,
 // located in path_to_map.
 std::string GetLatestMapFilename(std::string path_to_map);
 
-/*
-casts the float f to a pointer of unsigned 8 bit bytes
-iterates throught all the 8 bit bytes of f
-writes each 8 bit bytes to buffer
-*/
+// Casts the float f to a pointer of unsigned 8-bit bytes,
+// iterates through all the 8-bit bytes of f, and
+// writes each 8-bit byte to the buffer.
 void writeFloatToBufferInBytes(std::string& buffer, float f);
 
-/*
-casts the integer d to a pointer of unsigned 8 bit bytes
-iterates throught all the 8 bit bytes of d
-writes each 8 bit bytes to buffer
-*/
+// Casts the integer d to a pointer of unsigned 8-bit bytes,
+// iterates through all the 8-bit bytes of d, and
+// writes each 8-bit byte to the buffer.
 void writeIntToBufferInBytes(std::string& buffer, int d);
 
-/*
-applies the mapSize to the header template
-returning the pcd header as a string
-*/
+// Applies the mapSize to the header template and
+// returns the pcd header as a string.
 std::string pcdHeader(int mapSize, bool hasColor);
 
 }  // namespace utils

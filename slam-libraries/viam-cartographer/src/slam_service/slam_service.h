@@ -40,20 +40,20 @@ namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
-// rgb value representing no input from a Cario pained map
+// This RGB value represents "no input" from a Cario pained map
 static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
-// byte limit on GRPC, used to help determine sampling skip_count
+// Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
-// coeffient to adjust the skip count for the PCD to ensure the file is within
-// grpc limitations. Increase if expecting dense feature rich maps
+// Coeffient to adjust the skip count for the PCD to ensure the file is within
+// grpc limitations. Increase the value if you expect dense feature-rich maps
 static const int samplingFactor = 1;
-// conversion to number of bytes used in colored PCD encoding
+// Conversion to number of bytes used in colored PCD encoding
 static const int pixelBytetoPCDByte = 16 / 4;
-// quaternion to rotate axes to the XZ plane
+// Quaternion to rotate axes to the XZ plane
 static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
-// static offset quaternion so orientation matches physical intuition
-// this will result in rotations occuring within the y axis, to match 2D mapping
+// Static offset quaternion, so orientation matches physical intuition.
+// This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0);
 
