@@ -93,10 +93,9 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-::grpc::Status SLAMServiceImpl::GetPointCloudMap(ServerContext *context,
-                                       const GetPointCloudMapRequest *request,
-                                       GetPointCloudMapResponse *response) {
-
+::grpc::Status SLAMServiceImpl::GetPointCloudMap(
+    ServerContext *context, const GetPointCloudMapRequest *request,
+    GetPointCloudMapResponse *response) {
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -137,8 +136,8 @@ std::atomic<bool> b_continue_session{true};
     }
     // return grpc::Status::OK;
     return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                "currently working on map endpoint");
-}  
+                        "currently working on map endpoint");
+}
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
@@ -206,8 +205,8 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
-::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(const GetMapRequest *request,
-                                                 GetMapResponse *response) {
+::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(
+    const GetMapRequest *request, GetMapResponse *response) {
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -389,7 +388,6 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             LOG(INFO) << "Error creating jpeg map: " << e.what();
             return "";
         } else {
-            
             std::string errorLog = "Error writing submap to proto: ";
             errorLog += e.what();
             LOG(ERROR) << errorLog;
@@ -417,7 +415,6 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
         } else {
-            
             std::string errorLog = "Error writing submap to proto: ";
             errorLog += e.what();
             LOG(ERROR) << errorLog;
@@ -539,7 +536,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
 
     std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
         submap_slices;
-        
+
     if (submap_poses.size() == 0) {
         throw std::runtime_error(errorNoSubmaps);
     }

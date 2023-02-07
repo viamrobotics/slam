@@ -93,10 +93,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // GetPointCloudMap returns the current sampled pointcloud derived from the painted map, using probability estimates
-    ::grpc::Status GetPointCloudMap(ServerContext *context,
-                                    const GetPointCloudMapRequest *request,
-                                    GetPointCloudMapResponse *response) override;
+    // GetPointCloudMap returns the current sampled pointcloud derived from the
+    // painted map, using probability estimates
+    ::grpc::Status GetPointCloudMap(
+        ServerContext *context, const GetPointCloudMapRequest *request,
+        GetPointCloudMapResponse *response) override;
 
     // GetInternalState returns the current internal state of the map which is
     // a pbstream for cartographer.
@@ -221,7 +222,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // whether or not writing the map to the response
     // was successful.
     ::grpc::Status GetCurrentPointCloudMap(const GetMapRequest *request,
-                                    GetMapResponse *response);
+                                           GetMapResponse *response);
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory
     // that is newer than the provided data_cutoff_time
