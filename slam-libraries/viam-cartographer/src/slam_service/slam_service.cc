@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 
+#include "Eigen/Core"
 #include "../io/file_handler.h"
 #include "../io/image.h"
 #include "../mapping/map_builder.h"
@@ -115,7 +116,7 @@ std::atomic<bool> b_continue_session{true};
     } catch (std::exception &e) {
             LOG(ERROR) << "error creating pcd map: " << e.what();
             std::ostringstream oss;
-            viam::b_continue_session = false;     
+            std::terminate();    
             oss << "error creating pcd map: " << e.what();
             return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());   
     }
@@ -190,7 +191,7 @@ std::atomic<bool> b_continue_session{true};
     } catch (std::exception &e) {
         std::ostringstream oss;
         oss << "error encoding image: " << e.what();
-        viam::b_continue_session = false;     
+        std::terminate();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
@@ -226,7 +227,7 @@ std::atomic<bool> b_continue_session{true};
     } catch (std::exception &e) {
         std::ostringstream oss;
         oss << "error encoding pointcloud " << e.what();
-        viam::b_continue_session = false;
+        std::terminate();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
@@ -481,11 +482,14 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
+        Eigen::Vector3d map_point(x_pos,y_pos,z_pos);
+        auto rotated_map_point = pcdRotation * map_point;
+
 
         // Rotating coordinates to match slam service expectation (XZ plane)
-        viam::utils::writeFloatToBufferInBytes(data_buffer, x_pos);
-        viam::utils::writeFloatToBufferInBytes(data_buffer, z_pos);
-        viam::utils::writeFloatToBufferInBytes(data_buffer, y_pos);
+        viam::utils::writeFloatToBufferInBytes(data_buffer, rotated_map_point.x());
+        viam::utils::writeFloatToBufferInBytes(data_buffer, rotated_map_point.y());
+        viam::utils::writeFloatToBufferInBytes(data_buffer, rotated_map_point.z());
         viam::utils::writeIntToBufferInBytes(data_buffer, prob);
     }
 

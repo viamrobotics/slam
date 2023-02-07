@@ -53,11 +53,11 @@ static const int samplingFactor = 1;
 // Conversion to number of bytes used in colored PCD encoding
 static const int pixelBytetoPCDByte = 16 / 4;
 // Quaternion to rotate axes to the XZ plane
-static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
+static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // Static offset quaternion, so orientation matches physical intuition.
 // This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
-static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0);
+static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
 
