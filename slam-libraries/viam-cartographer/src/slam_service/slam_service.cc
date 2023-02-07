@@ -113,8 +113,7 @@ std::atomic<bool> b_continue_session{true};
             pointcloud_map = latest_pointcloud_map;
         }
     } catch (std::exception &e) {
-        LOG(ERROR) << "error creating pcd map: " << e.what();
-        std::ostringstream oss;
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud map: " << e.what();
         std::terminate();
     }
 
@@ -186,8 +185,7 @@ std::atomic<bool> b_continue_session{true};
                                 "currently no map exists yet");
         }
     } catch (std::exception &e) {
-        std::ostringstream oss;
-        oss << "error encoding image: " << e.what();
+        LOG(ERROR) << "Stopping Cartographer: error encoding jpeg image: " << e.what();
         std::terminate();
     }
 
@@ -221,8 +219,7 @@ std::atomic<bool> b_continue_session{true};
             pointcloud_map = latest_pointcloud_map;
         }
     } catch (std::exception &e) {
-        std::ostringstream oss;
-        oss << "error encoding pointcloud " << e.what();
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: " << e.what();
         std::terminate();
     }
 
