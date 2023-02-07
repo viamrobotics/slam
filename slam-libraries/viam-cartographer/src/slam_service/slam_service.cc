@@ -116,8 +116,6 @@ std::atomic<bool> b_continue_session{true};
         LOG(ERROR) << "error creating pcd map: " << e.what();
         std::ostringstream oss;
         std::terminate();
-        oss << "error creating pcd map: " << e.what();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
     // Write the pointcloud map string to the response
@@ -191,7 +189,6 @@ std::atomic<bool> b_continue_session{true};
         std::ostringstream oss;
         oss << "error encoding image: " << e.what();
         std::terminate();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
     // Write the jpeg map string to the response
@@ -227,7 +224,6 @@ std::atomic<bool> b_continue_session{true};
         std::ostringstream oss;
         oss << "error encoding pointcloud " << e.what();
         std::terminate();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
     // Write the pointcloud map string to the response
