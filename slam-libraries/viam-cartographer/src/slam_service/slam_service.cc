@@ -131,9 +131,6 @@ std::atomic<bool> b_continue_session{true};
         oss << "error writing pointcloud to response " << e.what();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
-    // return grpc::Status::OK;
-    return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                        "currently working on map endpoint");
 }
 
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
