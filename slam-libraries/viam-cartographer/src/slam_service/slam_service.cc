@@ -159,6 +159,12 @@ std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(const GetMapRequest *request,
                                                  GetMapResponse *response) {
+    if(localization_map_ready){
+        common::v1::PointCloudObject *pco = response->mutable_point_cloud();
+        pco->set_point_cloud(localization_pointcloud_map);
+        return grpc::Status::OK;
+    }
+    
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -567,6 +573,21 @@ void SLAMServiceImpl::RunSLAM() {
                 latest_map_filename.find(viam::io::filename_prefix) +
                     viam::io::filename_prefix.length(),
                 latest_map_filename.find(".pbstream")));
+        if(action_mode == ActionMode::LOCALIZING){
+            try {
+                GetLatestSampledPointCloudMapString(localization_pointcloud_map);
+            } catch (std::exception &e) {
+                LOG(ERROR) << "Stopping Cartographer: error encoding localized pointcloud map: " << e.what();
+                std::terminate();
+            }
+            
+            if(localization_pointcloud_map.empty()){
+                LOG(ERROR) << "Stopping Cartographer: error encoding localized pointcloud map: no map points";
+                std::terminate();
+            }
+
+            localization_map_ready = true;
+        }
     }
 
     LOG(INFO) << "Starting to run cartographer";
