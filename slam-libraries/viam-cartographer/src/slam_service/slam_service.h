@@ -291,7 +291,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string latest_jpeg_map_with_marker;
     std::string latest_jpeg_map_without_marker;
 
-    bool latest_pointcloud_map_has_points = false;
     std::string latest_pointcloud_map;
     // ---
 };
