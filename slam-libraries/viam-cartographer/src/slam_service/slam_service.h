@@ -295,6 +295,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     std::string latest_pointcloud_map;
 
+    // Enable Localization mode to utilize a cached version of the pointcloud map, to skip unecessary encoding steps
     std::atomic<bool> localization_map_ready{false};
     std::string localization_pointcloud_map;
 
