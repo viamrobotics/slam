@@ -254,10 +254,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // streamed point clouds
     void GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
-    void WriteSampledPointCloudMapToBuffer(std::string &pointcloud,
-                                           cairo_surface_t *painted_surface,
-                                           Eigen::Array2f origin);
-
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
     void BackupLatestMap();
