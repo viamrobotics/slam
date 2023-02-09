@@ -96,6 +96,10 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
+    if(localization_map_ready){
+        response->set_point_cloud_pcd(localization_pointcloud_map);
+        return grpc::Status::OK;
+    }
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
