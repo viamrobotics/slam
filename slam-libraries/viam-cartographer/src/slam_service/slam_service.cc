@@ -11,6 +11,7 @@
 #include "../io/image.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
+#include "Eigen/Core"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
 #include "cartographer/io/submap_painter.h"
@@ -92,6 +93,52 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMap(
+    ServerContext *context, const GetPointCloudMapRequest *request,
+    GetPointCloudMapResponse *response) {
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    try {
+        std::shared_lock optimization_lock{optimization_shared_mutex,
+                                           std::defer_lock};
+        if (optimization_lock.try_lock()) {
+            // We are able to lock the optimization_shared_mutex, which means
+            // that the optimization is not ongoing and we can grab the newest
+            // map
+            GetLatestSampledPointCloudMapString(pointcloud_map);
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_pointcloud_map = pointcloud_map;
+        } else {
+            // We couldn't lock the mutex which means the optimization process
+            // locked it and we need to use the backed up latest map
+            LOG(INFO)
+                << "Optimization is occuring, using cached pointcloud map";
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            pointcloud_map = latest_pointcloud_map;
+        }
+    } catch (std::exception &e) {
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud map: "
+                   << e.what();
+        std::terminate();
+    }
+
+    // Write the pointcloud map string to the response
+    try {
+        if (pointcloud_map.empty()) {
+            LOG(ERROR) << "map pointcloud does not have points yet";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "map pointcloud does not have points yet");
+        }
+        response->set_point_cloud_pcd(pointcloud_map);
+        return grpc::Status::OK;
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error writing pointcloud to response " << e.what();
+        LOG(ERROR) << oss.str();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+}
+
 ::grpc::Status SLAMServiceImpl::GetMap(ServerContext *context,
                                        const GetMapRequest *request,
                                        GetMapResponse *response) {
@@ -101,7 +148,7 @@ std::atomic<bool> b_continue_session{true};
     if (mime_type == "image/jpeg") {
         return GetJpegMap(request, response);
     } else if (mime_type == "pointcloud/pcd") {
-        return GetPointCloudMap(request, response);
+        return GetCurrentPointCloudMap(request, response);
     } else {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             "mime_type should be \"image/jpeg\" or "
@@ -125,9 +172,18 @@ std::atomic<bool> b_continue_session{true};
                 // means that the optimization is not ongoing and we can grab
                 // the newest map
                 jpeg_map = GetLatestJpegMapString(add_pose_marker);
+                if (add_pose_marker) {
+                    std::lock_guard<std::mutex> lk(viam_response_mutex);
+                    latest_jpeg_map_with_marker = jpeg_map;
+                } else {
+                    std::lock_guard<std::mutex> lk(viam_response_mutex);
+                    latest_jpeg_map_without_marker = jpeg_map;
+                }
+
             } else {
                 // We couldn't lock the mutex which means the optimization
                 // process locked it and we need to use the backed up latest map
+                LOG(INFO) << "Optimization is occuring, using cached jpeg map";
                 std::lock_guard<std::mutex> lk(viam_response_mutex);
                 if (add_pose_marker) {
                     jpeg_map = latest_jpeg_map_with_marker;
@@ -141,9 +197,9 @@ std::atomic<bool> b_continue_session{true};
                                 "currently no map exists yet");
         }
     } catch (std::exception &e) {
-        std::ostringstream oss;
-        oss << "error encoding image " << e.what();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        LOG(ERROR) << "Stopping Cartographer: error encoding jpeg image: "
+                   << e.what();
+        std::terminate();
     }
 
     // Write the jpeg map string to the response
@@ -153,12 +209,13 @@ std::atomic<bool> b_continue_session{true};
     } catch (std::exception &e) {
         std::ostringstream oss;
         oss << "error writing image to response " << e.what();
+        LOG(ERROR) << oss.str();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 }
 
-::grpc::Status SLAMServiceImpl::GetPointCloudMap(const GetMapRequest *request,
-                                                 GetMapResponse *response) {
+::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(
+    const GetMapRequest *request, GetMapResponse *response) {
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -169,16 +226,20 @@ std::atomic<bool> b_continue_session{true};
             // that the optimization is not ongoing and we can grab the newest
             // map
             GetLatestSampledPointCloudMapString(pointcloud_map);
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_pointcloud_map = pointcloud_map;
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
+            LOG(INFO)
+                << "Optimization is occuring, using cached pointcloud map";
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
     } catch (std::exception &e) {
-        std::ostringstream oss;
-        oss << "error encoding pointcloud " << e.what();
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
+                   << e.what();
+        std::terminate();
     }
 
     // Write the pointcloud map string to the response
@@ -194,6 +255,7 @@ std::atomic<bool> b_continue_session{true};
     } catch (std::exception &e) {
         std::ostringstream oss;
         oss << "error writing pointcloud to response " << e.what();
+        LOG(ERROR) << oss.str();
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 }
@@ -335,8 +397,15 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        LOG(INFO) << "Error creating jpeg map: " << e.what();
-        return "";
+        if (e.what() == errorNoSubmaps) {
+            LOG(INFO) << "Error creating jpeg map: " << e.what();
+            return "";
+        } else {
+            std::string errorLog = "Error writing submap to proto: ";
+            errorLog += e.what();
+            LOG(ERROR) << errorLog;
+            throw std::runtime_error(errorLog);
+        }
     }
     if (add_pose_marker) {
         PaintMarker(painted_slices.get());
@@ -355,12 +424,14 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
-        if (e.what() == "No submaps to paint") {
+        if (e.what() == errorNoSubmaps) {
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
         } else {
-            LOG(ERROR) << "Error creating pcd map: " << e.what();
-            throw e;
+            std::string errorLog = "Error writing submap to proto: ";
+            errorLog += e.what();
+            LOG(ERROR) << errorLog;
+            throw std::runtime_error(errorLog);
         }
     }
 
@@ -422,10 +493,18 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
 
-        // Rotating coordinates to match slam service expectation (XZ plane)
-        viam::utils::writeFloatToBufferInBytes(data_buffer, x_pos);
-        viam::utils::writeFloatToBufferInBytes(data_buffer, z_pos);
-        viam::utils::writeFloatToBufferInBytes(data_buffer, y_pos);
+        // Turn the map point into a vector to perform tranformations with.
+        // Current tranformation rotates coordinates to match slam service
+        // expectation (XZ plane)
+        Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
+        auto rotated_map_point = pcdRotation * map_point;
+
+        viam::utils::writeFloatToBufferInBytes(data_buffer,
+                                               rotated_map_point.x());
+        viam::utils::writeFloatToBufferInBytes(data_buffer,
+                                               rotated_map_point.y());
+        viam::utils::writeFloatToBufferInBytes(data_buffer,
+                                               rotated_map_point.z());
         viam::utils::writeIntToBufferInBytes(data_buffer, prob);
     }
 
@@ -477,7 +556,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
         submap_slices;
 
     if (submap_poses.size() == 0) {
-        throw std::runtime_error("No submaps to paint");
+        throw std::runtime_error(errorNoSubmaps);
     }
 
     for (const auto &&submap_id_pose : submap_poses) {
