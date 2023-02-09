@@ -30,6 +30,8 @@ using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
+using viam::service::slam::v1::GetPointCloudMapRequest;
+using viam::service::slam::v1::GetPointCloudMapResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -51,11 +53,13 @@ static const int samplingFactor = 1;
 // Conversion to number of bytes used in colored PCD encoding
 static const int pixelBytetoPCDByte = 16 / 4;
 // Quaternion to rotate axes to the XZ plane
-static const Eigen::Quaterniond pcdRotation(0.7071068, 0.7071068, 0, 0);
+static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // Static offset quaternion, so orientation matches physical intuition.
 // This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
-static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, -0.7071068, 0, 0);
+static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
+// Error log for when no submaps exist
+static const std::string errorNoSubmaps = "No submaps to paint";
 
 extern std::atomic<bool> b_continue_session;
 
@@ -88,6 +92,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // type requested.
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
+
+    // GetPointCloudMap returns the current sampled pointcloud derived from the
+    // painted map, using probability estimates
+    ::grpc::Status GetPointCloudMap(
+        ServerContext *context, const GetPointCloudMapRequest *request,
+        GetPointCloudMapResponse *response) override;
 
     // GetInternalState returns the current internal state of the map which is
     // a pbstream for cartographer.
@@ -207,12 +217,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetJpegMap(const GetMapRequest *request,
                               GetMapResponse *response);
 
-    // GetPointCloudMap writes the pointcloud version of the map to
+    // GetCurrentPointCloudMap writes the pointcloud version of the map to
     // the response. Returns a grpc status that reflects
     // whether or not writing the map to the response
     // was successful.
-    ::grpc::Status GetPointCloudMap(const GetMapRequest *request,
-                                    GetMapResponse *response);
+    ::grpc::Status GetCurrentPointCloudMap(const GetMapRequest *request,
+                                           GetMapResponse *response);
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory
     // that is newer than the provided data_cutoff_time
