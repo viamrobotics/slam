@@ -254,7 +254,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // streamed point clouds
     void GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
-    void WriteSampledPointCloudMapToBuffer(std::string &pointcloud, cairo_surface_t *painted_surface, Eigen::Array2f origin);
+    void WriteSampledPointCloudMapToBuffer(std::string &pointcloud,
+                                           cairo_surface_t *painted_surface,
+                                           Eigen::Array2f origin);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
@@ -295,7 +297,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     std::string latest_pointcloud_map;
 
-    // Enable Localization mode to utilize a cached version of the pointcloud map, to skip unecessary encoding steps
+    // Enable Localization mode to utilize a cached version of the pointcloud
+    // map, to skip unecessary encoding steps
     std::atomic<bool> localization_map_ready{false};
     std::string localization_pointcloud_map;
 

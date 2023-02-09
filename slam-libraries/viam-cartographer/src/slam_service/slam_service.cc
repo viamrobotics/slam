@@ -97,7 +97,7 @@ std::atomic<bool> b_continue_session{true};
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
     // if we have a map for localization, use it
-    if(localization_map_ready){
+    if (localization_map_ready) {
         response->set_point_cloud_pcd(localization_pointcloud_map);
         return grpc::Status::OK;
     }
@@ -219,15 +219,15 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
-::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(const GetMapRequest *request,
-                                                 GetMapResponse *response) {
+::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(
+    const GetMapRequest *request, GetMapResponse *response) {
     // if we have a map for localization, use it
-    if(localization_map_ready){
+    if (localization_map_ready) {
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
         pco->set_point_cloud(localization_pointcloud_map);
         return grpc::Status::OK;
     }
-    
+
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
@@ -658,18 +658,24 @@ void SLAMServiceImpl::RunSLAM() {
                 latest_map_filename.find(viam::io::filename_prefix) +
                     viam::io::filename_prefix.length(),
                 latest_map_filename.find(".pbstream")));
-        
-        // If using the LOCALIZING action mode, cache a copy of the map before beinging to process data. If cartographer fails to do this, terminate the program
-        if(action_mode == ActionMode::LOCALIZING){
+
+        // If using the LOCALIZING action mode, cache a copy of the map before
+        // beinging to process data. If cartographer fails to do this, terminate
+        // the program
+        if (action_mode == ActionMode::LOCALIZING) {
             try {
-                GetLatestSampledPointCloudMapString(localization_pointcloud_map);
+                GetLatestSampledPointCloudMapString(
+                    localization_pointcloud_map);
             } catch (std::exception &e) {
-                LOG(ERROR) << "Stopping Cartographer: error encoding localized pointcloud map: " << e.what();
+                LOG(ERROR) << "Stopping Cartographer: error encoding localized "
+                              "pointcloud map: "
+                           << e.what();
                 std::terminate();
             }
-            
-            if(localization_pointcloud_map.empty()){
-                LOG(ERROR) << "Stopping Cartographer: error encoding localized pointcloud map: no map points";
+
+            if (localization_pointcloud_map.empty()) {
+                LOG(ERROR) << "Stopping Cartographer: error encoding localized "
+                              "pointcloud map: no map points";
                 std::terminate();
             }
 
