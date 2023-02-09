@@ -111,7 +111,8 @@ std::atomic<bool> b_continue_session{true};
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
-            LOG(INFO) << "Optimization is occuring, using cached pointcloud map";
+            LOG(INFO)
+                << "Optimization is occuring, using cached pointcloud map";
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
@@ -171,15 +172,14 @@ std::atomic<bool> b_continue_session{true};
                 // means that the optimization is not ongoing and we can grab
                 // the newest map
                 jpeg_map = GetLatestJpegMapString(add_pose_marker);
-                if(add_pose_marker){
+                if (add_pose_marker) {
                     std::lock_guard<std::mutex> lk(viam_response_mutex);
                     latest_jpeg_map_with_marker = jpeg_map;
-                }
-                else{
+                } else {
                     std::lock_guard<std::mutex> lk(viam_response_mutex);
                     latest_jpeg_map_without_marker = jpeg_map;
                 }
-                
+
             } else {
                 // We couldn't lock the mutex which means the optimization
                 // process locked it and we need to use the backed up latest map
@@ -231,7 +231,8 @@ std::atomic<bool> b_continue_session{true};
         } else {
             // We couldn't lock the mutex which means the optimization process
             // locked it and we need to use the backed up latest map
-            LOG(INFO) << "Optimization is occuring, using cached pointcloud map";
+            LOG(INFO)
+                << "Optimization is occuring, using cached pointcloud map";
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
@@ -492,8 +493,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
 
-        // Turn the map point into a vector to perform tranformations with. Current tranformation
-        // rotates coordinates to match slam service expectation (XZ plane)
+        // Turn the map point into a vector to perform tranformations with.
+        // Current tranformation rotates coordinates to match slam service
+        // expectation (XZ plane)
         Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
         auto rotated_map_point = pcdRotation * map_point;
 
