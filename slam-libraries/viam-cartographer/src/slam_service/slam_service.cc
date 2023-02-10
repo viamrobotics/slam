@@ -100,11 +100,11 @@ std::atomic<bool> b_continue_session{true};
     if (localization_map_ready) {
         response->set_point_cloud_pcd(localization_pointcloud_map);
         return grpc::Status::OK;
-    }else if(action_mode == ActionMode::LOCALIZING){
-        std::string localization_error = "Localization map is still being prepared";
+    } else if (action_mode == ActionMode::LOCALIZING) {
+        std::string localization_error =
+            "Localization map is still being prepared";
         LOG(ERROR) << localization_error;
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                localization_error);
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, localization_error);
     }
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
@@ -231,11 +231,11 @@ std::atomic<bool> b_continue_session{true};
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
         pco->set_point_cloud(localization_pointcloud_map);
         return grpc::Status::OK;
-    }else if(action_mode == ActionMode::LOCALIZING){
-        std::string localization_error = "Localization map is still being prepared";
+    } else if (action_mode == ActionMode::LOCALIZING) {
+        std::string localization_error =
+            "Localization map is still being prepared";
         LOG(ERROR) << localization_error;
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                localization_error);
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, localization_error);
     }
 
     std::string pointcloud_map;
@@ -670,8 +670,8 @@ void SLAMServiceImpl::RunSLAM() {
                 latest_map_filename.find(".pbstream")));
 
         // If using the LOCALIZING action mode, cache a copy of the map before
-        // beginning to process data. If cartographer fails to do this, terminate
-        // the program
+        // beginning to process data. If cartographer fails to do this,
+        // terminate the program
         if (action_mode == ActionMode::LOCALIZING) {
             try {
                 GetLatestSampledPointCloudMapString(

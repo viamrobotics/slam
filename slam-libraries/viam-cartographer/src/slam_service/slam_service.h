@@ -273,7 +273,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // map, to skip unecessary encoding steps
     std::atomic<bool> localization_map_ready{false};
     std::string localization_pointcloud_map;
-    
+
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken
     // before map_builder_mutex. No other mutexes are expected to
