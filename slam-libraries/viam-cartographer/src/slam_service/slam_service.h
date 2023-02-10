@@ -269,6 +269,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     size_t current_file_offline = 0;
     std::string current_file_online;
 
+    // Enable Localization mode to utilize a cached version of the pointcloud
+    // map, to skip unecessary encoding steps
+    std::atomic<bool> localization_map_ready{false};
+    std::string localization_pointcloud_map;
+    
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken
     // before map_builder_mutex. No other mutexes are expected to
@@ -290,13 +295,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // optimization is started.
     std::string latest_jpeg_map_with_marker;
     std::string latest_jpeg_map_without_marker;
-
     std::string latest_pointcloud_map;
-
-    // Enable Localization mode to utilize a cached version of the pointcloud
-    // map, to skip unecessary encoding steps
-    std::atomic<bool> localization_map_ready{false};
-    std::string localization_pointcloud_map;
 
     // ---
 };
