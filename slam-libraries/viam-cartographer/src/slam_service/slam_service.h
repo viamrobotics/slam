@@ -272,7 +272,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // Enable Localization mode to utilize a cached version of the pointcloud
     // map, to skip unecessary encoding steps
     std::atomic<bool> localization_map_ready{false};
-    std::string localization_pointcloud_map;
 
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken
