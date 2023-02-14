@@ -96,7 +96,7 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
-    // if we have a map for localization, use it
+    // If we have a map for localization, use it
     if (localization_map_ready) {
         response->set_point_cloud_pcd(localization_pointcloud_map);
         return grpc::Status::OK;
@@ -226,7 +226,7 @@ std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(
     const GetMapRequest *request, GetMapResponse *response) {
-    // if we have a map for localization, use it
+    // If we have a map for localization, use it
     if (localization_map_ready) {
         common::v1::PointCloudObject *pco = response->mutable_point_cloud();
         pco->set_point_cloud(localization_pointcloud_map);
