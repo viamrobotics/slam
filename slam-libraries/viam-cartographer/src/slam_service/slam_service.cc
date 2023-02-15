@@ -101,7 +101,7 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if ((optimization_lock.try_lock()) && (!localization_map_ready)) {
+        if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -112,7 +112,7 @@ std::atomic<bool> b_continue_session{true};
             // Either we are in localization mode or we couldn't lock the mutex
             // which means the optimization process locked it and we need to use
             // the backed up latest map
-            if (localization_map_ready) {
+            if (action_mode == ActionMode::LOCALIZING) {
                 LOG(INFO)
                     << "In localization mode, using cached pointcloud map";
             } else {
@@ -228,7 +228,7 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if ((optimization_lock.try_lock()) && (!localization_map_ready)) {
+        if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -239,7 +239,7 @@ std::atomic<bool> b_continue_session{true};
             // Either we are in localization mode or we couldn't lock the mutex
             // which means the optimization process locked it and we need to use
             // the backed up latest map
-            if (localization_map_ready) {
+            if (action_mode == ActionMode::LOCALIZING) {
                 LOG(INFO)
                     << "In localization mode, using cached pointcloud map";
             } else {
@@ -357,7 +357,7 @@ void SLAMServiceImpl::BackupLatestMap() {
 // If using the LOCALIZING action mode, cache a copy of the map before
 // beginning to process data. If cartographer fails to do this,
 // terminate the program
-bool SLAMServiceImpl::CacheMapInLocalizationMode() {
+void SLAMServiceImpl::CacheMapInLocalizationMode() {
     if (action_mode == ActionMode::LOCALIZING) {
         std::string pointcloud_map_tmp;
         try {
@@ -380,9 +380,7 @@ bool SLAMServiceImpl::CacheMapInLocalizationMode() {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = std::move(pointcloud_map_tmp);
         }
-        return true;
     }
-    return false;
 }
 
 ActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
@@ -692,7 +690,7 @@ void SLAMServiceImpl::RunSLAM() {
                     viam::io::filename_prefix.length(),
                 latest_map_filename.find(".pbstream")));
 
-        localization_map_ready = CacheMapInLocalizationMode();
+        CacheMapInLocalizationMode();
     }
 
     LOG(INFO) << "Starting to run cartographer";
@@ -913,6 +911,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
     }
     if (!use_live_data) {
+        // We still want to optimize the map in localization mode, but we do not need to update the backup of the map
         if (action_mode != ActionMode::LOCALIZING) BackupLatestMap();
         {
             std::unique_lock<std::shared_mutex> optimization_lock(
@@ -935,7 +934,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
-        if (action_mode == ActionMode::LOCALIZING) BackupLatestMap();
 
         finished_processing_offline = true;
         // This log line is needed by rdk integration tests.
