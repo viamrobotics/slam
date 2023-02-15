@@ -258,6 +258,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // the respective member variables.
     void BackupLatestMap();
 
+    // If using the LOCALIZING action mode, cache a copy of the map before
+    // beginning to process data. If cartographer fails to do this,
+    // terminate the program
+    bool CacheMapInLocalizationMode();
+
     ActionMode action_mode = ActionMode::MAPPING;
 
     const std::string configuration_mapping_basename = "mapping_new_map.lua";
