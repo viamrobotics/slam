@@ -101,7 +101,8 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -109,10 +110,17 @@ std::atomic<bool> b_continue_session{true};
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
         } else {
-            // We couldn't lock the mutex which means the optimization process
-            // locked it and we need to use the backed up latest map
-            LOG(INFO)
-                << "Optimization is occuring, using cached pointcloud map";
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (action_mode == ActionMode::LOCALIZING) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
+            }
+
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
@@ -221,7 +229,8 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -229,10 +238,17 @@ std::atomic<bool> b_continue_session{true};
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
         } else {
-            // We couldn't lock the mutex which means the optimization process
-            // locked it and we need to use the backed up latest map
-            LOG(INFO)
-                << "Optimization is occuring, using cached pointcloud map";
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (action_mode == ActionMode::LOCALIZING) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
+            }
+
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
@@ -338,6 +354,35 @@ void SLAMServiceImpl::BackupLatestMap() {
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
     latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
+}
+
+// If using the LOCALIZING action mode, cache a copy of the map before
+// beginning to process data. If cartographer fails to do this,
+// terminate the program
+void SLAMServiceImpl::CacheMapInLocalizationMode() {
+    if (action_mode == ActionMode::LOCALIZING) {
+        std::string pointcloud_map_tmp;
+        try {
+            GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+
+        } catch (std::exception &e) {
+            LOG(ERROR) << "Stopping Cartographer: error encoding localized "
+                          "pointcloud map: "
+                       << e.what();
+            std::terminate();
+        }
+
+        if (pointcloud_map_tmp.empty()) {
+            LOG(ERROR) << "Stopping Cartographer: error encoding localized "
+                          "pointcloud map: no map points";
+            std::terminate();
+        }
+
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_pointcloud_map = std::move(pointcloud_map_tmp);
+        }
+    }
 }
 
 ActionMode SLAMServiceImpl::GetActionMode() { return action_mode; }
@@ -646,6 +691,8 @@ void SLAMServiceImpl::RunSLAM() {
                 latest_map_filename.find(viam::io::filename_prefix) +
                     viam::io::filename_prefix.length(),
                 latest_map_filename.find(".pbstream")));
+
+        CacheMapInLocalizationMode();
     }
 
     LOG(INFO) << "Starting to run cartographer";
@@ -866,7 +913,9 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
     }
     if (!use_live_data) {
-        BackupLatestMap();
+        // We still want to optimize the map in localization mode, but we do not
+        // need to update the backup of the map
+        if (action_mode != ActionMode::LOCALIZING) BackupLatestMap();
         {
             std::unique_lock<std::shared_mutex> optimization_lock(
                 optimization_shared_mutex, std::defer_lock);
@@ -888,6 +937,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
+
         finished_processing_offline = true;
         // This log line is needed by rdk integration tests.
         VLOG(1) << "Finished optimizing final map";

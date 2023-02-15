@@ -251,12 +251,17 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // a pcd string with probability estimates written to the color field. The
     // pcd is generated from PaintedMapSlices() and sampled to fit the 32 MB
     // limit on gRPC messages. The sampled behavior may change when moving to
-    // streamed point clouds
+    // streamed point clouds.
     void GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
     void BackupLatestMap();
+
+    // If using the LOCALIZING action mode, cache a copy of the map before
+    // beginning to process data. If cartographer fails to do this,
+    // terminate the program.
+    void CacheMapInLocalizationMode();
 
     ActionMode action_mode = ActionMode::MAPPING;
 
@@ -290,7 +295,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // optimization is started.
     std::string latest_jpeg_map_with_marker;
     std::string latest_jpeg_map_without_marker;
-
     std::string latest_pointcloud_map;
     // ---
 };
