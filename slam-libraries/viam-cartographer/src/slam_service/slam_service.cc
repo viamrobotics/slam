@@ -101,7 +101,8 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -228,7 +229,8 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -911,7 +913,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
     }
     if (!use_live_data) {
-        // We still want to optimize the map in localization mode, but we do not need to update the backup of the map
+        // We still want to optimize the map in localization mode, but we do not
+        // need to update the backup of the map
         if (action_mode != ActionMode::LOCALIZING) BackupLatestMap();
         {
             std::unique_lock<std::shared_mutex> optimization_lock(
