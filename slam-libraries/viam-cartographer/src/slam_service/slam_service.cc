@@ -96,13 +96,12 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     GetPointCloudMapResponse *response) {
-
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if ((optimization_lock.try_lock())&&(!localization_map_ready)) {
+        if ((optimization_lock.try_lock()) && (!localization_map_ready)) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -110,14 +109,17 @@ std::atomic<bool> b_continue_session{true};
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
         } else {
-            // Either we are in localization mode or we couldn't lock the mutex which means the optimization process
-            // locked it and we need to use the backed up latest map
-            if(localization_map_ready){
-                LOG(INFO) << "In localization mode, using cached pointcloud map";
-            }else{
-                LOG(INFO) << "Optimization is occuring, using cached pointcloud map";
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (localization_map_ready) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
             }
-            
+
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
@@ -221,13 +223,12 @@ std::atomic<bool> b_continue_session{true};
 
 ::grpc::Status SLAMServiceImpl::GetCurrentPointCloudMap(
     const GetMapRequest *request, GetMapResponse *response) {
-
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if ((optimization_lock.try_lock())&&(!localization_map_ready)) {
+        if ((optimization_lock.try_lock()) && (!localization_map_ready)) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -235,12 +236,15 @@ std::atomic<bool> b_continue_session{true};
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
         } else {
-            // Either we are in localization mode or we couldn't lock the mutex which means the optimization process
-            // locked it and we need to use the backed up latest map
-            if(localization_map_ready){
-                LOG(INFO) << "In localization mode, using cached pointcloud map";
-            }else{
-                LOG(INFO) << "Optimization is occuring, using cached pointcloud map";
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (localization_map_ready) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
             }
 
             std::lock_guard<std::mutex> lk(viam_response_mutex);
@@ -910,8 +914,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         map_builder.map_builder_->FinishTrajectory(trajectory_id);
     }
     if (!use_live_data) {
-        if(action_mode != ActionMode::LOCALIZING)
-        BackupLatestMap();
+        if (action_mode != ActionMode::LOCALIZING) BackupLatestMap();
         {
             std::unique_lock<std::shared_mutex> optimization_lock(
                 optimization_shared_mutex, std::defer_lock);
@@ -928,13 +931,12 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                                                             local_poses.back());
             }
         }
-        
+
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
-        if(action_mode == ActionMode::LOCALIZING)
-        BackupLatestMap();
+        if (action_mode == ActionMode::LOCALIZING) BackupLatestMap();
 
         finished_processing_offline = true;
         // This log line is needed by rdk integration tests.
