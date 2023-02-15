@@ -357,30 +357,29 @@ void SLAMServiceImpl::BackupLatestMap() {
 // If using the LOCALIZING action mode, cache a copy of the map before
 // beginning to process data. If cartographer fails to do this,
 // terminate the program
-bool SLAMServiceImpl::CacheMapInLocalizationMode(){
+bool SLAMServiceImpl::CacheMapInLocalizationMode() {
     if (action_mode == ActionMode::LOCALIZING) {
         std::string pointcloud_map_tmp;
         try {
-            GetLatestSampledPointCloudMapString(
-                pointcloud_map_tmp);
-            
+            GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+
         } catch (std::exception &e) {
             LOG(ERROR) << "Stopping Cartographer: error encoding localized "
-                            "pointcloud map: "
-                        << e.what();
+                          "pointcloud map: "
+                       << e.what();
             std::terminate();
         }
 
         if (pointcloud_map_tmp.empty()) {
             LOG(ERROR) << "Stopping Cartographer: error encoding localized "
-                            "pointcloud map: no map points";
+                          "pointcloud map: no map points";
             std::terminate();
         }
 
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = std::move(pointcloud_map_tmp);
-        }     
+        }
         return true;
     }
     return false;
