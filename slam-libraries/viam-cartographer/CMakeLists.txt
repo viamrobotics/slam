@@ -25,9 +25,9 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIRS})
-link_directories(${OPENSSL_LIBRARY_DIRS})
-add_definitions(${OPENSSL_DEFINITIONS})
+# include_directories(${OPENSSL_INCLUDE_DIRS})
+# link_directories(${OPENSSL_LIBRARY_DIRS})
+# add_definitions(${OPENSSL_DEFINITIONS})
 
 if(WIN32)
   # On Windows, Protobuf is incorrectly found by the bundled CMake module, so prefer native CMake config.
