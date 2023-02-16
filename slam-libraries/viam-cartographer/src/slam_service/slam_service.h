@@ -37,6 +37,11 @@ using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
+using viam::service::slam::v1::GetInternalStateStreamRequest;
+using viam::service::slam::v1::GetInternalStateStreamResponse;
+using viam::service::slam::v1::GetPointCloudMapStreamRequest;
+using viam::service::slam::v1::GetPointCloudMapStreamResponse;
+using grpc::ServerWriter;
 
 namespace viam {
 
@@ -47,6 +52,8 @@ static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
+// Byte limit on GRPC, used to help determine sampling skip_count
+static const int maximumGRPCByteChunkSize = 64 * 1024;
 // Coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations. Increase the value if you expect dense feature-rich maps
 static const int samplingFactor = 1;
@@ -93,17 +100,29 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // GetPointCloudMap returns the current sampled pointcloud derived from the
+    // DEPRECATED GetPointCloudMap returns the current sampled pointcloud derived from the
     // painted map, using probability estimates
     ::grpc::Status GetPointCloudMap(
         ServerContext *context, const GetPointCloudMapRequest *request,
         GetPointCloudMapResponse *response) override;
 
-    // GetInternalState returns the current internal state of the map which is
+    // DEPRECATED GetInternalState returns the current internal state of the map which is
     // a pbstream for cartographer.
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
+
+    // GetPointCloudStreamMap returns a streaming response of the current sampled 
+    // pointcloud derived from the painted map, using probability estimates
+    ::grpc::Status GetPointCloudMapStream(
+        ServerContext *context, const GetPointCloudMapStreamRequest *request,
+        ServerWriter<GetPointCloudMapStreamResponse>* writer) override;
+
+    // GetInternalStateStream returns a streaming response of the current internal state 
+    // // of the map which is a pbstream for cartographer.
+    ::grpc::Status GetInternalStateStream(
+        ServerContext *context, const GetInternalStateStreamRequest *request,
+        ServerWriter<GetInternalStateStreamResponse>* writer) override;
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating

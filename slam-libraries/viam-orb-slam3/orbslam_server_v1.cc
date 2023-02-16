@@ -439,6 +439,38 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+::grpc::Status SLAMServiceImpl::GetInternalStateStream(
+    ServerContext *context, const GetInternalStateRequest *request,
+    ServerWriter<GetInternalStateResponse> *writer) {
+    std::stringbuf buffer;
+    bool success = ArchiveSlam(buffer);
+    if (success) {
+
+        std::string buf = buffer.str();
+        // std::string internal_state_chunk;
+        // GetInternalStateStreamResponse response;
+        // for (int start_index = 0; start_index < buf.size(); start_index += maximumGRPCByteChunkSize) {
+        //     internal_state_chunk = buf.substr(start_index, maximumGRPCByteChunkSize); // fix string element -> byte conversion
+        //     response.set_internal_state_chunk(internal_state_chunk);
+        //     writer->Write(response);
+        // }
+
+        buf = "hello_world";
+        std::string internal_state_chunk;
+        GetInternalStateStreamResponse response;
+        for (int start_index = 0; start_index < buf.size(); start_index += 1) {
+            internal_state_chunk = buf.substr(start_index, 1);
+            response.set_internal_state_chunk(internal_state_chunk);
+            writer->Write(response);
+        }
+
+        return grpc::Status::OK;
+    } else {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "SLAM is not yet initialized");
+    }
+}
+
 // TODO: This is an antipattern, which only exists b/c:
 // 1. we only have one class for both the data thread(s)
 //    & GRPC server

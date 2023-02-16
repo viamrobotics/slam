@@ -157,6 +157,58 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
+        ServerContext *context, const GetPointCloudMapStreamRequest *request,
+        ServerWriter<GetPointCloudMapStreamResponse>* writer) {
+            return grpc::Status::OK;
+        }
+
+::grpc::Status SLAMServiceImpl::GetInternalStateStream( ServerContext *context, 
+        const GetInternalStateStreamRequest *request, 
+        ServerWriter<GetInternalStateStreamResponse>* writer) {
+
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    std::string filename = path_to_map + "/" + "temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        bool ok = map_builder.SaveMapToFile(true, filename);
+        if (!ok) {
+            std::ostringstream oss;
+            oss << "Failed to save the state as a pbstream.";
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        }
+    }
+
+    std::string buf;
+    try {
+        ConvertSavedMapToStream(filename, &buf);
+    } catch (std::exception &e) {
+        std::ostringstream oss;
+        oss << "error during data serialization: " << e.what();
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+    }
+
+    // std::string internal_state_chunk;
+    // GetInternalStateStreamResponse response;
+    // for (int start_index = 0; start_index < buf.size(); start_index += maximumGRPCByteChunkSize) {
+    //     internal_state_chunk = buf.substr(start_index, maximumGRPCByteChunkSize);
+    //     response.set_internal_state_chunk(internal_state_chunk);
+    //     writer->Write(response);
+    // }
+
+    buf = "hello_world";
+    std::string internal_state_chunk;
+    GetInternalStateStreamResponse response;
+    for (int start_index = 0; start_index < buf.size(); start_index += 1) {
+        internal_state_chunk = buf.substr(start_index, 1);
+        response.set_internal_state_chunk(internal_state_chunk);
+        writer->Write(response);
+    }
+
+    return grpc::Status::OK;
+} 
+
 ::grpc::Status SLAMServiceImpl::GetJpegMap(const GetMapRequest *request,
                                            GetMapResponse *response) {
     std::string jpeg_map = "";

@@ -23,6 +23,11 @@ using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
+using viam::service::slam::v1::GetInternalStateStreamRequest;
+using viam::service::slam::v1::GetInternalStateStreamResponse;
+using viam::service::slam::v1::GetPointCloudMapStreamRequest;
+using viam::service::slam::v1::GetPointCloudMapStreamResponse;
+using grpc::ServerWriter;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
 namespace viam {
@@ -63,6 +68,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
+
+    // GetPointCloudStreamMap returns a streaming response of the current sampled 
+    // pointcloud derived from the painted map, using probability estimates
+    ::grpc::Status GetPointCloudMapStream(
+        ServerContext *context, const GetPointCloudMapStreamRequest *request,
+        ServerWriter<GetPointCloudMapStreamResponse>* writer) override;
+
+    // GetInternalStateStream returns a streaming response of the current internal state 
+    // // of the map which is a pbstream for cartographer.
+    ::grpc::Status GetInternalStateStream(
+        ServerContext *context, const GetInternalStateStreamRequest *request,
+        ServerWriter<GetInternalStateStreamResponse>* writer) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
