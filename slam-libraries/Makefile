@@ -1,7 +1,7 @@
 BUILD_CHANNEL?=local
 
 bufinstall:
-	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
+	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl@1.1 --quiet
 
 bufsetup:
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
