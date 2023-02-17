@@ -317,7 +317,9 @@ std::atomic<bool> b_continue_session{true};
             buf.substr(start_index, maximumGRPCByteChunkSize);
         response.set_internal_state_chunk(internal_state_chunk);
         bool ok = writer->Write(response);
-        if (!ok) return grpc::Status(grpc::StatusCode::UNAVAILABLE, "error while writing to stream: stream closed");
+        if (!ok)
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "error while writing to stream: stream closed");
     }
 
     return grpc::Status::OK;
