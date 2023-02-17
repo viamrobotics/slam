@@ -304,6 +304,7 @@ std::atomic<bool> b_continue_session{true};
     }
 
     std::string buf;
+    // deferring reading the pbstream file in chunks until we run into issues with loading the file into memory
     try {
         ConvertSavedMapToStream(filename, &buf);
     } catch (std::exception &e) {
