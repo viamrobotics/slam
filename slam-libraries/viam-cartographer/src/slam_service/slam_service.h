@@ -23,25 +23,25 @@
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
+using grpc::ServerWriter;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
 using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
+using viam::service::slam::v1::GetInternalStateStreamRequest;
+using viam::service::slam::v1::GetInternalStateStreamResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPointCloudMapRequest;
 using viam::service::slam::v1::GetPointCloudMapResponse;
+using viam::service::slam::v1::GetPointCloudMapStreamRequest;
+using viam::service::slam::v1::GetPointCloudMapStreamResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
-using viam::service::slam::v1::GetInternalStateStreamRequest;
-using viam::service::slam::v1::GetInternalStateStreamResponse;
-using viam::service::slam::v1::GetPointCloudMapStreamRequest;
-using viam::service::slam::v1::GetPointCloudMapStreamResponse;
-using grpc::ServerWriter;
 
 namespace viam {
 
@@ -100,29 +100,31 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
                           GetMapResponse *response) override;
 
-    // DEPRECATED GetPointCloudMap returns the current sampled pointcloud derived from the
-    // painted map, using probability estimates
+    // DEPRECATED GetPointCloudMap returns the current sampled pointcloud
+    // derived from the painted map, using probability estimates
     ::grpc::Status GetPointCloudMap(
         ServerContext *context, const GetPointCloudMapRequest *request,
         GetPointCloudMapResponse *response) override;
 
-    // DEPRECATED GetInternalState returns the current internal state of the map which is
-    // a pbstream for cartographer.
+    // DEPRECATED GetInternalState returns the current internal state of the map
+    // which is a pbstream for cartographer.
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
 
-    // GetPointCloudStreamMap returns a streaming response of the current sampled 
-    // pointcloud derived from the painted map, using probability estimates
+    // GetPointCloudStreamMap returns a streaming response of the current
+    // sampled pointcloud derived from the painted map, using probability
+    // estimates
     ::grpc::Status GetPointCloudMapStream(
         ServerContext *context, const GetPointCloudMapStreamRequest *request,
-        ServerWriter<GetPointCloudMapStreamResponse>* writer) override;
+        ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
 
-    // GetInternalStateStream returns a streaming response of the current internal state 
+    // GetInternalStateStream returns a streaming response of the current
+    // internal state
     // // of the map which is a pbstream for cartographer.
     ::grpc::Status GetInternalStateStream(
         ServerContext *context, const GetInternalStateStreamRequest *request,
-        ServerWriter<GetInternalStateStreamResponse>* writer) override;
+        ServerWriter<GetInternalStateStreamResponse> *writer) override;
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
@@ -266,12 +268,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // PaintMarker paints the latest global pose on the painted slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
-    // GetLatestSampledPointCloudMapString paints and returns the latest map as
-    // a pcd string with probability estimates written to the color field. The
-    // pcd is generated from PaintedMapSlices() and sampled to fit the 32 MB
-    // limit on gRPC messages. The sampled behavior may change when moving to
-    // streamed point clouds
-    void GetLatestSampledPointCloudMapString(std::string &pointcloud);
+    // GetLatestSampledPointCloudMapString paints and writes the latest map as
+    // a pcd to the provided string with probability estimates written to the
+    // color field. The pcd is generated from PaintedMapSlices() and sampled to
+    // fit the 32 MB limit on gRPC messages. The sampled behavior may change
+    // when moving to streamed point clouds. The number of points in the PCD is
+    // then returned
+    int GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
     // BackupLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
