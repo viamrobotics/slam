@@ -23,15 +23,20 @@
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
+using grpc::ServerWriter;
 using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
 using viam::common::v1::PoseInFrame;
 using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
+using viam::service::slam::v1::GetInternalStateStreamRequest;
+using viam::service::slam::v1::GetInternalStateStreamResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPointCloudMapRequest;
 using viam::service::slam::v1::GetPointCloudMapResponse;
+using viam::service::slam::v1::GetPointCloudMapStreamRequest;
+using viam::service::slam::v1::GetPointCloudMapStreamResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -47,6 +52,8 @@ static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
+// Byte limit for chunks on GRPC, used for streaming apis
+static const int maximumGRPCByteChunkSize = 64 * 1024;
 // Coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations. Increase the value if you expect dense feature-rich maps
 static const int samplingFactor = 1;
@@ -104,6 +111,20 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
+
+    // GetPointCloudMap returns a stream of the current sampled pointcloud
+    // derived from the painted map, using probability estimates in chunks with
+    // a max size of maximumGRPCByteChunkSize
+    ::grpc::Status GetPointCloudMapStream(
+        ServerContext *context, const GetPointCloudMapStreamRequest *request,
+        ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
+
+    // GetInternalState returns a stream of the current internal state of the
+    // map which is a pbstream for cartographer in chunks of size
+    // maximumGRPCByteChunkSize
+    ::grpc::Status GetInternalStateStream(
+        ServerContext *context, const GetInternalStateStreamRequest *request,
+        ServerWriter<GetInternalStateStreamResponse> *writer) override;
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
