@@ -439,6 +439,17 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
+    ServerContext *context, const GetPointCloudMapStreamRequest *request,
+    ServerWriter<GetPointCloudMapStreamResponse> *writer) {
+    return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status SLAMServiceImpl::GetInternalStateStream(
+    ServerContext *context, const GetInternalStateStreamRequest *request,
+    ServerWriter<GetInternalStateStreamResponse> *writer) {
+    return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
 // TODO: This is an antipattern, which only exists b/c:
 // 1. we only have one class for both the data thread(s)
 //    & GRPC server

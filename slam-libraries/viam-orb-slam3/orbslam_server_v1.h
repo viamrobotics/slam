@@ -12,6 +12,7 @@
 #include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
+using grpc::ServerWriter;
 using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetMapRequest;
@@ -23,6 +24,10 @@ using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
 using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
+using viam::service::slam::v1::GetInternalStateStreamRequest;
+using viam::service::slam::v1::GetInternalStateStreamResponse;
+using viam::service::slam::v1::GetPointCloudMapStreamRequest;
+using viam::service::slam::v1::GetPointCloudMapStreamResponse;
 using SlamPtr = std::unique_ptr<ORB_SLAM3::System>;
 
 namespace viam {
@@ -63,6 +68,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
+
+    // GetPointCloudMap returns a stream of the current sampled pointcloud derived from the
+    // painted map, using probability estimates in chunks with a max size of maximumGRPCByteChunkSize
+    ::grpc::Status GetPointCloudMapStream(
+        ServerContext *context, const GetPointCloudMapStreamRequest *request,
+        ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
+
+    // GetInternalState returns a stream of the current internal state of the map which is
+    // a pbstream for cartographer in chunks of size maximumGRPCByteChunkSize
+    ::grpc::Status GetInternalStateStream(
+        ServerContext *context, const GetInternalStateStreamRequest *request,
+        ServerWriter<GetInternalStateStreamResponse> *writer) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
