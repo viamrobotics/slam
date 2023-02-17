@@ -260,6 +260,72 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+// ::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
+//     ServerContext *context, const GetPointCloudMapStreamRequest *request,
+//     ServerWriter<GetPointCloudMapStreamResponse> *writer) {
+//     std::string pointcloud_map;
+//     int num_points;
+//     // Write or grab the latest pointcloud map in form of a string
+//     try {
+//         std::shared_lock optimization_lock{optimization_shared_mutex,
+//                                            std::defer_lock};
+//         if (optimization_lock.try_lock()) {
+//             // We are able to lock the optimization_shared_mutex, which means
+//             // that the optimization is not ongoing and we can grab the newest
+//             // map
+//             num_points = GetLatestSampledPointCloudMapString(pointcloud_map);
+//             std::lock_guard<std::mutex> lk(viam_response_mutex);
+//             latest_pointcloud_map = pointcloud_map;
+//         } else {
+//             // We couldn't lock the mutex which means the optimization process
+//             // locked it and we need to use the backed up latest map
+//             LOG(INFO)
+//                 << "Optimization is occuring, using cached pointcloud map";
+//             std::lock_guard<std::mutex> lk(viam_response_mutex);
+//             pointcloud_map = latest_pointcloud_map;
+//         }
+//     } catch (std::exception &e) {
+//         LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
+//                    << e.what();
+//         std::terminate();
+//     }
+
+//     if (pointcloud_map.empty()) {
+//         LOG(ERROR) << "map pointcloud does not have points yet";
+//         return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+//                             "map pointcloud does not have points yet");
+//     }
+
+//     std::string pcd_chunk;
+//     GetPointCloudMapStreamResponse response;
+
+//     // Calculate chunk sizes to ensure no points data is split between chunks
+//     int header_byte_size = viam::utils::pcdHeader(num_points, true).size();
+//     int point_byte_size = 4 * sizeof(float);
+//     int header_chunk_size =
+//         std::floor((maximumGRPCByteChunkSize - header_byte_size) /
+//                    point_byte_size) *
+//         point_byte_size;
+//     int point_chunk_size =
+//         std::floor(maximumGRPCByteChunkSize / point_byte_size) *
+//         point_byte_size;
+
+//     // Send header chunk
+//     pcd_chunk = pointcloud_map.substr(0, header_chunk_size);
+//     response.set_point_cloud_pcd_chunk(pcd_chunk);
+//     writer->Write(response);
+
+//     // Send point chunks
+//     for (int start_index = header_chunk_size;
+//          start_index < pointcloud_map.size(); start_index += point_chunk_size) {
+//         pcd_chunk = pointcloud_map.substr(start_index, point_chunk_size);
+//         response.set_point_cloud_pcd_chunk(pcd_chunk);
+//         writer->Write(response);
+//     }
+
+//     return grpc::Status::OK;
+// }
+
 ::grpc::Status SLAMServiceImpl::GetInternalState(
     ServerContext *context, const GetInternalStateRequest *request,
     GetInternalStateResponse *response) {
@@ -415,7 +481,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     return image.WriteJpegToString(jpegQuality);
 }
 
-void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
+int SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     std::string &pointcloud) {
     std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
         nullptr;
@@ -426,7 +492,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     } catch (std::exception &e) {
         if (e.what() == errorNoSubmaps) {
             LOG(INFO) << "Error creating pcd map: " << e.what();
-            return;
+            return 0;
         } else {
             std::string errorLog = "Error writing submap to proto: ";
             errorLog += e.what();
@@ -513,7 +579,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
 
     // Writes data buffer to the pointcloud string
     pointcloud += data_buffer;
-    return;
+    return num_points;
 }
 
 unsigned char ViamColorToProbability(unsigned char color) {
