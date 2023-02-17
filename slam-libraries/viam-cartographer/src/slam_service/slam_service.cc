@@ -285,7 +285,7 @@ std::atomic<bool> b_continue_session{true};
     }
 
 // GetInternalState returns the current internal state of the map which is
-// a pbstream for cartographer.
+    // a pbstream for cartographer. The internal state is streamed in chunks of size maximumGRPCByteChunkSize
 ::grpc::Status SLAMServiceImpl::GetInternalStateStream(
     ServerContext *context, const GetInternalStateStreamRequest *request,
     ServerWriter<GetInternalStateStreamResponse>* writer){

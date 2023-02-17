@@ -53,8 +53,8 @@ static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 
-// Byte limit on GRPC, used to help determine sampling skip_count
-static const int maximumGRPCByteChunkSize = 32 * 1024 * 1024;
+// Byte limit for chunks on GRPC, used for streaming apis
+static const int maximumGRPCByteChunkSize = 64000;
 
 // Coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations. Increase the value if you expect dense feature-rich maps
@@ -121,7 +121,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
         ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
 
     // GetInternalState returns the current internal state of the map which is
-    // a pbstream for cartographer.
+    // a pbstream for cartographer. The internal state is streamed in chunks of size maximumGRPCByteChunkSize
     ::grpc::Status GetInternalStateStream(
         ServerContext *context, const GetInternalStateStreamRequest *request,
         ServerWriter<GetInternalStateStreamResponse>* writer) override;
