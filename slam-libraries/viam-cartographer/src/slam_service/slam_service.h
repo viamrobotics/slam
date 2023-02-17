@@ -271,8 +271,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // GetLatestSampledPointCloudMapString paints and writes the latest map as
     // a pcd to the provided string with probability estimates written to the
     // color field. The pcd is generated from PaintedMapSlices() and sampled to
-    // fit the 32 MB limit on gRPC messages. The sampled behavior may change
-    // when moving to streamed point clouds. The number of points in the PCD is
+    // fit the 32 MB limit on gRPC messages. The number of points in the PCD is
     // then returned
     int GetLatestSampledPointCloudMapString(std::string &pointcloud);
 

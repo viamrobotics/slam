@@ -335,7 +335,7 @@ std::atomic<bool> b_continue_session{true};
             grpc::StatusCode::UNAVAILABLE,
             "error while writing header to stream: stream closed");
 
-    // Send point chunks
+    // Send remaining point chunks
     for (int start_index = header_chunk_size;
          start_index < pointcloud_map.size(); start_index += point_chunk_size) {
         pcd_chunk = pointcloud_map.substr(start_index, point_chunk_size);
