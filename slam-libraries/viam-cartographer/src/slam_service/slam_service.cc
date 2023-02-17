@@ -276,17 +276,12 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
-// GetPointCloudMap returns the current sampled pointcloud derived from the
-// painted map, using probability estimates
 ::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
     ServerContext *context, const GetPointCloudMapStreamRequest *request,
     ServerWriter<GetPointCloudMapStreamResponse> *writer) {
     return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-// GetInternalState returns the current internal state of the map which is
-// a pbstream for cartographer. The internal state is streamed in chunks of size
-// maximumGRPCByteChunkSize
 ::grpc::Status SLAMServiceImpl::GetInternalStateStream(
     ServerContext *context, const GetInternalStateStreamRequest *request,
     ServerWriter<GetInternalStateStreamResponse> *writer) {
@@ -321,7 +316,8 @@ std::atomic<bool> b_continue_session{true};
         internal_state_chunk =
             buf.substr(start_index, maximumGRPCByteChunkSize);
         response.set_internal_state_chunk(internal_state_chunk);
-        writer->Write(response);
+        bool ok = writer->Write(response);
+        if (!ok) return grpc::Status(grpc::StatusCode::UNAVAILABLE, "error while writing to stream: stream closed");
     }
 
     return grpc::Status::OK;
