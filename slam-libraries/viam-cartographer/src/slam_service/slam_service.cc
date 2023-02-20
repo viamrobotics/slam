@@ -317,12 +317,12 @@ std::atomic<bool> b_continue_session{true};
 
     // Calculate chunk sizes to ensure no points data is split between chunks
     int header_byte_size = viam::utils::pcdHeader(num_points, true).size();
-    int point_byte_size = 4 * sizeof(float);
+    int point_byte_size = 4 * sizeof(float);         // X, Y, Z, Color
     int header_chunk_size =
         std::floor((maximumGRPCByteChunkSize - header_byte_size) /
                    point_byte_size) *
         point_byte_size;
-    int point_chunk_size =
+    int chunk_size =
         std::floor(maximumGRPCByteChunkSize / point_byte_size) *
         point_byte_size;
 
@@ -337,8 +337,8 @@ std::atomic<bool> b_continue_session{true};
 
     // Send remaining point chunks
     for (int start_index = header_chunk_size;
-         start_index < pointcloud_map.size(); start_index += point_chunk_size) {
-        pcd_chunk = pointcloud_map.substr(start_index, point_chunk_size);
+         start_index < pointcloud_map.size(); start_index += chunk_size) {
+        pcd_chunk = pointcloud_map.substr(start_index, chunk_size);
         response.set_point_cloud_pcd_chunk(pcd_chunk);
         bool ok = writer->Write(response);
         if (!ok)
