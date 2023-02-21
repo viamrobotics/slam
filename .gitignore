@@ -19,3 +19,4 @@ grpc/
 # grpc
 slam-libraries/grpc
 
+bin/

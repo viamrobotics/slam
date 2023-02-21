@@ -7,7 +7,7 @@ concurrency:
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ 'main' ]
+    branches: [ 'kk/add-lint-test' ]
     types: [ 'opened', 'reopened', 'synchronize' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/slam
@@ -16,6 +16,9 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/slam/.github/workflows/test.yml@main
+    uses: viamrobotics/slam/.github/workflows/test.yml@kk/add-lint-test
     secrets:
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
+
+  gotest:
+    uses: viamrobotics/slam/.github/workflows/gotest.yml@kk/add-lint-test
