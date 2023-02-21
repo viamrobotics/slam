@@ -280,7 +280,6 @@ std::atomic<bool> b_continue_session{true};
     ServerContext *context, const GetPointCloudMapStreamRequest *request,
     ServerWriter<GetPointCloudMapStreamResponse> *writer) {
     std::string pointcloud_map;
-    int num_points = 0;
     // Write or grab the latest pointcloud map in form of a string
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
@@ -289,10 +288,9 @@ std::atomic<bool> b_continue_session{true};
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
-            num_points = GetLatestSampledPointCloudMapString(pointcloud_map);
+            GetLatestSampledPointCloudMapString(pointcloud_map);
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
-            latest_num_points = num_points;
         } else {
             // Either we are in localization mode or we couldn't lock the mutex
             // which means the optimization process locked it and we need to use
@@ -306,7 +304,6 @@ std::atomic<bool> b_continue_session{true};
             }
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
-            num_points = latest_num_points;
         }
     } catch (std::exception &e) {
         LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
@@ -322,31 +319,10 @@ std::atomic<bool> b_continue_session{true};
 
     std::string pcd_chunk;
     GetPointCloudMapStreamResponse response;
-
-    // Calculate chunk sizes to ensure no points data is split between chunks
-    int header_byte_size = viam::utils::pcdHeader(num_points, true).size();
-    int point_byte_size = 3 * sizeof(float) + sizeof(int);  // X, Y, Z, Color
-    int header_chunk_size =
-        std::floor((maximumGRPCByteChunkSize - header_byte_size) /
-                   point_byte_size) *
-            point_byte_size +
-        header_byte_size;
-    int chunk_size = std::floor(maximumGRPCByteChunkSize / point_byte_size) *
-                     point_byte_size;
-
-    // Send header chunk
-    pcd_chunk = pointcloud_map.substr(0, header_chunk_size);
-    response.set_point_cloud_pcd_chunk(pcd_chunk);
-    bool ok = writer->Write(response);
-    if (!ok)
-        return grpc::Status(
-            grpc::StatusCode::UNAVAILABLE,
-            "error while writing header to stream: stream closed");
-
-    // Send remaining point chunks
-    for (int start_index = header_chunk_size;
-         start_index < pointcloud_map.size(); start_index += chunk_size) {
-        pcd_chunk = pointcloud_map.substr(start_index, chunk_size);
+    for (int start_index = 0; start_index < pointcloud_map.size();
+         start_index += maximumGRPCByteChunkSize) {
+        pcd_chunk =
+            pointcloud_map.substr(start_index, maximumGRPCByteChunkSize);
         response.set_point_cloud_pcd_chunk(pcd_chunk);
         bool ok = writer->Write(response);
         if (!ok)
@@ -471,13 +447,12 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
-    int num_points = GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+    GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
     latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
-    latest_num_points = num_points;
 }
 
 // If using the LOCALIZING action mode, cache a copy of the map before
@@ -488,8 +463,7 @@ void SLAMServiceImpl::CacheMapInLocalizationMode() {
         std::string pointcloud_map_tmp;
         int num_points = 0;
         try {
-            num_points =
-                GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+            GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
         } catch (std::exception &e) {
             LOG(ERROR) << "Stopping Cartographer: error encoding localized "
@@ -507,7 +481,6 @@ void SLAMServiceImpl::CacheMapInLocalizationMode() {
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = std::move(pointcloud_map_tmp);
-            latest_num_points = num_points;
         }
     }
 }
@@ -587,7 +560,7 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     return image.WriteJpegToString(jpegQuality);
 }
 
-int SLAMServiceImpl::GetLatestSampledPointCloudMapString(
+void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     std::string &pointcloud) {
     std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
         nullptr;
@@ -598,7 +571,7 @@ int SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     } catch (std::exception &e) {
         if (e.what() == errorNoSubmaps) {
             LOG(INFO) << "Error creating pcd map: " << e.what();
-            return 0;
+            return;
         } else {
             std::string errorLog = "Error writing submap to proto: ";
             errorLog += e.what();
@@ -685,7 +658,7 @@ int SLAMServiceImpl::GetLatestSampledPointCloudMapString(
 
     // Writes data buffer to the pointcloud string
     pointcloud += data_buffer;
-    return num_points;
+    return;
 }
 
 unsigned char ViamColorToProbability(unsigned char color) {
