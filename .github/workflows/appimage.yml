@@ -37,7 +37,7 @@ jobs:
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
     outputs:
-      date: ${{ steps.build_test_app.outputs.date }}
+      date: ${{ steps.build_appimage.outputs.date }}
 
     steps:
     - name: Configure git for private repos
@@ -103,7 +103,10 @@ jobs:
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestOrbslamIntegration'
 
     - name: Build appimage
-      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimageorb'
+      id: build_appimage
+      run: |
+        echo "date=`date +%F`" >> $GITHUB_OUTPUT 
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimageorb'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
@@ -136,7 +139,7 @@ jobs:
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
     outputs:
-      date: ${{ steps.build_test_app.outputs.date }}
+      date: ${{ steps.build_appimage.outputs.date }}
 
     steps:
     - name: Configure git for private repos
@@ -206,7 +209,10 @@ jobs:
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
 
     - name: Build appimage
-      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimagecarto'
+      id: build_appimage
+      run: |
+        echo "date=`date +%F`" >> $GITHUB_OUTPUT 
+        sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimagecarto'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
