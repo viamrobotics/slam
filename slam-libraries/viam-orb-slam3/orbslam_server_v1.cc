@@ -448,12 +448,13 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetInternalStateStream(
     ServerContext *context, const GetInternalStateStreamRequest *request,
     ServerWriter<GetInternalStateStreamResponse> *writer) {
-
     std::stringbuf buffer;
     // deferring reading the osa file in chunks until we run into issues
     // with loading the file into memory
     bool success = ArchiveSlam(buffer);
-    if (!success) return grpc::Status(grpc::StatusCode::UNAVAILABLE, "SLAM is not yet initialized");
+    if (!success)
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "SLAM is not yet initialized");
 
     std::string internal_state_chunk;
     GetInternalStateStreamResponse response;
@@ -463,7 +464,9 @@ std::atomic<bool> b_continue_session{true};
             buffer.str().substr(start_index, maximumGRPCByteChunkSize);
         response.set_internal_state_chunk(internal_state_chunk);
         bool ok = writer->Write(response);
-        if (!ok) return grpc::Status(grpc::StatusCode::UNAVAILABLE, "error while writing to stream: stream closed");
+        if (!ok)
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "error while writing to stream: stream closed");
     }
 
     return grpc::Status::OK;
