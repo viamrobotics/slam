@@ -280,7 +280,7 @@ std::atomic<bool> b_continue_session{true};
     ServerContext *context, const GetPointCloudMapStreamRequest *request,
     ServerWriter<GetPointCloudMapStreamResponse> *writer) {
     std::string pointcloud_map;
-    int num_points;
+    int num_points = 0;
     // Write or grab the latest pointcloud map in form of a string
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
@@ -325,7 +325,7 @@ std::atomic<bool> b_continue_session{true};
 
     // Calculate chunk sizes to ensure no points data is split between chunks
     int header_byte_size = viam::utils::pcdHeader(num_points, true).size();
-    int point_byte_size = 4 * sizeof(float);  // X, Y, Z, Color
+    int point_byte_size = 3 * sizeof(float) + sizeof(int);  // X, Y, Z, Color
     int header_chunk_size =
         std::floor((maximumGRPCByteChunkSize - header_byte_size) /
                    point_byte_size) *
@@ -486,7 +486,7 @@ void SLAMServiceImpl::BackupLatestMap() {
 void SLAMServiceImpl::CacheMapInLocalizationMode() {
     if (action_mode == ActionMode::LOCALIZING) {
         std::string pointcloud_map_tmp;
-        int num_points;
+        int num_points = 0;
         try {
             num_points =
                 GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
