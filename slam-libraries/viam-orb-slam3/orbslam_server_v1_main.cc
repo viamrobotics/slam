@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     // Increasing the gRPC max message size from the default value of 4MB to
     // 32MB, to match the limit that is set in RDK. This is necessary for
     // transmitting large pointclouds.
-    builder.SetMaxSendMessageSize(maximumGRPCByteLimit);
+    builder.SetMaxSendMessageSize(viam::maximumGRPCByteLimit);
     builder.RegisterService(&slamService);
 
     // Start the SLAM gRPC server
