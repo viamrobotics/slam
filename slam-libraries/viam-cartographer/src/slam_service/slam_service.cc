@@ -292,6 +292,7 @@ std::atomic<bool> b_continue_session{true};
             num_points = GetLatestSampledPointCloudMapString(pointcloud_map);
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
+            latest_num_points = num_points;
         } else {
             // Either we are in localization mode or we couldn't lock the mutex
             // which means the optimization process locked it and we need to use
@@ -470,12 +471,13 @@ void SLAMServiceImpl::BackupLatestMap() {
     std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
     std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
-    GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+    int num_points = GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
     latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
+    latest_num_points = num_points;
 }
 
 // If using the LOCALIZING action mode, cache a copy of the map before
@@ -484,8 +486,10 @@ void SLAMServiceImpl::BackupLatestMap() {
 void SLAMServiceImpl::CacheMapInLocalizationMode() {
     if (action_mode == ActionMode::LOCALIZING) {
         std::string pointcloud_map_tmp;
+        int num_points;
         try {
-            GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+            num_points =
+                GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
         } catch (std::exception &e) {
             LOG(ERROR) << "Stopping Cartographer: error encoding localized "
@@ -503,6 +507,7 @@ void SLAMServiceImpl::CacheMapInLocalizationMode() {
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = std::move(pointcloud_map_tmp);
+            latest_num_points = num_points;
         }
     }
 }
