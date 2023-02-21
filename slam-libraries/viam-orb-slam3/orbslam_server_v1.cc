@@ -448,9 +448,10 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetInternalStateStream(
     ServerContext *context, const GetInternalStateStreamRequest *request,
     ServerWriter<GetInternalStateStreamResponse> *writer) {
-    // return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 
     std::stringbuf buffer;
+    // deferring reading the osa file in chunks until we run into issues
+    // with loading the file into memory
     bool success = ArchiveSlam(buffer);
     if (!success) return grpc::Status(grpc::StatusCode::UNAVAILABLE, "SLAM is not yet initialized");
 
