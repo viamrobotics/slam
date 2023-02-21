@@ -293,12 +293,19 @@ std::atomic<bool> b_continue_session{true};
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
         } else {
-            // We couldn't lock the mutex which means the optimization process
-            // locked it and we need to use the backed up latest map
-            LOG(INFO)
-                << "Optimization is occuring, using cached pointcloud map";
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (action_mode == ActionMode::LOCALIZING) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
+            }
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
+            num_points = latest_num_points;
         }
     } catch (std::exception &e) {
         LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
@@ -317,14 +324,14 @@ std::atomic<bool> b_continue_session{true};
 
     // Calculate chunk sizes to ensure no points data is split between chunks
     int header_byte_size = viam::utils::pcdHeader(num_points, true).size();
-    int point_byte_size = 4 * sizeof(float);         // X, Y, Z, Color
+    int point_byte_size = 4 * sizeof(float);  // X, Y, Z, Color
     int header_chunk_size =
         std::floor((maximumGRPCByteChunkSize - header_byte_size) /
                    point_byte_size) *
-        point_byte_size + header_byte_size;
-    int chunk_size =
-        std::floor(maximumGRPCByteChunkSize / point_byte_size) *
-        point_byte_size;
+            point_byte_size +
+        header_byte_size;
+    int chunk_size = std::floor(maximumGRPCByteChunkSize / point_byte_size) *
+                     point_byte_size;
 
     // Send header chunk
     pcd_chunk = pointcloud_map.substr(0, header_chunk_size);
