@@ -321,7 +321,7 @@ std::atomic<bool> b_continue_session{true};
     int header_chunk_size =
         std::floor((maximumGRPCByteChunkSize - header_byte_size) /
                    point_byte_size) *
-        point_byte_size;
+        point_byte_size + header_byte_size;
     int chunk_size =
         std::floor(maximumGRPCByteChunkSize / point_byte_size) *
         point_byte_size;
