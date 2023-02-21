@@ -268,11 +268,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // PaintMarker paints the latest global pose on the painted slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
-    // GetLatestSampledPointCloudMapString paints and writes the latest map as
-    // a pcd to the provided string with probability estimates written to the
-    // color field. The pcd is generated from PaintedMapSlices() and sampled to
-    // fit the 32 MB limit on gRPC messages. The number of points in the PCD is
-    // then returned
+    // GetLatestSampledPointCloudMapString paints and returns the latest map as
+    // a pcd string with probability estimates written to the color field. The
+    // pcd is generated from PaintedMapSlices() and sampled to fit the 32 MB
+    // limit on gRPC messages. The sampled behavior may change when moving to
+    // streamed point clouds.
     void GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
     // BackupLatestMap extracts and saves the latest map as a backup in

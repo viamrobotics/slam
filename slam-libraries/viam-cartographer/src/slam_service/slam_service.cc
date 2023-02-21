@@ -461,7 +461,6 @@ void SLAMServiceImpl::BackupLatestMap() {
 void SLAMServiceImpl::CacheMapInLocalizationMode() {
     if (action_mode == ActionMode::LOCALIZING) {
         std::string pointcloud_map_tmp;
-        int num_points = 0;
         try {
             GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
