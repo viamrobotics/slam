@@ -74,7 +74,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
         GetInternalStateResponse *response) override;
 
     // GetPointCloudMap returns a stream containing a sparse
-    // slam map as Binary PCD. The z-axis represents the direction the camera is
+    // slam map as Binary PCD. In chunks of size maximumGRPCByteChunkSize.
+    // The z-axis represents the direction the camera is
     // facing at the origin of the map
     ::grpc::Status GetPointCloudMapStream(
         ServerContext *context, const GetPointCloudMapStreamRequest *request,
