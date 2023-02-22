@@ -1,4 +1,4 @@
-module go.viam.com/slam
+module github.com/viamrobotics/slam
 
 go 1.19
 
