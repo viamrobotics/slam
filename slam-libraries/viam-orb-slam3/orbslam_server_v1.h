@@ -12,17 +12,12 @@
 #include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
-using grpc::ServerWriter;
 using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
-using viam::service::slam::v1::GetInternalStateStreamRequest;
-using viam::service::slam::v1::GetInternalStateStreamResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPointCloudMapRequest;
 using viam::service::slam::v1::GetPointCloudMapResponse;
-using viam::service::slam::v1::GetPointCloudMapStreamRequest;
-using viam::service::slam::v1::GetPointCloudMapStreamResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -35,10 +30,6 @@ namespace viam {
 static const int filenamePrefixLength = 6;
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 extern std::atomic<bool> b_continue_session;
-// Byte limit on GRPC, used to help determine sampling skip_count
-static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
-// Byte limit for chunks on GRPC, used for streaming apis
-static const int maximumGRPCByteChunkSize = 64 * 1024;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -72,19 +63,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
-
-    // GetPointCloudMap returns a stream of the curren sparse slam map as a
-    // PCD binary in chunks with a max size of maximumGRPCByteChunkSize. Map
-    // uses z axis is in the direction the camera is facing
-    ::grpc::Status GetPointCloudMapStream(
-        ServerContext *context, const GetPointCloudMapStreamRequest *request,
-        ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
-
-    // GetInternalState returns a stream of the current internal state of the
-    // map which is a osa for orbslam in chunks of size maximumGRPCByteChunkSize
-    ::grpc::Status GetInternalStateStream(
-        ServerContext *context, const GetInternalStateStreamRequest *request,
-        ServerWriter<GetInternalStateStreamResponse> *writer) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
