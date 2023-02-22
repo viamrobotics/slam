@@ -73,9 +73,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
 
-    // GetPointCloudMap returns a stream of the current sampled pointcloud
-    // derived from the painted map, using probability estimates in chunks with
-    // a max size of maximumGRPCByteChunkSize
+    // GetPointCloudMap returns a stream of the curren sparse slam map as a
+    // PCD binary in chunks with a max size of maximumGRPCByteChunkSize. Map
+    // uses z axis is in the direction the camera is facing
     ::grpc::Status GetPointCloudMapStream(
         ServerContext *context, const GetPointCloudMapStreamRequest *request,
         ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
