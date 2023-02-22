@@ -439,6 +439,49 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
+    ServerContext *context, const GetPointCloudMapStreamRequest *request,
+    ServerWriter<GetPointCloudMapStreamResponse> *writer) {
+    std::vector<ORB_SLAM3::MapPoint *> actualMap;
+    {
+        std::lock_guard<std::mutex> lk(slam_mutex);
+        actualMap = currMapPoints;
+    }
+
+    if (actualMap.size() == 0) {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "currently no map points exist");
+    }
+
+    auto buffer = utils::PcdHeader(actualMap.size());
+
+    for (auto p : actualMap) {
+        Eigen::Matrix<float, 3, 1> v = p->GetWorldPos();
+        utils::WriteFloatToBufferInBytes(buffer, v.x());
+        utils::WriteFloatToBufferInBytes(buffer, v.y());
+        utils::WriteFloatToBufferInBytes(buffer, v.z());
+    }
+
+    std::string pcd_chunk;
+    GetPointCloudMapStreamResponse response;
+    for (int start_index = 0; start_index < buffer.size();
+         start_index += maximumGRPCByteChunkSize) {
+        pcd_chunk = buffer.substr(start_index, maximumGRPCByteChunkSize);
+        response.set_point_cloud_pcd_chunk(pcd_chunk);
+        bool ok = writer->Write(response);
+        if (!ok)
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "error while writing to stream: stream closed");
+    }
+    return grpc::Status::OK;
+}
+
+::grpc::Status SLAMServiceImpl::GetInternalStateStream(
+    ServerContext *context, const GetInternalStateStreamRequest *request,
+    ServerWriter<GetInternalStateStreamResponse> *writer) {
+    return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 // TODO: This is an antipattern, which only exists b/c:
 // 1. we only have one class for both the data thread(s)
 //    & GRPC server
