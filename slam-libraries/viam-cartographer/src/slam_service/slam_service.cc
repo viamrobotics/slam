@@ -279,7 +279,57 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
     ServerContext *context, const GetPointCloudMapStreamRequest *request,
     ServerWriter<GetPointCloudMapStreamResponse> *writer) {
-    return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    try {
+        std::shared_lock optimization_lock{optimization_shared_mutex,
+                                           std::defer_lock};
+        if (optimization_lock.try_lock()) {
+            // We are able to lock the optimization_shared_mutex, which means
+            // that the optimization is not ongoing and we can grab the newest
+            // map
+            GetLatestSampledPointCloudMapString(pointcloud_map);
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_pointcloud_map = pointcloud_map;
+        } else {
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (action_mode == ActionMode::LOCALIZING) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
+            }
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            pointcloud_map = latest_pointcloud_map;
+        }
+    } catch (std::exception &e) {
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
+                   << e.what();
+        std::terminate();
+    }
+
+    if (pointcloud_map.empty()) {
+        LOG(ERROR) << "map pointcloud does not have points yet";
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "map pointcloud does not have points yet");
+    }
+
+    std::string pcd_chunk;
+    GetPointCloudMapStreamResponse response;
+    for (int start_index = 0; start_index < pointcloud_map.size();
+         start_index += maximumGRPCByteChunkSize) {
+        pcd_chunk =
+            pointcloud_map.substr(start_index, maximumGRPCByteChunkSize);
+        response.set_point_cloud_pcd_chunk(pcd_chunk);
+        bool ok = writer->Write(response);
+        if (!ok)
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "error while writing to stream: stream closed");
+    }
+    return grpc::Status::OK;
 }
 
 ::grpc::Status SLAMServiceImpl::GetInternalStateStream(
@@ -587,8 +637,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         // 2D SLAM so Z is set to 0
         float z_pos = 0;
 
-        // Turn the map point into a vector to perform tranformations with.
-        // Current tranformation rotates coordinates to match slam service
+        // Turn the map point into a vector to perform transformations with.
+        // Current transformation rotates coordinates to match slam service
         // expectation (XZ plane)
         Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
         auto rotated_map_point = pcdRotation * map_point;
