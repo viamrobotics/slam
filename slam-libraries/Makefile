@@ -19,6 +19,7 @@ clean-all: cleanorb cleancarto
 cleanorb:
 	rm -rf viam-orb-slam3/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/build
+	rm -rf viam-orb-slam3/ORB_SLAM3/lib
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/DBoW2/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/g2o/build
 	rm -rf viam-orb-slam3/ORB_SLAM3/Thirdparty/Sophus/build

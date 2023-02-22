@@ -12,12 +12,17 @@
 #include "service/slam/v1/slam.pb.h"
 
 using grpc::ServerContext;
+using grpc::ServerWriter;
 using viam::service::slam::v1::GetInternalStateRequest;
 using viam::service::slam::v1::GetInternalStateResponse;
+using viam::service::slam::v1::GetInternalStateStreamRequest;
+using viam::service::slam::v1::GetInternalStateStreamResponse;
 using viam::service::slam::v1::GetMapRequest;
 using viam::service::slam::v1::GetMapResponse;
 using viam::service::slam::v1::GetPointCloudMapRequest;
 using viam::service::slam::v1::GetPointCloudMapResponse;
+using viam::service::slam::v1::GetPointCloudMapStreamRequest;
+using viam::service::slam::v1::GetPointCloudMapStreamResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
 using viam::service::slam::v1::GetPositionRequest;
@@ -30,6 +35,10 @@ namespace viam {
 static const int filenamePrefixLength = 6;
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 extern std::atomic<bool> b_continue_session;
+// Byte limit on unary GRPC calls
+static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
+// Byte limit for chunks on GRPC, used for streaming apis
+static const int maximumGRPCByteChunkSize = 64 * 1024;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -50,19 +59,34 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // For a given GetPointCloudMapRequest
     // Returns a GetPointCloudMapResponse containing a sparse
-    // slam map as Binary PCD
-    // Map uses z axis is in the direction the camera is facing
+    // slam map as Binary PCD. The z-axis represents the direction the camera is
+    // facing at the origin of the map
     ::grpc::Status GetPointCloudMap(
         ServerContext *context, const GetPointCloudMapRequest *request,
         GetPointCloudMapResponse *response) override;
 
     // For a given GetInternalStateRequest
     // Returns a GetInternalStateResponse containing
-    // the internal state of the SLAM algorithm
-    // required to continue mapping/localization
+    // current internal state of the map represented as an ORB-SLAM Atlas(.osa)
+    // file in chunks of size maximumGRPCByteChunkSize
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
+
+    // GetPointCloudMap returns a stream containing a sparse
+    // slam map as Binary PCD. In chunks of size maximumGRPCByteChunkSize.
+    // The z-axis represents the direction the camera is
+    // facing at the origin of the map
+    ::grpc::Status GetPointCloudMapStream(
+        ServerContext *context, const GetPointCloudMapStreamRequest *request,
+        ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
+
+    // GetInternalStateStream returns a stream of the current internal state of
+    // the map represented as an ORB-SLAM Atlas(.osa) file in chunks of size
+    // maximumGRPCByteChunkSize
+    ::grpc::Status GetInternalStateStream(
+        ServerContext *context, const GetInternalStateStreamRequest *request,
+        ServerWriter<GetInternalStateStreamResponse> *writer) override;
 
     void ProcessDataOnline(ORB_SLAM3::System *SLAM);
 
