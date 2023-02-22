@@ -458,10 +458,11 @@ std::atomic<bool> b_continue_session{true};
 
     std::string internal_state_chunk;
     GetInternalStateStreamResponse response;
-    for (int start_index = 0; start_index < buffer.str().size();
+    std::string buffer_str = buffer.str();
+    for (int start_index = 0; start_index < buffer_str.size();
          start_index += maximumGRPCByteChunkSize) {
         internal_state_chunk =
-            buffer.str().substr(start_index, maximumGRPCByteChunkSize);
+            buffer_str.substr(start_index, maximumGRPCByteChunkSize);
         response.set_internal_state_chunk(internal_state_chunk);
         bool ok = writer->Write(response);
         if (!ok)
