@@ -500,7 +500,6 @@ std::atomic<bool> b_continue_session{true};
             return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                                 "error while writing to stream: stream closed");
     }
-
     return grpc::Status::OK;
 }
 
