@@ -59,26 +59,29 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // For a given GetPointCloudMapRequest
     // Returns a GetPointCloudMapResponse containing a sparse
-    // slam map as Binary PCD. The z-axis represents the direction the camera is facing at the origin of the map
+    // slam map as Binary PCD. The z-axis represents the direction the camera is
+    // facing at the origin of the map
     ::grpc::Status GetPointCloudMap(
         ServerContext *context, const GetPointCloudMapRequest *request,
         GetPointCloudMapResponse *response) override;
 
     // For a given GetInternalStateRequest
     // Returns a GetInternalStateResponse containing
-    // current internal state of the map represented as an ORB-SLAM Atlas(.osa) file in chunks of size maximumGRPCByteChunkSize
+    // current internal state of the map represented as an ORB-SLAM Atlas(.osa)
+    // file in chunks of size maximumGRPCByteChunkSize
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         GetInternalStateResponse *response) override;
 
     // GetPointCloudMap returns a stream containing a sparse
-    // slam map as Binary PCD. The z-axis represents the direction the camera is facing at the origin of the map
+    // slam map as Binary PCD. The z-axis represents the direction the camera is
+    // facing at the origin of the map
     ::grpc::Status GetPointCloudMapStream(
         ServerContext *context, const GetPointCloudMapStreamRequest *request,
         ServerWriter<GetPointCloudMapStreamResponse> *writer) override;
 
-    // GetInternalStateStream returns a stream of the current internal state of the
-    // map represented as an ORB-SLAM Atlas(.osa) file in chunks of size
+    // GetInternalStateStream returns a stream of the current internal state of
+    // the map represented as an ORB-SLAM Atlas(.osa) file in chunks of size
     // maximumGRPCByteChunkSize
     ::grpc::Status GetInternalStateStream(
         ServerContext *context, const GetInternalStateStreamRequest *request,
