@@ -439,6 +439,39 @@ std::atomic<bool> b_continue_session{true};
     }
 }
 
+::grpc::Status SLAMServiceImpl::GetPointCloudMapStream(
+    ServerContext *context, const GetPointCloudMapStreamRequest *request,
+    ServerWriter<GetPointCloudMapStreamResponse> *writer) {
+    return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status SLAMServiceImpl::GetInternalStateStream(
+    ServerContext *context, const GetInternalStateStreamRequest *request,
+    ServerWriter<GetInternalStateStreamResponse> *writer) {
+    std::stringbuf buffer;
+    // deferring reading the osa file in chunks until we run into issues
+    // with loading the file into memory
+    bool success = ArchiveSlam(buffer);
+    if (!success)
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "SLAM is not yet initialized");
+
+    std::string internal_state_chunk;
+    GetInternalStateStreamResponse response;
+    std::string buffer_str = buffer.str();
+    for (int start_index = 0; start_index < buffer_str.size();
+         start_index += maximumGRPCByteChunkSize) {
+        internal_state_chunk =
+            buffer_str.substr(start_index, maximumGRPCByteChunkSize);
+        response.set_internal_state_chunk(internal_state_chunk);
+        bool ok = writer->Write(response);
+        if (!ok)
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "error while writing to stream: stream closed");
+    }
+
+    return grpc::Status::OK;
+}
 // TODO: This is an antipattern, which only exists b/c:
 // 1. we only have one class for both the data thread(s)
 //    & GRPC server
