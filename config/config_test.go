@@ -74,7 +74,7 @@ func TestDetermineUseLiveData(t *testing.T) {
 	})
 }
 
-// makeCfgService creates the simplest possible config that can pass validation
+// makeCfgService creates the simplest possible config that can pass validation.
 func makeCfgService() config.Service {
 	model := resource.NewDefaultModel(resource.ModelName("test"))
 	cfgService := config.Service{Name: "test", Type: "slam", Model: model}

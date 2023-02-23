@@ -56,8 +56,8 @@ type AttrConfig struct {
 	Dev                 bool              `json:"dev"`
 }
 
-func NewAttrConfig(cfg config.Service) (returnValue *AttrConfig, returnError error) {
-
+// NewAttrConfig creates a slam config from a service config.
+func NewAttrConfig(cfg config.Service) (*AttrConfig, error) {
 	attrCfg := &AttrConfig{}
 
 	_, err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes)
@@ -76,7 +76,6 @@ func NewAttrConfig(cfg config.Service) (returnValue *AttrConfig, returnError err
 
 // Validate creates the list of implicit dependencies.
 func (config *AttrConfig) Validate(path string) ([]string, error) {
-
 	if config.ConfigParams["mode"] == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
@@ -108,7 +107,6 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 
 // SetParameters ...
 func (config *AttrConfig) SetParameters(localhost0 string, defaultDataRateMs, defaultMapRateSec int, logger golog.Logger) error {
-
 	if config.Port == "" {
 		config.Port = localhost0
 	}
