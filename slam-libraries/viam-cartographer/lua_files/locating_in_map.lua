@@ -1,7 +1,10 @@
 include "trajectory_builder.lua"
 include "map_builder.lua"
 
--- ++++ ALWAYS TRY TO TUNE FOR A PLATFORM, NOT A PARTICULAR BAG ++++ --
+-- !!!!! NOTE: DO NOT CHANGE THIS FILE !!!!! --
+
+-- ALWAYS TRY TO TUNE FOR A SENSOR SET/ROBOT SETUP,
+-- NOT A PARTICULAR ENVIRONMENT --
 
 -- ===== Local SLAM Options ======
 -- no reason to change these:
