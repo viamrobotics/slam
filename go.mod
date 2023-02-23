@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
 	github.com/edaniels/golog v0.0.0-20230215213219-28954395e8d0
+	github.com/edaniels/gostream v0.0.0-20230217173133-d1a1fe96076e
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.23
@@ -43,6 +44,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.0 // indirect
+	github.com/blackjack/webcam v0.0.0-20220329180758-ba064708e165 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/breml/bidichk v0.2.3 // indirect
@@ -74,6 +76,7 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
+	github.com/gen2brain/malgo v0.11.10 // indirect
 	github.com/go-critic/go-critic v0.6.5 // indirect
 	github.com/go-fonts/liberation v0.2.0 // indirect
 	github.com/go-gl/mathgl v1.0.0 // indirect
@@ -185,6 +188,7 @@ require (
 	github.com/pion/interceptor v0.1.12 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.7 // indirect
+	github.com/pion/mediadevices v0.4.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.10 // indirect
 	github.com/pion/rtp v1.7.13 // indirect
@@ -260,6 +264,7 @@ require (
 	go.uber.org/goleak v1.2.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
+	goji.io v2.0.2+incompatible // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
