@@ -19,3 +19,6 @@ jobs:
     uses: viamrobotics/slam/.github/workflows/test.yml@main
     secrets:
       ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
+
+  gotest:
+    uses: viamrobotics/slam/.github/workflows/gotest.yml@main

@@ -36,8 +36,6 @@ jobs:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
-    outputs:
-      date: ${{ steps.build_test_app.outputs.date }}
 
     steps:
     - name: Configure git for private repos
@@ -135,8 +133,6 @@ jobs:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
-    outputs:
-      date: ${{ steps.build_test_app.outputs.date }}
 
     steps:
     - name: Configure git for private repos
