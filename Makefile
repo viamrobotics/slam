@@ -1,5 +1,4 @@
 TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
-
 PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
 
 tool-install:
