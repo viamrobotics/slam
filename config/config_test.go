@@ -13,7 +13,6 @@ var (
 )
 
 func TestDetermineDeleteProcessedData(t *testing.T) {
-
 	logger := golog.NewTestLogger(t)
 
 	t.Run("No delete_processed_data provided", func(t *testing.T) {
@@ -42,15 +41,14 @@ func TestDetermineDeleteProcessedData(t *testing.T) {
 }
 
 func TestDetermineUseLiveData(t *testing.T) {
-
 	logger := golog.NewTestLogger(t)
 	t.Run("No use_live_data specified", func(t *testing.T) {
 		useLiveData, err := DetermineUseLiveData(logger, nil, []string{})
-		test.That(t, err, test.ShouldBeError, ConfigError("use_live_data is a required input parameter"))
+		test.That(t, err, test.ShouldBeError, newError("use_live_data is a required input parameter"))
 		test.That(t, useLiveData, test.ShouldBeFalse)
 
 		useLiveData, err = DetermineUseLiveData(logger, nil, []string{"camera"})
-		test.That(t, err, test.ShouldBeError, ConfigError("use_live_data is a required input parameter"))
+		test.That(t, err, test.ShouldBeError, newError("use_live_data is a required input parameter"))
 		test.That(t, useLiveData, test.ShouldBeFalse)
 	})
 	t.Run("False use_live_data", func(t *testing.T) {
@@ -64,7 +62,7 @@ func TestDetermineUseLiveData(t *testing.T) {
 	})
 	t.Run("True use_live_data", func(t *testing.T) {
 		useLiveData, err := DetermineUseLiveData(logger, &_true, []string{})
-		test.That(t, err, test.ShouldBeError, ConfigError("sensors field cannot be empty when use_live_data is set to true"))
+		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 		test.That(t, useLiveData, test.ShouldBeFalse)
 
 		useLiveData, err = DetermineUseLiveData(logger, &_true, []string{"camera"})
