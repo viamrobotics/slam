@@ -57,7 +57,7 @@ jobs:
         git init
         git add .
         chown -R testbot .
-        sudo -u testbot bash -lc make lint
+        sudo -u testbot bash -lc 'make lint'
         GEN_DIFF=$(git status -s)
 
         if [ -n "$GEN_DIFF" ]; then
