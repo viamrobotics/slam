@@ -76,35 +76,36 @@ func TestDetermineUseLiveData(t *testing.T) {
 	})
 }
 
+// makeCfgService creates the simplest possible config that can pass validation
+func makeCfgService() (config.Service) {
+    model := resource.NewDefaultModel(resource.ModelName("test"))
+    cfgService := config.Service{Name: "test", Type: "slam", Model: model}
+    cfgService.Attributes = make(map[string]interface{})
+    cfgService.Attributes["config_params"] = map[string]string{
+        "mode" : "test mode",
+    };
+    cfgService.Attributes["data_dir"] = "path"
+    cfgService.Attributes["use_live_data"] = true
+    cfgService.Attributes["delete_processed_data"] = true
+    return cfgService
+}
+
 func TestNewAttrConf(t *testing.T) {
     testCfgPath := "config_path";
 	logger := golog.NewTestLogger(t)
-    // setup the simplest possible config that can pass validation
-    makeCfgService := func() (config.Service) {
-        model := resource.NewDefaultModel(resource.ModelName("test"))
-        cfgService := config.Service{Name: "test", Type: "slam", Model: model}
-        cfgService.Attributes = make(map[string]interface{})
-        cfgService.Attributes["config_params"] = map[string]string{
-            "mode" : "test mode",
-        };
-        cfgService.Attributes["data_dir"] = "path"
-        cfgService.Attributes["use_live_data"] = true
-        cfgService.Attributes["delete_processed_data"] = true
-        return cfgService
-    }
-    t.Run("SLAM blank config", func(t *testing.T) {
+    t.Run("Empty config", func(t *testing.T) {
         model := resource.NewDefaultModel(resource.ModelName("test"))
         cfgService := config.Service{Name: "test", Type: "slam", Model: model}
         _,err := NewAttrConfig(cfgService)
         test.That(t, err, test.ShouldBeError)
     })
-    t.Run("SLAM valid", func(t *testing.T) {
+    t.Run("Simplest valid config", func(t *testing.T) {
         cfgService := makeCfgService()
         _,err := NewAttrConfig(cfgService)
         test.That(t, err, test.ShouldBeNil)
     })
 
-    t.Run("SLAM config without required fields", func(t *testing.T) {
+    t.Run("Config without required fields", func(t *testing.T) {
         requiredFields := []string{"delete_processed_data","data_dir","use_live_data"}
         for _,requiredField := range requiredFields {
             logger.Debugf("Testing SLAM config without %s", requiredField)
@@ -114,7 +115,7 @@ func TestNewAttrConf(t *testing.T) {
             test.That(t, err, test.ShouldBeError, WrapError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField)))
         }
     })
-    t.Run("SLAM config invalid parameter type", func(t *testing.T) {
+    t.Run("Config with invalid parameter type", func(t *testing.T) {
         cfgService := makeCfgService()
         cfgService.Attributes["use_live_data"] = "foo"
         _,err := NewAttrConfig(cfgService)
@@ -122,14 +123,30 @@ func TestNewAttrConf(t *testing.T) {
         cfgService.Attributes["use_live_data"] = true
         _,err = NewAttrConfig(cfgService)
         test.That(t, err, test.ShouldBeNil)
+        cfgService.Attributes["Chiekcn_live_data"] = true
+        _,err = NewAttrConfig(cfgService)
+        test.That(t, err, test.ShouldBeNil)
     })
-    t.Run("SLAM config boundary", func(t *testing.T) {
+    /*
+    TODO link to JIRA ticket that should have this fail
+    t.Run("Config with unused parameter", func(t *testing.T) {
         cfgService := makeCfgService()
+        cfgService.Attributes["UNDEFINED_PARAMETER"] = "foo"
         _,err := NewAttrConfig(cfgService)
-        test.That(t,err, test.ShouldBeNil)
-
+        test.That(t, err, test.ShouldBeError)
+    })*/
+    t.Run("Config with unacceptable values", func(t *testing.T) {
+        cfgService := makeCfgService()
+        cfgService.Attributes["data_rate_msec"] = -1;
+        _,err := NewAttrConfig(cfgService)
+        test.That(t,err, test.ShouldBeError)
+        cfgService.Attributes["data_rate_msec"] = 1;
+        cfgService.Attributes["map_rate_sec"] = -1;
+        _,err = NewAttrConfig(cfgService)
+        test.That(t,err, test.ShouldBeError)
     })
-    t.Run("SLAM config struct translation e2e", func(t *testing.T) {
+
+    t.Run("All parameters e2e", func(t *testing.T) {
         cfgService := makeCfgService()
         cfgService.Attributes["sensors"] = []string{"a","b"}
         cfgService.Attributes["data_rate_msec"] = 1001
@@ -156,13 +173,20 @@ func TestNewAttrConf(t *testing.T) {
         test.That(t, cfg.Dev, test.ShouldEqual, cfgService.Attributes["dev"])
         test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
     })
-    t.Run("New SLAM config without ", func(t *testing.T) {
-        cfgService := makeCfgService()
-        cfgService.Attributes["config_params"] = map[string]string{
-            "mode" : "test mode",
-        };
-        _,err := NewAttrConfig(cfgService)
-        test.That(t,err, test.ShouldBeNil)
-    })
 }
 
+func TestSetParameters(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+    t.Run("Defaults", func(t *testing.T) {
+        cfgService := makeCfgService()
+        cfgService.Attributes["use_live_data"] = true
+        cfg,err := NewAttrConfig(cfgService)
+        test.That(t, err, test.ShouldBeNil)
+        cfg.SetParameters("localhost", 1001, 1002, logger)
+        test.That(t, cfg.Port, test.ShouldResemble, "localhost")
+        test.That(t, cfg.DataRateMs, test.ShouldEqual, 1001)
+        test.That(t, *cfg.MapRateSec, test.ShouldEqual, 1002)
+        test.That(t, *cfg.UseLiveData, test.ShouldEqual, true)
+        test.That(t, *cfg.DeleteProcessedData, test.ShouldEqual, true)
+    })
+}
