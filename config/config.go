@@ -2,45 +2,21 @@
 package config
 
 import (
-	"fmt"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/config"
-	"go.viam.com/rdk/registry"
 	"go.viam.com/utils"
 )
-
-var (
-	cameraValidationMaxTimeoutSec = 30 // reconfigurable for testing
-	dialMaxTimeoutSec             = 30 // reconfigurable for testing
-)
-
-const (
-	defaultDataRateMs           = 200
-	minDataRateMs               = 200
-	defaultMapRateSec           = 60
-	cameraValidationIntervalSec = 1.
-	parsePortMaxTimeoutSec      = 60
-	// time format for the slam service.
-	slamTimeFormat        = "2006-01-02T15:04:05.0000Z"
-	opTimeoutErrorMessage = "bad scan: OpTimeout"
-	localhost0            = "localhost:0"
-)
-
-// SetCameraValidationMaxTimeoutSecForTesting sets cameraValidationMaxTimeoutSec for testing.
-func SetCameraValidationMaxTimeoutSecForTesting(val int) {
-	cameraValidationMaxTimeoutSec = val
-}
-
-// SetDialMaxTimeoutSecForTesting sets dialMaxTimeoutSec for testing.
-func SetDialMaxTimeoutSecForTesting(val int) {
-	dialMaxTimeoutSec = val
-}
 
 // NewError returns an error specific to a failure in the SLAM config.
 func NewError(configError string) error {
 	return errors.Errorf("SLAM Service configuration error: %s", configError)
+}
+
+// WrapError wraps an error to show it came from the slam service.
+func WrapError(configError error) error {
+	return NewError(configError.Error())
 }
 
 // DetermineDeleteProcessedData will determine the value of the deleteProcessData attribute
@@ -86,54 +62,20 @@ type AttrConfig struct {
 	Dev                 bool              `json:"dev"`
 }
 
-func NewAttrConfig(cfg config.Service, deps registry.Dependencies) (*AttrConfig, error) {
-	attrCfg := &AttrConfig{
-		Sensors:             cfg.Attributes.StringSlice("sensors"),
-		ConfigParams:        make(map[string]string),
-		DataDirectory:       cfg.Attributes.String("data_dir"),
-		UseLiveData:         nil,
-		DataRateMs:          cfg.Attributes.Int("data_rate_msec", 0),
-		MapRateSec:          nil,
-		Port:                cfg.Attributes.String("port"),
-		DeleteProcessedData: nil,
-		Dev:                 cfg.Attributes.Bool("dev", false),
-	}
 
+func NewAttrConfig(cfg config.Service) (returnValue *AttrConfig, returnError error) {
 
-	if cfg.Attributes.Has("use_live_data") {
-        useLive := cfg.Attributes.Bool("use_live_data",false);
-        attrCfg.UseLiveData = &useLive;
-	}
-
-	if cfg.Attributes.Has("delete_processed_data") {
-        deleteProcessed := cfg.Attributes.Bool("delete_processed_data", false);
-        attrCfg.DeleteProcessedData = &deleteProcessed;
-	}
-
-	if cfg.Attributes.Has("map_rate_sec") {
-		mapRateSec := cfg.Attributes.Int("map_rate_sec", 0)
-		attrCfg.MapRateSec = &mapRateSec
-	}
-
-    configParams := cfg.Attributes["config_params"]
-    if configParams != nil {
-        if config, ok := configParams.(map[string]interface{}); ok {
-            for k, valueInterface := range config {
-                if valueString, ok := valueInterface.(string); ok {
-                    attrCfg.ConfigParams[k] = valueString
-                }else {
-                    return nil, NewError(fmt.Sprintf("unable to load config_params. Key (%s) must have a string value", k))
-                }
-            }
-        } else {
-            return nil, NewError("unable to load config_params. It should be a map of strings to strings.")
-        }
-        
-    }
-
-	_, err := attrCfg.Validate("TODO")
+	attrCfg := &AttrConfig{}
+    
+    _,err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes)
 	if err != nil {
-		return &AttrConfig{}, err
+		return &AttrConfig{}, WrapError(err)
+	}
+
+    // TODO Replace this config_path with a more sensible value
+	_, err = attrCfg.Validate("config_path")
+	if err != nil {
+		return &AttrConfig{}, WrapError(err)
 	}
 
 	return attrCfg, nil
@@ -154,8 +96,12 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
-	if config.DataRateMs != 0 && config.DataRateMs < minDataRateMs {
-		return nil, errors.Errorf("cannot specify data_rate_msec less than %v", minDataRateMs)
+	if config.DeleteProcessedData == nil {
+		return nil, utils.NewConfigValidationFieldRequiredError(path, "delete_processed_data")
+	}
+
+	if config.DataRateMs != 0 && config.DataRateMs < 0 {
+		return nil, errors.New("cannot specify data_rate_msec less than zero")
 	}
 
 	if config.MapRateSec != nil && *config.MapRateSec < 0 {
