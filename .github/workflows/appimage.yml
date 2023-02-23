@@ -36,8 +36,6 @@ jobs:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
-    outputs:
-      date: ${{ steps.build_appimage.outputs.date }}
 
     steps:
     - name: Configure git for private repos
@@ -104,9 +102,7 @@ jobs:
 
     - name: Build appimage
       id: build_appimage
-      run: |
-        echo "date=`date +%F`" >> $GITHUB_OUTPUT 
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimageorb'
+      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimageorb'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
@@ -138,8 +134,6 @@ jobs:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 180
-    outputs:
-      date: ${{ steps.build_appimage.outputs.date }}
 
     steps:
     - name: Configure git for private repos
@@ -210,9 +204,7 @@ jobs:
 
     - name: Build appimage
       id: build_appimage
-      run: |
-        echo "date=`date +%F`" >> $GITHUB_OUTPUT 
-        sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimagecarto'
+      run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimagecarto'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
