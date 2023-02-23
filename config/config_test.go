@@ -121,9 +121,6 @@ func TestNewAttrConf(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		_, err = NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		cfgService.Attributes["Chiekcn_live_data"] = true
-		_, err = NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
 	})
 	/*
 	   TODO link to JIRA ticket that should have this fail
