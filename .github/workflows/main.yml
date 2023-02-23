@@ -6,7 +6,7 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: [ 'kk/add-lint-test' ]
+    branches: [ 'main' ]
     paths-ignore:
       - 'README.md'
     tags:
@@ -17,12 +17,12 @@ on:
 # Don't forget to tag back to @main before merge.
 
 jobs:
-  # appimage:
-  #   uses: viamrobotics/slam/.github/workflows/appimage.yml@main
-  #   secrets:
-  #     GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-  #     REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
-  #     ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
+  appimage:
+    uses: viamrobotics/slam/.github/workflows/appimage.yml@main
+    secrets:
+      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+      REPO_READ_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
+      ARTIFACT_READ_ONLY_GCP_CREDENTIALS: ${{ secrets.ARTIFACT_READ_ONLY_GCP_CREDENTIALS }}
 
   gotest:
-    uses: viamrobotics/slam/.github/workflows/gotest.yml@kk/add-lint-test
+    uses: viamrobotics/slam/.github/workflows/gotest.yml@main
