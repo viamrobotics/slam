@@ -15,6 +15,5 @@ lint-go: tool-install
 lint: lint-go
 	PATH=$(PATH_WITH_TOOLS) actionlint
 
-
 test:
 	go test -race ./...
