@@ -13,11 +13,9 @@ jobs:
           - arch: [x64, qemu-host]
             image: ghcr.io/viamrobotics/canon:amd64-cache
             platform: linux/amd64
-            lint: 'make lint'
           - arch: [arm64, qemu-host]
             image: ghcr.io/viamrobotics/canon:arm64-cache
             platform: linux/arm64
-            lint: 'make lint'
     runs-on: ${{ matrix.arch }}
     container:
       image: ${{ matrix.image }}
@@ -54,12 +52,12 @@ jobs:
         echo "GITHUB_X_PR_BASE_SHA=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
         echo "GITHUB_X_PR_BASE_REF=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
 
-    - name: Verify no uncommitted changes from "${{ matrix.lint }}"
+    - name: Verify no uncommitted changes from "make lint"
       run: |
         git init
         git add .
         chown -R testbot .
-        sudo -u testbot bash -lc '${{ matrix.lint }}'
+        sudo -u testbot bash -lc make lint
         GEN_DIFF=$(git status -s)
 
         if [ -n "$GEN_DIFF" ]; then
