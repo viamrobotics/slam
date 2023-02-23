@@ -254,8 +254,14 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void ProcessDataAndStartSavingMaps(double data_cutoff_time);
 
     // SetUpMapBuilder loads the lua file with default cartographer config
-    // parameters depending on the action mode.
+    // parameters depending on the action mode. Setting the correct action
+    // mode has to happen before calling this function.
     void SetUpMapBuilder();
+
+    // SetUpSLAM sets the correct action mode, prepares the map builder and
+    // loads the right hyperparameters based on the action mode. Needs to be
+    // called before running slam. 
+    void SetUpSLAM();
 
     // GetLatestPaintedMapSlices paints and returns the current map of
     // Cartographer
