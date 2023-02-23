@@ -2,7 +2,6 @@
 package config
 
 import (
-
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/config"
@@ -62,17 +61,16 @@ type AttrConfig struct {
 	Dev                 bool              `json:"dev"`
 }
 
-
 func NewAttrConfig(cfg config.Service) (returnValue *AttrConfig, returnError error) {
 
 	attrCfg := &AttrConfig{}
-    
-    _,err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes)
+
+	_, err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes)
 	if err != nil {
 		return &AttrConfig{}, WrapError(err)
 	}
 
-    // TODO Replace this config_path with a more sensible value
+	// TODO Replace this config_path with a more sensible value
 	_, err = attrCfg.Validate("config_path")
 	if err != nil {
 		return &AttrConfig{}, WrapError(err)
@@ -112,7 +110,6 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 
 	return deps, nil
 }
-
 
 // SetParameters ...
 func (config *AttrConfig) SetParameters(localhost0 string, defaultDataRateMs, defaultMapRateSec int, logger golog.Logger) error {
