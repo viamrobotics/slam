@@ -101,7 +101,6 @@ jobs:
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestOrbslamIntegration'
 
     - name: Build appimage
-      id: build_appimage
       run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimageorb'
 
     - name: Authorize GCP Upload
@@ -203,7 +202,6 @@ jobs:
         sudo --preserve-env=GOOGLE_APPLICATION_CREDENTIALS -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
 
     - name: Build appimage
-      id: build_appimage
       run: sudo -u testbot bash -lc 'cd slam/slam-libraries && make BUILD_CHANNEL="latest" appimagecarto'
 
     - name: Authorize GCP Upload
