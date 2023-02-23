@@ -12,6 +12,8 @@ lint-go: tool-install
 	go vet -vettool=$(TOOL_BIN)/combined ./...
 	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/.golangci.yaml
 
+
+
 lint: lint-go
 	PATH=$(PATH_WITH_TOOLS) actionlint
 
