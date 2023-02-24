@@ -260,8 +260,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // SetUpSLAM sets the correct action mode, prepares the map builder and
     // loads the right hyperparameters based on the action mode. Needs to be
-    // called before running slam. 
-    void SetUpSLAM();
+    // called before running slam.
+    int SetUpSLAM();
 
     // GetLatestPaintedMapSlices paints and returns the current map of
     // Cartographer
