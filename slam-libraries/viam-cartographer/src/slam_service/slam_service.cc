@@ -755,7 +755,7 @@ void SLAMServiceImpl::PaintMarker(
     viam::io::DrawPoseOnSurface(painted_slices, global_pose, kPixelSize);
 }
 
-int SLAMServiceImpl::SetUpSLAM() {
+double SLAMServiceImpl::SetUpSLAM() {
     // Setting the action mode has to happen before setting up the
     // map builder.
     SetActionMode();
@@ -799,7 +799,7 @@ int SLAMServiceImpl::SetUpSLAM() {
 
 void SLAMServiceImpl::RunSLAM() {
     LOG(INFO) << "Setting up cartographer";
-    int data_start_time = SetUpSLAM();
+    double data_start_time = SetUpSLAM();
     LOG(INFO) << "Starting to run cartographer";
     ProcessDataAndStartSavingMaps(data_start_time);
     LOG(INFO) << "Done running cartographer";
