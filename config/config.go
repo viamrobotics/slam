@@ -1,4 +1,4 @@
-// Package config implements functions to assist with attribute evaluation in the slam service
+// Package config implements functions to assist with attribute evaluation in SLAM modules
 package config
 
 import (
@@ -42,13 +42,13 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 	return useLiveData, nil
 }
 
-// AttrConfig describes how to configure the service.
+// AttrConfig describes how to configure a SLAM module.
 type AttrConfig struct {
 	Sensors             []string          `json:"sensors"`
 	ConfigParams        map[string]string `json:"config_params"`
 	DataDirectory       string            `json:"data_dir"`
 	UseLiveData         *bool             `json:"use_live_data"`
-	DataRateMs          int               `json:"data_rate_msec"`
+	DataRateMsec        int               `json:"data_rate_msec"`
 	MapRateSec          *int              `json:"map_rate_sec"`
 	InputFilePattern    string            `json:"input_file_pattern"`
 	Port                string            `json:"port"`
@@ -56,7 +56,7 @@ type AttrConfig struct {
 	Dev                 bool              `json:"dev"`
 }
 
-// NewAttrConfig creates a slam config from a service config.
+// NewAttrConfig creates a SLAM config from a service config.
 func NewAttrConfig(cfg config.Service) (*AttrConfig, error) {
 	attrCfg := &AttrConfig{}
 
@@ -88,11 +88,7 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
-	if config.DeleteProcessedData == nil {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "delete_processed_data")
-	}
-
-	if config.DataRateMs != 0 && config.DataRateMs < 0 {
+	if config.DataRateMsec != 0 && config.DataRateMsec < 0 {
 		return nil, errors.New("cannot specify data_rate_msec less than zero")
 	}
 
@@ -105,20 +101,24 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 	return deps, nil
 }
 
-// SetParameters updates the config with a set of default values for the paramters. 
-// If any of the parameters are unset then they will be set to the passed in values. 
-func (config *AttrConfig) SetParameters(port string, defaultDataRateMs, defaultMapRateSec int, logger golog.Logger) error {
+<<<<<<< Updated upstream
+// SetParameters updates any unset config parameters to the values passed to this function.
+func (config *AttrConfig) SetParameters(port string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) error {
+=======
+// SetParameters ...
+func (config *AttrConfig) SetParameters(localhost0 string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) error {
+>>>>>>> Stashed changes
 	if config.Port == "" {
 		config.Port = port
 	}
 
-	if config.DataRateMs == 0 {
-		config.DataRateMs = defaultDataRateMs
-		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMs)
+	if config.DataRateMsec == 0 {
+		config.DataRateMsec = defaultDataRateMsec
+		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
 	}
 
 	if config.MapRateSec == nil {
-		logger.Debugf("no map_rate_secs given, setting to default value of %d", defaultMapRateSec)
+		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
 		config.MapRateSec = &defaultMapRateSec
 	} else if *config.MapRateSec == 0 {
 		logger.Info("setting slam system to localization mode")
@@ -132,5 +132,6 @@ func (config *AttrConfig) SetParameters(port string, defaultDataRateMs, defaultM
 
 	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 	config.DeleteProcessedData = &deleteProcessedData
+
 	return nil
 }

@@ -84,19 +84,20 @@ func makeCfgService() config.Service {
 	}
 	cfgService.Attributes["data_dir"] = "path"
 	cfgService.Attributes["use_live_data"] = true
-	cfgService.Attributes["delete_processed_data"] = true
 	return cfgService
 }
 
 func TestNewAttrConf(t *testing.T) {
 	testCfgPath := "config_path"
 	logger := golog.NewTestLogger(t)
+
 	t.Run("Empty config", func(t *testing.T) {
 		model := resource.NewDefaultModel(resource.ModelName("test"))
 		cfgService := config.Service{Name: "test", Type: "slam", Model: model}
 		_, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeError)
 	})
+
 	t.Run("Simplest valid config", func(t *testing.T) {
 		cfgService := makeCfgService()
 		_, err := NewAttrConfig(cfgService)
@@ -104,7 +105,7 @@ func TestNewAttrConf(t *testing.T) {
 	})
 
 	t.Run("Config without required fields", func(t *testing.T) {
-		requiredFields := []string{"delete_processed_data", "data_dir", "use_live_data"}
+		requiredFields := []string{"data_dir", "use_live_data"}
 		for _, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s", requiredField)
 			cfgService := makeCfgService()
@@ -113,23 +114,26 @@ func TestNewAttrConf(t *testing.T) {
 			test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField).Error()))
 		}
 	})
+
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["use_live_data"] = "foo"
+		cfgService.Attributes["use_live_data"] = "true"
 		_, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeError)
 		cfgService.Attributes["use_live_data"] = true
 		_, err = NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
-	/*
-	   TODO link to JIRA ticket that should have this fail
-	   t.Run("Config with unused parameter", func(t *testing.T) {
-	       cfgService := makeCfgService()
-	       cfgService.Attributes["UNDEFINED_PARAMETER"] = "foo"
-	       _,err := NewAttrConfig(cfgService)
-	       test.That(t, err, test.ShouldBeError)
-	   })*/
+
+	/* Unused config parameters should throw an error or fail. See: RSDK-2076
+	t.Run("Config with unused parameter", func(t *testing.T) {
+	    cfgService := makeCfgService()
+	    cfgService.Attributes["UNDEFINED_PARAMETER"] = "foo"
+	    _,err := NewAttrConfig(cfgService)
+	    test.That(t, err, test.ShouldBeError)
+	})
+	*/
+
 	t.Run("Config with unacceptable values", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["data_rate_msec"] = -1
@@ -161,7 +165,7 @@ func TestNewAttrConf(t *testing.T) {
 		test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
 		test.That(t, *cfg.UseLiveData, test.ShouldEqual, cfgService.Attributes["use_live_data"])
 		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
-		test.That(t, cfg.DataRateMs, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
+		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
 		test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
 		test.That(t, cfg.InputFilePattern, test.ShouldResemble, cfgService.Attributes["input_file_pattern"])
 		test.That(t, cfg.Port, test.ShouldEqual, cfgService.Attributes["port"])
@@ -172,16 +176,28 @@ func TestNewAttrConf(t *testing.T) {
 
 func TestSetParameters(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	t.Run("Defaults", func(t *testing.T) {
+
+	t.Run("Pass default parameters", func(t *testing.T) {
+		cfgService := makeCfgService()
+		cfgService.Attributes["sensors"] = []string{"a"}
+		cfgService.Attributes["use_live_data"] = true
+		cfg, err := NewAttrConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		err = cfg.SetParameters("localhost", 1001, 1002, logger)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, cfg.Port, test.ShouldResemble, "localhost")
+		test.That(t, cfg.DataRateMsec, test.ShouldEqual, 1001)
+		test.That(t, *cfg.MapRateSec, test.ShouldEqual, 1002)
+		test.That(t, *cfg.UseLiveData, test.ShouldEqual, true)
+		test.That(t, *cfg.DeleteProcessedData, test.ShouldEqual, true)
+	})
+
+	t.Run("Live data without sensors", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		cfg.SetParameters("localhost", 1001, 1002, logger)
-		test.That(t, cfg.Port, test.ShouldResemble, "localhost")
-		test.That(t, cfg.DataRateMs, test.ShouldEqual, 1001)
-		test.That(t, *cfg.MapRateSec, test.ShouldEqual, 1002)
-		test.That(t, *cfg.UseLiveData, test.ShouldEqual, true)
-		test.That(t, *cfg.DeleteProcessedData, test.ShouldEqual, true)
+		err = cfg.SetParameters("localhost", 1001, 1002, logger)
+		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }
