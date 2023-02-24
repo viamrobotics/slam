@@ -1,4 +1,4 @@
-// Package config implements functions to assist with attribute evaluation in SLAM modules
+// Package config implements functions to assist with attribute evaluation in the SLAM service
 package config
 
 import (
@@ -42,7 +42,7 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 	return useLiveData, nil
 }
 
-// AttrConfig describes how to configure a SLAM module.
+// AttrConfig describes how to configure the SLAM service.
 type AttrConfig struct {
 	Sensors             []string          `json:"sensors"`
 	ConfigParams        map[string]string `json:"config_params"`
