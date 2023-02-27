@@ -10,6 +10,7 @@ set(VIAM_CARTOGRAPHER_SOVERSION ${CARTOGRAPHER_MAJOR_VERSION}.${CARTOGRAPHER_MIN
 
 include("${PROJECT_SOURCE_DIR}/cmake/functions.cmake")
 
+add_definitions(-DABSL_LEGACY_THREAD_ANNOTATIONS)
 find_package(absl REQUIRED)
 find_package(Ceres REQUIRED COMPONENTS SuiteSparse)
 find_package(Lua 5.2 REQUIRED)

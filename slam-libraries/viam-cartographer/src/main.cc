@@ -2,6 +2,7 @@
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
 #include <signal.h>
+#define ABSL_LEGACY_THREAD_ANNOTATIONS
 
 #include <iostream>
 #include <thread>
