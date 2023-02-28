@@ -95,7 +95,7 @@ testcarto:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
 
 installcarto:
-	sudo cp ./viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
+	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
 installorb:
 	sudo cp viam-orb-slam3/bin/orb_grpc_server /usr/local/bin/orb_grpc_server
