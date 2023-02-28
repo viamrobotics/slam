@@ -18,7 +18,8 @@ rm -rf build
 mkdir build
 pushd build
 
-cmake .. -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH=`brew --prefix` -DABSL_LEGACY_THREAD_ANNOTATIONS=1
+echo building cartogropher
+cmake .. -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH=`brew --prefix`
 ninja
 popd
 popd
