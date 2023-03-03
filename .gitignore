@@ -10,5 +10,8 @@
 *.DS_Store
 *.swp
 
+# Generated directories
+bin/
+
 # Code editor settings
 .vscode
