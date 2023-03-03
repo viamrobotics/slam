@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	pc "go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/rimage"
 	rdkutils "go.viam.com/rdk/utils"
 )
@@ -53,6 +54,25 @@ func WriteImageToPNGFile(ctx context.Context, image image.Image, filename string
 		return err
 	}
 	if err := w.Flush(); err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+// WritePCDToFile Encodes the pointcloud and then saves it to the passed filename.
+func WritePCDToFile(ctx context.Context, pointcloud pc.PointCloud, filename string) error {
+	//nolint:gosec
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	w := bufio.NewWriter(f)
+
+	if err = pc.ToPCD(pointcloud, w, 1); err != nil {
+		return err
+	}
+	if err = w.Flush(); err != nil {
 		return err
 	}
 	return f.Close()
