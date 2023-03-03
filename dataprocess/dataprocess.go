@@ -38,41 +38,37 @@ func convertImageToPNG(ctx context.Context, img image.Image) ([]byte, error) {
 	return nil, errors.New("Failed to convert image to PNG")
 }
 
-// WriteImageToPNGFile attempts to convert an image to PNG and then save it to the passed filename.
+// WriteImageToPNGFile Convert the image to PNG and then saves it to the passed filename.
 func WriteImageToPNGFile(ctx context.Context, image image.Image, filename string) error {
 	png, err := convertImageToPNG(ctx, image)
 	if err != nil {
 		return err
 	}
-	//nolint:gosec
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	w := bufio.NewWriter(f)
-	if _, err := w.Write(png); err != nil {
-		return err
-	}
-	if err := w.Flush(); err != nil {
-		return err
-	}
-	return f.Close()
+	return WriteBytesToFile(png, filename)
 }
 
 // WritePCDToFile Encodes the pointcloud and then saves it to the passed filename.
 func WritePCDToFile(ctx context.Context, pointcloud pc.PointCloud, filename string) error {
+	buf := new(bytes.Buffer)
+	err := pc.ToPCD(pointcloud, buf, 1)
+	if err != nil {
+		return err
+	}
+	return WriteBytesToFile(buf.Bytes(), filename)
+}
+
+// WriteBytesToFile Writes the passed bytes to the passed filename.
+func WriteBytesToFile(bytes []byte, filename string) error {
 	//nolint:gosec
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
-
 	w := bufio.NewWriter(f)
-
-	if err = pc.ToPCD(pointcloud, w, 1); err != nil {
+	if _, err := w.Write(bytes); err != nil {
 		return err
 	}
-	if err = w.Flush(); err != nil {
+	if err := w.Flush(); err != nil {
 		return err
 	}
 	return f.Close()
