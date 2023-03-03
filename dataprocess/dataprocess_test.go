@@ -3,6 +3,8 @@ package dataprocess
 import (
 	"context"
 	"image"
+	"image/color"
+	"image/png"
 	"os"
 	"testing"
 
@@ -16,16 +18,21 @@ func TestWriteImage(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "*")
 	defer os.RemoveAll(tempDir)
 	test.That(t, err, test.ShouldBeNil)
-	img := image.NewRGBA(image.Rectangle{
+	img := image.NewNRGBA(image.Rectangle{
 		image.Point{0, 0},
-		image.Point{200, 200},
+		image.Point{10, 10},
 	})
+	img.Set(1, 1, color.Black)
 	fileDest := tempDir + "test_img.png"
 	err = WriteImageToPNGFile(context.Background(), img, fileDest)
 	test.That(t, err, test.ShouldBeNil)
+	reader, err := os.Open(fileDest)
 	// Test that the file was actually written
-	_, err = os.Stat(fileDest)
 	test.That(t, err, test.ShouldBeNil)
+	// Test that decoding the image produces the same image
+	readImage, err := png.Decode(reader)
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, img, test.ShouldResemble, readImage)
 }
 
 func TestWritePCD(t *testing.T) {
