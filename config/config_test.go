@@ -174,7 +174,7 @@ func TestNewAttrConf(t *testing.T) {
 	})
 }
 
-func TestSetParameters(t *testing.T) {
+func TestSetOptionalParameters(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Pass default parameters", func(t *testing.T) {
@@ -183,7 +183,7 @@ func TestSetParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		err = cfg.SetParameters("localhost", 1001, 1002, logger)
+		err = cfg.SetOptionalParameters("localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, cfg.Port, test.ShouldResemble, "localhost")
 		test.That(t, cfg.DataRateMsec, test.ShouldEqual, 1001)
@@ -197,7 +197,7 @@ func TestSetParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		err = cfg.SetParameters("localhost", 1001, 1002, logger)
+		err = cfg.SetOptionalParameters("localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }

@@ -101,8 +101,8 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 	return deps, nil
 }
 
-// SetParameters updates any unset config parameters to the values passed to this function.
-func (config *AttrConfig) SetParameters(port string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) error {
+// SetOptionalParameters updates any unset config parameters to the values passed to this function.
+func (config *AttrConfig) SetOptionalParameters(port string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) error {
 	if config.Port == "" {
 		config.Port = port
 	}
