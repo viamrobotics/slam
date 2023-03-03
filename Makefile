@@ -8,6 +8,7 @@ tool-install:
 		github.com/rhysd/actionlint/cmd/actionlint
 
 lint-go: tool-install
+	go mod tidy
 	go vet -vettool=$(TOOL_BIN)/combined ./...
 	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/.golangci.yaml
 
