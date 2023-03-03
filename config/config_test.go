@@ -105,6 +105,7 @@ func TestNewAttrConf(t *testing.T) {
 	})
 
 	t.Run("Config without required fields", func(t *testing.T) {
+		// Test for missing main attribute fields
 		requiredFields := []string{"data_dir", "use_live_data"}
 		for _, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s", requiredField)
@@ -113,6 +114,12 @@ func TestNewAttrConf(t *testing.T) {
 			_, err := NewAttrConfig(cfgService)
 			test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField).Error()))
 		}
+		// Test for missing config_params attributes
+		logger.Debug("Testing SLAM config without config_params[mode]")
+		cfgService := makeCfgService()
+		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
+		_, err := NewAttrConfig(cfgService)
+		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
 	})
 
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
@@ -124,15 +131,6 @@ func TestNewAttrConf(t *testing.T) {
 		_, err = NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
-
-	/* Unused config parameters should throw an error or fail. See: RSDK-2076
-	t.Run("Config with unused parameter", func(t *testing.T) {
-	    cfgService := makeCfgService()
-	    cfgService.Attributes["UNDEFINED_PARAMETER"] = "foo"
-	    _,err := NewAttrConfig(cfgService)
-	    test.That(t, err, test.ShouldBeError)
-	})
-	*/
 
 	t.Run("Config with unacceptable values", func(t *testing.T) {
 		cfgService := makeCfgService()
@@ -150,7 +148,6 @@ func TestNewAttrConf(t *testing.T) {
 		cfgService.Attributes["sensors"] = []string{"a", "b"}
 		cfgService.Attributes["data_rate_msec"] = 1001
 		cfgService.Attributes["map_rate_sec"] = 1002
-		cfgService.Attributes["input_file_pattern"] = "*"
 		cfgService.Attributes["port"] = "47"
 		cfgService.Attributes["delete_processed_data"] = true
 		cfgService.Attributes["dev"] = false
@@ -167,7 +164,6 @@ func TestNewAttrConf(t *testing.T) {
 		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
 		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
 		test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
-		test.That(t, cfg.InputFilePattern, test.ShouldResemble, cfgService.Attributes["input_file_pattern"])
 		test.That(t, cfg.Port, test.ShouldEqual, cfgService.Attributes["port"])
 		test.That(t, cfg.Dev, test.ShouldEqual, cfgService.Attributes["dev"])
 		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])

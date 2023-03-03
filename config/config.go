@@ -50,7 +50,6 @@ type AttrConfig struct {
 	UseLiveData         *bool             `json:"use_live_data"`
 	DataRateMsec        int               `json:"data_rate_msec"`
 	MapRateSec          *int              `json:"map_rate_sec"`
-	InputFilePattern    string            `json:"input_file_pattern"`
 	Port                string            `json:"port"`
 	DeleteProcessedData *bool             `json:"delete_processed_data"`
 	Dev                 bool              `json:"dev"`
@@ -88,7 +87,7 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
-	if config.DataRateMsec != 0 && config.DataRateMsec < 0 {
+	if config.DataRateMsec < 0 {
 		return nil, errors.New("cannot specify data_rate_msec less than zero")
 	}
 
