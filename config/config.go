@@ -64,8 +64,8 @@ func NewAttrConfig(cfg config.Service) (*AttrConfig, error) {
 		return &AttrConfig{}, newError(err.Error())
 	}
 
-	// TODO Replace this config_path with a more sensible value
-	_, err = attrCfg.Validate("config_path")
+	// This temporary value will be replaced once we are using rdk's validation
+	_, err = attrCfg.Validate("services.slam.attributes.fake")
 	if err != nil {
 		return &AttrConfig{}, newError(err.Error())
 	}

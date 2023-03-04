@@ -88,7 +88,7 @@ func makeCfgService() config.Service {
 }
 
 func TestNewAttrConf(t *testing.T) {
-	testCfgPath := "config_path"
+	testCfgPath := "services.slam.attributes.fake"
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Empty config", func(t *testing.T) {
