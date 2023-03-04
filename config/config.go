@@ -114,7 +114,8 @@ func (config *AttrConfig) SetOptionalParameters(port string, defaultDataRateMsec
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
 		config.MapRateSec = &defaultMapRateSec
-	} else if *config.MapRateSec == 0 {
+	}
+	if *config.MapRateSec == 0 {
 		logger.Info("setting slam system to localization mode")
 	}
 
