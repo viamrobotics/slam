@@ -5,45 +5,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"image"
 	"os"
 
-	"github.com/pkg/errors"
 	pc "go.viam.com/rdk/pointcloud"
-	"go.viam.com/rdk/rimage"
-	rdkutils "go.viam.com/rdk/utils"
 )
-
-// convertImageToPNG only supports rimage.LazyPNG and image.YCbCr.
-// This was done because decoding a png from the camera server and then re-encoding
-// it results in changes to the image that caused orbslam to be unable to use it
-// for feature matching (RSDK-1393).
-func convertImageToPNG(ctx context.Context, img image.Image) ([]byte, error) {
-	if lazyImg, ok := img.(*rimage.LazyEncodedImage); ok {
-		if lazyImg.MIMEType() != rdkutils.MimeTypePNG {
-			return nil, errors.Errorf("expected mime type %v, got %T", rdkutils.MimeTypePNG, img)
-		}
-		return lazyImg.RawData(), nil
-	}
-
-	if ycbcrImg, ok := img.(*image.YCbCr); ok {
-		pngImage, err := rimage.EncodeImage(ctx, ycbcrImg, rdkutils.MimeTypePNG)
-		if err != nil {
-			return nil, err
-		}
-		return pngImage, nil
-	}
-	return nil, errors.New("Failed to convert image to PNG. It was not LazyPNG or YCbCr")
-}
-
-// WriteImageToPNGFile Convert the image to PNG and then saves it to the passed filename.
-func WriteImageToPNGFile(ctx context.Context, image image.Image, filename string) error {
-	png, err := convertImageToPNG(ctx, image)
-	if err != nil {
-		return err
-	}
-	return WriteBytesToFile(png, filename)
-}
 
 // WritePCDToFile Encodes the pointcloud and then saves it to the passed filename.
 func WritePCDToFile(ctx context.Context, pointcloud pc.PointCloud, filename string) error {
