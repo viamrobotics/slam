@@ -1,15 +1,17 @@
 package dataprocess
 
 import (
+	"bytes"
 	"context"
 	"image"
-	"image/color"
 	"image/png"
 	"os"
 	"testing"
 
 	"github.com/edaniels/golog"
 	pc "go.viam.com/rdk/pointcloud"
+	"go.viam.com/rdk/rimage"
+	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/test"
 )
 
@@ -18,21 +20,26 @@ func TestWriteImage(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "*")
 	defer os.RemoveAll(tempDir)
 	test.That(t, err, test.ShouldBeNil)
-	img := image.NewNRGBA(image.Rectangle{
+	// Create an image to encode
+	origImg := image.NewRGBA(image.Rectangle{
 		image.Point{0, 0},
 		image.Point{10, 10},
 	})
-	img.Set(1, 1, color.Black)
+	buf := new(bytes.Buffer)
+	png.Encode(buf, origImg)
+	// Encode it as a LazyImage
+	lazyImg := rimage.NewLazyEncodedImage(buf.Bytes(), rdkutils.MimeTypePNG)
+	// Save the encoded image
+	ctx := context.Background()
 	fileDest := tempDir + "test_img.png"
-	err = WriteImageToPNGFile(context.Background(), img, fileDest)
+	err = WriteImageToPNGFile(ctx, lazyImg, fileDest)
 	test.That(t, err, test.ShouldBeNil)
-	reader, err := os.Open(fileDest)
 	// Test that the file was actually written
+	imgBytes, err := os.ReadFile(fileDest)
 	test.That(t, err, test.ShouldBeNil)
 	// Test that decoding the image produces the same image
-	readImage, err := png.Decode(reader)
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, img, test.ShouldResemble, readImage)
+	readImg := rimage.NewLazyEncodedImage(imgBytes, rdkutils.MimeTypePNG)
+	test.That(t, readImg, test.ShouldResemble, lazyImg)
 }
 
 func TestWritePCD(t *testing.T) {
