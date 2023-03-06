@@ -7,22 +7,13 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/registry"
-	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/sensors"
 )
 
 type Lidar struct {
-	Name       string
-	lidar      camera.Camera
-	DataRateMs int
-}
-
-func validate(ctx context.Context, lidar camera.Camera) error {
-	return nil
-}
-
-func (lidar Lidar) GetData(ctx context.Context) (pointcloud.PointCloud, error) {
-	return lidar.lidar.NextPointCloud(ctx)
+	Name         string
+	lidar        camera.Camera
+	DataRateMsec int
 }
 
 func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor, svcConfig *slamConfig.AttrConfig) (Lidar, error) {
@@ -30,6 +21,7 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 	if err != nil {
 		return Lidar{}, err
 	}
+
 	newLidar, err := camera.FromDependencies(deps, name)
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting camera %v for slam service", name)
@@ -39,14 +31,17 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 		return Lidar{}, err
 	}
 
-	dataRateMs, err := sensor.GetDataRateMs(ctx, svcConfig)
-	if err != nil {
-		return Lidar{}, err
-	}
-
 	return Lidar{
-		Name:       name,
-		lidar:      newLidar,
-		DataRateMs: dataRateMs,
+		Name:         name,
+		lidar:        newLidar,
+		DataRateMsec: sensor.GetDataRateMs(svcConfig),
 	}, nil
+}
+
+func (lidar Lidar) GetData(ctx context.Context) (pointcloud.PointCloud, error) {
+	return lidar.lidar.NextPointCloud(ctx)
+}
+
+func validate(ctx context.Context, lidar camera.Camera) error {
+	return nil
 }
