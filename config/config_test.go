@@ -132,7 +132,7 @@ func TestNewAttrConf(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run("Config with unacceptable values", func(t *testing.T) {
+	t.Run("Config with out of range values", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["data_rate_msec"] = -1
 		_, err := NewAttrConfig(cfgService)
