@@ -65,7 +65,7 @@ func TestSetupDirectories(t *testing.T) {
 		noPermsDir := tempDir + "/no_permissions"
 		// create a directory in the temp folder
 		// that doesn't have write permissions
-		err = os.Mkdir(noPermsDir, 000)
+		err = os.Mkdir(noPermsDir, 0o00)
 		test.That(t, err, test.ShouldBeNil)
 		err = SetupDirectories(noPermsDir, logger)
 		test.That(t, err, test.ShouldBeError)
