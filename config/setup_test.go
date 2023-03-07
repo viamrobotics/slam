@@ -10,7 +10,6 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.viam.com/test"
-
 	"google.golang.org/grpc"
 )
 
