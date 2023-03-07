@@ -42,7 +42,7 @@ func SetupGRPCConnection(
 	defer timeoutCancel()
 	// Increase the gRPC max message size from the default value of 4MB to 32MB, to match the limit that is set in RDK. This is
 	// necessary for transmitting large pointclouds.
-    maxMessageSize := 32 * 1024 * 1024
+	maxMessageSize := 32 * 1024 * 1024
 	maxMsgSizeOption := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxMessageSize))
 	// TODO: If we support running SLAM in the cloud, we need to pass credentials to this function
 	connLib, err := grpc.DialContext(ctx, port, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), maxMsgSizeOption)
