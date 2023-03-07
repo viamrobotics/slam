@@ -10,12 +10,8 @@
 *.DS_Store
 *.swp
 
-# generate folders
-grpc/
+# Generated directories
 bin/
 
-# code editor settings
+# Code editor settings
 .vscode
-
-# grpc
-slam-libraries/grpc
