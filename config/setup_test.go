@@ -4,20 +4,40 @@ import (
 	"context"
 	"os"
 	"testing"
+    "net"
+    "fmt"
+
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"go.opencensus.io/trace"
 	"go.viam.com/test"
+
+	"google.golang.org/grpc"
 )
+
+func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {
+	listener, err := net.Listen("tcp", ":0")
+	test.That(tb, err, test.ShouldBeNil)
+	grpcServer := grpc.NewServer()
+	go grpcServer.Serve(listener)
+
+	return grpcServer, listener.Addr().(*net.TCPAddr).Port
+}
 
 func TestGRPCConnection(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	t.Run("Invalid grpc connection", func(t *testing.T) {
-		ctx, _ := trace.StartSpan(context.Background(), "slam::test::TestGRPCConnection")
 		port := "invalid_unused_port:0"
-		_, _, err := SetupGRPCConnection(ctx, port, 1, logger)
+		_, _, err := SetupGRPCConnection(context.Background(), port, 1, logger)
 		test.That(t, err, test.ShouldBeError, errors.New("context deadline exceeded"))
+	})
+	t.Run("Valid grpc connection", func(t *testing.T) {
+        // Setup grpc server and attempt to connect to that one
+        grpcServer, portNum := setupTestGRPCServer(t)
+        defer grpcServer.Stop()
+        port := fmt.Sprintf(":%d",portNum)
+		_, _, err := SetupGRPCConnection(context.Background(), port, 1, logger)
+		test.That(t, err, test.ShouldBeNil)
 	})
 }
 
