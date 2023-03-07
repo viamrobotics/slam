@@ -22,7 +22,6 @@ func TestWriteBytesToFile(t *testing.T) {
 		readBytes, err := os.ReadFile(fileDest)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, readBytes, test.ShouldResemble, actualBytes)
-
 	})
 }
 
@@ -38,6 +37,5 @@ func TestWritePCDToFile(t *testing.T) {
 		// Test that the file was actually written
 		_, err = os.Stat(fileDest)
 		test.That(t, err, test.ShouldBeNil)
-
 	})
 }
