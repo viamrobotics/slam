@@ -1,3 +1,4 @@
+// Package utils contains helper functions for the sensor implementations.
 package utils
 
 import (

@@ -1,3 +1,4 @@
+// Package lidar implements the Lidar sensor
 package lidar
 
 import (
@@ -7,16 +8,19 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/registry"
+
 	"go.viam.com/slam/config"
 	"go.viam.com/slam/sensors"
 )
 
+// Lidar represents a LIDAR sensor.
 type Lidar struct {
 	Name         string
 	lidar        camera.Camera
 	DataRateMsec int
 }
 
+// New creates a new Lidar sensor based on the sensor definition and the service config.
 func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor, svcConfig *config.AttrConfig) (Lidar, error) {
 	name, err := sensor.GetName(svcConfig)
 	if err != nil {
@@ -35,10 +39,11 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 	return Lidar{
 		Name:         name,
 		lidar:        newLidar,
-		DataRateMsec: sensor.GetDataRateMs(svcConfig),
+		DataRateMsec: sensor.GetDataRateMsec(svcConfig),
 	}, nil
 }
 
+// GetData returns data from the lidar sensor.
 func (lidar Lidar) GetData(ctx context.Context) (pointcloud.PointCloud, error) {
 	return lidar.lidar.NextPointCloud(ctx)
 }

@@ -1,3 +1,4 @@
+// Package rgb implements the RGB sensor
 package rgb
 
 import (
@@ -7,17 +8,20 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/registry"
 	"go.viam.com/rdk/rimage/transform"
+
 	"go.viam.com/slam/config"
 	"go.viam.com/slam/sensors"
 	"go.viam.com/slam/sensors/utils"
 )
 
+// RGB represents an RGB sensor.
 type RGB struct {
 	Name         string
 	rgb          camera.Camera
 	DataRateMsec int
 }
 
+// New creates a new RGB sensor based on the sensor definition and the service config.
 func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor, svcConfig *config.AttrConfig) (RGB, error) {
 	name, err := sensor.GetName(svcConfig)
 	if err != nil {
@@ -36,10 +40,11 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 	return RGB{
 		Name:         name,
 		rgb:          newRGB,
-		DataRateMsec: sensor.GetDataRateMs(svcConfig),
+		DataRateMsec: sensor.GetDataRateMsec(svcConfig),
 	}, nil
 }
 
+// GetData returns data from the RGB sensor.
 func (rgb RGB) GetData(ctx context.Context) ([]byte, func(), error) {
 	return utils.GetPNGImage(ctx, rgb.rgb)
 }
@@ -71,7 +76,6 @@ func validate(ctx context.Context, rgb camera.Camera) error {
 	}
 	if err := brownConrady.CheckValid(); err != nil {
 		return errors.Wrapf(err, "error validating distortion_parameters for slam service")
-
 	}
 	return nil
 }
