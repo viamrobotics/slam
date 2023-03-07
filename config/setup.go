@@ -1,20 +1,22 @@
 package config
 
 import (
-    "os"
-    "path/filepath"
-    "context"
-    "time"
-	"go.opencensus.io/trace"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"context"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
+// SetupDirectories creates the core data, map, and config directories at the end of the passed path.
 func SetupDirectories(dataDirectory string, logger golog.Logger) error {
-    for _, directoryName := range [4]string{"", "data", "map", "config"} {
+	for _, directoryName := range [4]string{"", "data", "map", "config"} {
 		directoryPath := filepath.Join(dataDirectory, directoryName)
 		if _, err := os.Stat(directoryPath); os.IsNotExist(err) {
 			logger.Warnf("%v directory does not exist", directoryPath)
@@ -23,12 +25,16 @@ func SetupDirectories(dataDirectory string, logger golog.Logger) error {
 			}
 		}
 	}
-    return nil
+	return nil
 }
 
-
-// setupGRPCConnection uses the defined port to create a GRPC client for communicating with the SLAM algorithms.
-func setupGRPCConnection(ctx context.Context, port string, dialMaxTimeoutSec int, logger golog.Logger) (pb.SLAMServiceClient, func() error, error) {
+// SetupGRPCConnection uses the defined port to create a GRPC client for communicating with the SLAM algorithms.
+func SetupGRPCConnection(
+	ctx context.Context,
+	port string,
+	dialMaxTimeoutSec int,
+	logger golog.Logger,
+) (pb.SLAMServiceClient, func() error, error) {
 	ctx, span := trace.StartSpan(ctx, "slam::builtIn::setupGRPCConnection")
 	defer span.End()
 
