@@ -14,7 +14,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// SetupDirectories creates the core data, map, and config directories at the end of the passed path.
+// SetupDirectories creates the data directory at the specified path along with
+// its data, map, and config subdirectories.
 func SetupDirectories(dataDirectory string, logger golog.Logger) error {
 	for _, directoryName := range [4]string{"", "data", "map", "config"} {
 		directoryPath := filepath.Join(dataDirectory, directoryName)
@@ -37,17 +38,12 @@ func SetupGRPCConnection(
 ) (pb.SLAMServiceClient, func() error, error) {
 	ctx, span := trace.StartSpan(ctx, "slam::builtIn::setupGRPCConnection")
 	defer span.End()
-
-	// This takes about 1 second, so the timeout should be sufficient.
 	ctx, timeoutCancel := context.WithTimeout(ctx, time.Duration(dialMaxTimeoutSec)*time.Second)
 	defer timeoutCancel()
-	// The 'port' provided in the config is already expected to include "localhost:", if needed, so that it doesn't need to be
-	// added anywhere in the code. This will allow cloud-based SLAM processing to exist in the future.
-	// TODO: add credentials when running SLAM processing in the cloud.
-
-	// Increasing the gRPC max message size from the default value of 4MB to 32MB, to match the limit that is set in RDK. This is
+	// Increase the gRPC max message size from the default value of 4MB to 32MB, to match the limit that is set in RDK. This is
 	// necessary for transmitting large pointclouds.
 	maxMsgSizeOption := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(32 * 1024 * 1024))
+	// TODO: If we support running SLAM in the cloud, we need to pass credentials to this function
 	connLib, err := grpc.DialContext(ctx, port, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), maxMsgSizeOption)
 	if err != nil {
 		logger.Errorw("error connecting to slam process", "error", err)
