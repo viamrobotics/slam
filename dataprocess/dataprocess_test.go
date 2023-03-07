@@ -3,7 +3,9 @@ package dataprocess
 import (
 	"os"
 	"testing"
+	"time"
 
+	"github.com/edaniels/golog"
 	pc "go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 )
@@ -38,4 +40,16 @@ func TestWritePCDToFile(t *testing.T) {
 		_, err = os.Stat(fileDest)
 		test.That(t, err, test.ShouldBeNil)
 	})
+}
+
+func TestCreateTimestampFilename(t *testing.T) {
+	_ = golog.NewTestLogger(t)
+	dataDirectory := "/Users/whoami/slam"
+	primarySensorName := "myCamera"
+	fileType := ".fakepng"
+	timeStamp := time.Date(1955, time.March, 13, 01, 10, 30, 00, time.UTC)
+
+	filepathActual := CreateTimestampFilename(dataDirectory, primarySensorName, fileType, timeStamp)
+	filepathExpected := "/Users/whoami/slam/myCamera_data_1955-03-13T01:10:30.0000Z.fakepng"
+	test.That(t, filepathActual, test.ShouldEqual, filepathExpected)
 }
