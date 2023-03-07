@@ -2,11 +2,10 @@ package config
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"os"
 	"testing"
-    "net"
-    "fmt"
-
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
@@ -32,10 +31,10 @@ func TestGRPCConnection(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, errors.New("context deadline exceeded"))
 	})
 	t.Run("Valid grpc connection", func(t *testing.T) {
-        // Setup grpc server and attempt to connect to that one
-        grpcServer, portNum := setupTestGRPCServer(t)
-        defer grpcServer.Stop()
-        port := fmt.Sprintf(":%d",portNum)
+		// Setup grpc server and attempt to connect to that one
+		grpcServer, portNum := setupTestGRPCServer(t)
+		defer grpcServer.Stop()
+		port := fmt.Sprintf(":%d", portNum)
 		_, _, err := SetupGRPCConnection(context.Background(), port, 1, logger)
 		test.That(t, err, test.ShouldBeNil)
 	})
