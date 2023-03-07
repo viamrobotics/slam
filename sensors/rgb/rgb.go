@@ -7,6 +7,7 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/registry"
 	"go.viam.com/rdk/rimage/transform"
+	"go.viam.com/slam/config"
 	"go.viam.com/slam/sensors"
 	"go.viam.com/slam/sensors/utils"
 )
@@ -17,8 +18,8 @@ type RGB struct {
 	DataRateMsec int
 }
 
-func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor, svcConfig *slamConfig.AttrConfig) (RGB, error) {
-	name, err := sensor.GetName(ctx, svcConfig)
+func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor, svcConfig *config.AttrConfig) (RGB, error) {
+	name, err := sensor.GetName(svcConfig)
 	if err != nil {
 		return RGB{}, err
 	}

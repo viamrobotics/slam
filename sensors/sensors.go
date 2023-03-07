@@ -1,10 +1,8 @@
 package sensors
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
-	slamConfig "go.viam.com/slam/config"
+	"go.viam.com/slam/config"
 )
 
 type Sensor struct {
@@ -13,16 +11,16 @@ type Sensor struct {
 	DefaultDataRateMs int
 }
 
-func (sensor Sensor) GetName(ctx context.Context, svcConfig *slamConfig.AttrConfig) (string, error) {
+func (sensor Sensor) GetName(svcConfig *config.AttrConfig) (string, error) {
 	if sensor.Index > len(svcConfig.Sensors) {
 		return "", errors.New("index out of bounds")
 	}
 	return svcConfig.Sensors[sensor.Index], nil
 }
 
-func (sensor Sensor) GetDataRateMs(ctx context.Context, svcConfig *slamConfig.AttrConfig) int {
-	if svcConfig.DataRateMs == 0 {
+func (sensor Sensor) GetDataRateMs(svcConfig *config.AttrConfig) int {
+	if svcConfig.DataRateMsec == 0 {
 		return sensor.DefaultDataRateMs
 	}
-	return svcConfig.DataRateMs
+	return svcConfig.DataRateMsec
 }
