@@ -1,4 +1,4 @@
-// Package dataprocess manages code related to the data-accepting process
+// Package dataprocess manages code related to the data-saving process
 package dataprocess
 
 import (
@@ -10,8 +10,8 @@ import (
 	pc "go.viam.com/rdk/pointcloud"
 )
 
-// WritePCDToFile Encodes the pointcloud and then saves it to the passed filename.
-func WritePCDToFile(ctx context.Context, pointcloud pc.PointCloud, filename string) error {
+// WritePCDToFile encodes the pointcloud and then saves it to the passed filename.
+func WritePCDToFile(pointcloud pc.PointCloud, filename string) error {
 	buf := new(bytes.Buffer)
 	err := pc.ToPCD(pointcloud, buf, 1)
 	if err != nil {
@@ -20,7 +20,7 @@ func WritePCDToFile(ctx context.Context, pointcloud pc.PointCloud, filename stri
 	return WriteBytesToFile(buf.Bytes(), filename)
 }
 
-// WriteBytesToFile Writes the passed bytes to the passed filename.
+// WriteBytesToFile writes the passed bytes to the passed filename.
 func WriteBytesToFile(bytes []byte, filename string) error {
 	//nolint:gosec
 	f, err := os.Create(filename)
