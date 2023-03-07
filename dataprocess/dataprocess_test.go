@@ -15,7 +15,7 @@ func TestWriteBytesToFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "*")
 	defer os.RemoveAll(tempDir)
 	test.That(t, err, test.ShouldBeNil)
-	// Create an image to encode
+	// Save a set of bytes to a file
 	actualBytes := []byte{1, 5, 8}
 	fileDest := tempDir + "test_bytes"
 	err = WriteBytesToFile(actualBytes, fileDest)
