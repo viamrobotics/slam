@@ -4,7 +4,6 @@ package dataprocess
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"os"
 
 	pc "go.viam.com/rdk/pointcloud"

@@ -1,7 +1,6 @@
 package dataprocess
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -33,7 +32,7 @@ func TestWritePCDToFile(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	fileDest := tempDir + "test_pcd.pcd"
 	pointcloud := pc.New()
-	err = WritePCDToFile(context.Background(), pointcloud, fileDest)
+	err = WritePCDToFile(pointcloud, fileDest)
 	test.That(t, err, test.ShouldBeNil)
 	// Test that the file was actually written
 	_, err = os.Stat(fileDest)
