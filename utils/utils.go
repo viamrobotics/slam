@@ -1,3 +1,4 @@
+// Package utils contains helper functions for the slam library implementations
 package utils
 
 import "strings"
