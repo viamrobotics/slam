@@ -41,18 +41,33 @@ func TestGRPCConnection(t *testing.T) {
 
 func TestSetupDirectories(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	tempDir, err := os.MkdirTemp("", "*")
-	defer os.RemoveAll(tempDir)
-	test.That(t, err, test.ShouldBeNil)
-	SetupDirectories(tempDir, logger)
-	// Ensure that all of the directories have been created
-	_, errData := os.Stat(tempDir + "/data")
-	test.That(t, errData, test.ShouldBeNil)
-	_, errMap := os.Stat(tempDir + "/map")
-	test.That(t, errMap, test.ShouldBeNil)
-	_, errConfig := os.Stat(tempDir + "/config")
-	test.That(t, errConfig, test.ShouldBeNil)
-	// Ensure that the tests work
-	_, errFoo := os.Stat(tempDir + "/foodir")
-	test.That(t, errFoo, test.ShouldBeError)
+    t.Run("Valid directories", func(t *testing.T) {
+        tempDir, err := os.MkdirTemp("", "*")
+        defer os.RemoveAll(tempDir)
+        test.That(t, err, test.ShouldBeNil)
+        err = SetupDirectories(tempDir, logger)
+        test.That(t, err, test.ShouldBeNil)
+        // Ensure that all of the directories have been created
+        _, errData := os.Stat(tempDir + "/data")
+        test.That(t, errData, test.ShouldBeNil)
+        _, errMap := os.Stat(tempDir + "/map")
+        test.That(t, errMap, test.ShouldBeNil)
+        _, errConfig := os.Stat(tempDir + "/config")
+        test.That(t, errConfig, test.ShouldBeNil)
+        // Ensure that the tests work
+        _, errFoo := os.Stat(tempDir + "/foodir")
+        test.That(t, errFoo, test.ShouldBeError)
+    })
+    t.Run("Invalid permissions", func(t *testing.T) {
+        tempDir, err := os.MkdirTemp("", "*")
+        test.That(t, err, test.ShouldBeNil)
+        defer os.RemoveAll(tempDir)
+        noPermsDir := tempDir + "/no_permissions"
+        // create a directory in the temp folder 
+        // that doesn't have write permissions
+        err = os.Mkdir(noPermsDir, 000)
+        test.That(t, err, test.ShouldBeNil)
+        err = SetupDirectories(noPermsDir, logger)
+        test.That(t, err, test.ShouldBeError)
+    })
 }

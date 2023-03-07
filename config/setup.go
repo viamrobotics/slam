@@ -19,7 +19,7 @@ import (
 func SetupDirectories(dataDirectory string, logger golog.Logger) error {
 	for _, directoryName := range [4]string{"", "data", "map", "config"} {
 		directoryPath := filepath.Join(dataDirectory, directoryName)
-		if _, err := os.Stat(directoryPath); os.IsNotExist(err) {
+		if _, err := os.Stat(directoryPath); err != nil {
 			logger.Warnf("%v directory does not exist", directoryPath)
 			if err := os.Mkdir(directoryPath, os.ModePerm); err != nil {
 				return errors.Errorf("issue creating directory at %v: %v", directoryPath, err)
@@ -42,7 +42,8 @@ func SetupGRPCConnection(
 	defer timeoutCancel()
 	// Increase the gRPC max message size from the default value of 4MB to 32MB, to match the limit that is set in RDK. This is
 	// necessary for transmitting large pointclouds.
-	maxMsgSizeOption := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(32 * 1024 * 1024))
+    maxMessageSize := 32 * 1024 * 1024
+	maxMsgSizeOption := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxMessageSize))
 	// TODO: If we support running SLAM in the cloud, we need to pass credentials to this function
 	connLib, err := grpc.DialContext(ctx, port, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), maxMsgSizeOption)
 	if err != nil {
