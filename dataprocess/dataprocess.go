@@ -24,8 +24,7 @@ func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, 
 // WritePCDToFile encodes the pointcloud and then saves it to the passed filename.
 func WritePCDToFile(pointcloud pc.PointCloud, filename string) error {
 	buf := new(bytes.Buffer)
-	err := pc.ToPCD(pointcloud, buf, 1)
-	if err != nil {
+	if err := pc.ToPCD(pointcloud, buf, 1); err != nil {
 		return err
 	}
 	return WriteBytesToFile(buf.Bytes(), filename)
