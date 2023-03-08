@@ -69,6 +69,6 @@ func TestSetupDirectories(t *testing.T) {
 		err = os.Mkdir(noPermsDir, 0o000)
 		test.That(t, err, test.ShouldBeNil)
 		err = SetupDirectories(noPermsDir, logger)
-		test.That(t, err, test.ShouldBeError)
+		test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "issue creating directory at")
 	})
 }

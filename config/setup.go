@@ -41,7 +41,7 @@ func SetupGRPCConnection(
 	dialMaxTimeoutSec int,
 	logger golog.Logger,
 ) (pb.SLAMServiceClient, func() error, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::builtIn::setupGRPCConnection")
+	ctx, span := trace.StartSpan(ctx, "slam::SetupGRPCConnection")
 	defer span.End()
 	ctx, timeoutCancel := context.WithTimeout(ctx, time.Duration(dialMaxTimeoutSec)*time.Second)
 	defer timeoutCancel()
