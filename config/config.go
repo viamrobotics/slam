@@ -130,3 +130,37 @@ func (config *AttrConfig) SetOptionalParameters(defaultPort string, defaultDataR
 
 	return nil
 }
+
+// SetOptionalParametersReplacement updates any unset optional config parameters to the values passed to this function.
+func SetOptionalParametersReplacement(config *AttrConfig, defaultPort string,
+	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
+) (string, int, int, bool, bool, error) {
+	port := config.Port
+	if config.Port == "" {
+		port = defaultPort
+	}
+
+	dataRateMsec := config.DataRateMsec
+	if config.DataRateMsec == 0 {
+		dataRateMsec = defaultDataRateMsec
+		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
+	}
+
+	mapRateSec := *config.MapRateSec
+	if config.MapRateSec == nil {
+		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
+		mapRateSec = defaultMapRateSec
+	}
+	if mapRateSec == 0 {
+		logger.Info("setting slam system to localization mode")
+	}
+
+	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
+	if err != nil {
+		return "", 0, 0, false, false, err
+	}
+
+	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
+
+	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, nil
+}
