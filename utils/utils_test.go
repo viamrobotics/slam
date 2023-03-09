@@ -9,7 +9,7 @@ import (
 )
 
 func TestDictToString(t *testing.T) {
-	t.Run("Convert dictionay to a string", func(t *testing.T) {
+	t.Run("Convert dictionary to a string", func(t *testing.T) {
 		configParamsDict := map[string]string{
 			"min_range": "0.3",
 			"max_range": "12",
