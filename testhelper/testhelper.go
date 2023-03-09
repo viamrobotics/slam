@@ -11,6 +11,10 @@ import (
 	"go.viam.com/test"
 )
 
+const (
+	dataBufferSize = 4
+)
+
 // CreateTempFolderArchitecture creates a new random temporary
 // directory with the config, data, and map subdirectories needed
 // to run the SLAM libraries.
@@ -44,15 +48,15 @@ func ResetFolder(path string) error {
 	return err
 }
 
-func CheckDeleteProcessedData(t *testing.T, subAlgo slam.SubAlgo, dir string, prev int, deleteProcessedData, useLiveData bool) int {
-	var numFiles int
-
+// CheckDeleteProcessedData compares the number of files found in a specified data
+// directory with the previous number found and uses the useLiveData and
+// deleteProcessedData values to evaluate this comparison.
+func CheckDeleteProcessedData(t *testing.T, subAlgo slam.Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
 	switch subAlgo {
 	case slam.Mono:
-		numFilesRGB, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
+		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
-
-		numFiles = numFilesRGB
+		return numFiles
 	case slam.Rgbd:
 		numFilesRGB, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
@@ -61,21 +65,17 @@ func CheckDeleteProcessedData(t *testing.T, subAlgo slam.SubAlgo, dir string, pr
 		test.That(t, err, test.ShouldBeNil)
 
 		test.That(t, numFilesRGB, test.ShouldEqual, numFilesDepth)
-		numFiles = numFilesRGB
+		return numFilesRGB
 	case slam.Dim2d:
-		numFiles2D, err := checkDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
+		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
-		numFiles = numFiles2D
+		return numFiles
 	default:
+		return 0
 	}
-	return numFiles
 }
 
-// checkDataDirForExpectedFiles compares the number of files found in a specified data
-// directory with the previous number found and uses the online state and
-// delete_processed_data value to evaluate this comparison.
 func checkDataDirForExpectedFiles(t *testing.T, dir string, prev int, delete_processed_data, useLiveData bool) (int, error) {
-
 	files, err := ioutil.ReadDir(dir)
 	test.That(t, err, test.ShouldBeNil)
 
