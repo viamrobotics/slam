@@ -132,7 +132,9 @@ func (config *AttrConfig) SetOptionalParameters(defaultPort string, defaultDataR
 }
 
 // SetOptionalParametersReplacement updates any unset optional config parameters to the values passed to this function.
-func SetOptionalParametersReplacement(config *AttrConfig, defaultPort string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) (string, int, int, bool, bool, error) {
+func SetOptionalParametersReplacement(config *AttrConfig, defaultPort string,
+	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
+) (string, int, int, bool, bool, error) {
 	port := config.Port
 	if config.Port == "" {
 		port = defaultPort
