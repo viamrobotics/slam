@@ -131,8 +131,9 @@ func (config *AttrConfig) SetOptionalParameters(defaultPort string, defaultDataR
 	return nil
 }
 
-// SetOptionalParametersReplacement updates any unset optional config parameters to the values passed to this function.
-func SetOptionalParametersReplacement(config *AttrConfig, defaultPort string,
+// GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
+// and returns them.
+func GetOptionalParameters(config *AttrConfig, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (string, int, int, bool, bool, error) {
 	port := config.Port
@@ -146,10 +147,12 @@ func SetOptionalParametersReplacement(config *AttrConfig, defaultPort string,
 		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
 	}
 
-	mapRateSec := *config.MapRateSec
+	mapRateSec := 0
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
 		mapRateSec = defaultMapRateSec
+	} else {
+		mapRateSec = *config.MapRateSec
 	}
 	if mapRateSec == 0 {
 		logger.Info("setting slam system to localization mode")
