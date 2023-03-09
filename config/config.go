@@ -161,7 +161,6 @@ func SetOptionalParametersReplacement(config *AttrConfig, defaultPort string,
 	}
 
 	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
-	config.DeleteProcessedData = &deleteProcessedData
 
 	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, nil
 }
