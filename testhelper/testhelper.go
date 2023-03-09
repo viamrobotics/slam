@@ -2,10 +2,10 @@
 package testhelper
 
 import (
-	"errors"
 	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
 )
@@ -43,15 +43,13 @@ func ResetFolder(path string) error {
 	if err != nil {
 		return err
 	}
-	if !dirInfo.IsDir(path) {
+	if !dirInfo.IsDir() {
 		return errors.Errorf("the path passed ResetFolder does not point to a folder: %v", path)
 	}
-	err := os.RemoveAll(path)
-	if err != nil {
+	if err = os.RemoveAll(path); err != nil {
 		return err
 	}
-	err = os.Mkdir(path, dirInfo.Mode())
-	return err
+	return os.Mkdir(path, dirInfo.Mode())
 }
 
 // CheckDeleteProcessedData compares the number of files found in a specified data
