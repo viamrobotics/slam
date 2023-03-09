@@ -101,32 +101,34 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 }
 
 // SetOptionalParameters updates any unset optional config parameters to the values passed to this function.
-func (config *AttrConfig) SetOptionalParameters(defaultPort string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) error {
+func SetOptionalParameters(config *AttrConfig, defaultPort string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) (string, int, int, bool, bool, error) {
+	port := config.Port
 	if config.Port == "" {
-		config.Port = defaultPort
+		port = defaultPort
 	}
 
+	dataRateMsec := config.DataRateMsec
 	if config.DataRateMsec == 0 {
-		config.DataRateMsec = defaultDataRateMsec
+		dataRateMsec = defaultDataRateMsec
 		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
 	}
 
+	mapRateSec := *config.MapRateSec
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
-		config.MapRateSec = &defaultMapRateSec
+		mapRateSec = defaultMapRateSec
 	}
-	if *config.MapRateSec == 0 {
+	if mapRateSec == 0 {
 		logger.Info("setting slam system to localization mode")
 	}
 
 	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
 	if err != nil {
-		return err
+		return "", 0, 0, false, false, err
 	}
-	config.UseLiveData = &useLiveData
 
 	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 	config.DeleteProcessedData = &deleteProcessedData
 
-	return nil
+	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, nil
 }
