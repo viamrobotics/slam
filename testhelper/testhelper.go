@@ -3,7 +3,6 @@ package testhelper
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -51,8 +50,8 @@ func ResetFolder(path string) error {
 // CheckDeleteProcessedData compares the number of files found in a specified data
 // directory with the previous number found and uses the useLiveData and
 // deleteProcessedData values to evaluate this comparison.
-func CheckDeleteProcessedData(t *testing.T, subAlgo slam.Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
-	switch subAlgo {
+func CheckDeleteProcessedData(t *testing.T, slamMode slam.Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
+	switch slamMode {
 	case slam.Mono:
 		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
@@ -70,28 +69,33 @@ func CheckDeleteProcessedData(t *testing.T, subAlgo slam.Mode, dir string, prev 
 		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
 		return numFiles
+	case slam.Dim3d:
+		// TODO: Delete this when implementing models:
+		// https://viam.atlassian.net/browse/RSDK-2015
+		// https://viam.atlassian.net/browse/RSDK-2014
+		return 0
 	default:
 		return 0
 	}
 }
 
-func checkDataDirForExpectedFiles(t *testing.T, dir string, prev int, delete_processed_data, useLiveData bool) (int, error) {
-	files, err := ioutil.ReadDir(dir)
+func checkDataDirForExpectedFiles(t *testing.T, dir string, prev int, deleteProcessedData, useLiveData bool) (int, error) {
+	files, err := os.ReadDir(dir)
 	test.That(t, err, test.ShouldBeNil)
 
 	if prev == 0 {
 		return len(files), nil
 	}
-	if delete_processed_data && useLiveData {
+	if deleteProcessedData && useLiveData {
 		test.That(t, prev, test.ShouldBeLessThanOrEqualTo, dataBufferSize+1)
 	}
-	if !delete_processed_data && useLiveData {
+	if !deleteProcessedData && useLiveData {
 		test.That(t, prev, test.ShouldBeLessThan, len(files))
 	}
-	if delete_processed_data && !useLiveData {
+	if deleteProcessedData && !useLiveData {
 		return 0, errors.New("the delete_processed_data value cannot be true when running SLAM in offline mode")
 	}
-	if !delete_processed_data && !useLiveData {
+	if !deleteProcessedData && !useLiveData {
 		test.That(t, prev, test.ShouldEqual, len(files))
 	}
 	return len(files), nil

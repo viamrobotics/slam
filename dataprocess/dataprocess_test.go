@@ -16,7 +16,7 @@ func TestCreateTimestampFilename(t *testing.T) {
 		dataDirectory := "/Users/whoami/slam"
 		primarySensorName := "myCamera"
 		fileType := ".fakepng"
-		timeStamp := time.Date(1955, time.March, 13, 01, 10, 30, 00, time.UTC)
+		timeStamp := time.Date(1955, time.March, 13, 1, 10, 30, 0, time.UTC)
 
 		filepathActual := CreateTimestampFilename(dataDirectory, primarySensorName, fileType, timeStamp)
 		filepathExpected := "/Users/whoami/slam/myCamera_data_1955-03-13T01:10:30.0000Z.fakepng"
