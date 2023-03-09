@@ -39,11 +39,18 @@ func CreateTempFolderArchitecture() (string, error) {
 // ResetFolder removes all content in path and creates a new directory
 // in its place.
 func ResetFolder(path string) error {
+	dirInfo, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !dirInfo.IsDir(path) {
+		return errors.Errorf("the path passed ResetFolder does not point to a folder: %v", path)
+	}
 	err := os.RemoveAll(path)
 	if err != nil {
 		return err
 	}
-	err = os.Mkdir(path, os.ModePerm)
+	err = os.Mkdir(path, dirInfo.Mode())
 	return err
 }
 
