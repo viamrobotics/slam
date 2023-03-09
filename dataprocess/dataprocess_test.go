@@ -5,14 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	pc "go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 )
 
 func TestCreateTimestampFilename(t *testing.T) {
 	t.Run("Create filename with a timestamp", func(t *testing.T) {
-		_ = golog.NewTestLogger(t)
 		dataDirectory := "/Users/whoami/slam"
 		primarySensorName := "myCamera"
 		fileType := ".fakepng"
