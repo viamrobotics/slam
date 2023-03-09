@@ -168,7 +168,7 @@ func TestNewAttrConf(t *testing.T) {
 	})
 }
 
-func TestSetOptionalParameters(t *testing.T) {
+func TestGetOptionalParameters(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Pass default parameters", func(t *testing.T) {
@@ -177,13 +177,13 @@ func TestSetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		err = cfg.SetOptionalParameters("localhost", 1001, 1002, logger)
+		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, cfg.Port, test.ShouldResemble, "localhost")
-		test.That(t, cfg.DataRateMsec, test.ShouldEqual, 1001)
-		test.That(t, *cfg.MapRateSec, test.ShouldEqual, 1002)
-		test.That(t, *cfg.UseLiveData, test.ShouldEqual, true)
-		test.That(t, *cfg.DeleteProcessedData, test.ShouldEqual, true)
+		test.That(t, port, test.ShouldResemble, "localhost")
+		test.That(t, dataRateMsec, test.ShouldEqual, 1001)
+		test.That(t, mapRateSec, test.ShouldEqual, 1002)
+		test.That(t, useLiveData, test.ShouldEqual, true)
+		test.That(t, deleteProcessedData, test.ShouldEqual, true)
 	})
 
 	t.Run("Live data without sensors", func(t *testing.T) {
@@ -191,7 +191,7 @@ func TestSetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := NewAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		err = cfg.SetOptionalParameters("localhost", 1001, 1002, logger)
+		_, _, _, _, _, err = GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }

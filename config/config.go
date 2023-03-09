@@ -99,37 +99,6 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 	return deps, nil
 }
 
-// SetOptionalParameters updates any unset optional config parameters to the values passed to this function.
-func (config *AttrConfig) SetOptionalParameters(defaultPort string, defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger) error {
-	if config.Port == "" {
-		config.Port = defaultPort
-	}
-
-	if config.DataRateMsec == 0 {
-		config.DataRateMsec = defaultDataRateMsec
-		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
-	}
-
-	if config.MapRateSec == nil {
-		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
-		config.MapRateSec = &defaultMapRateSec
-	}
-	if *config.MapRateSec == 0 {
-		logger.Info("setting slam system to localization mode")
-	}
-
-	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
-	if err != nil {
-		return err
-	}
-	config.UseLiveData = &useLiveData
-
-	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
-	config.DeleteProcessedData = &deleteProcessedData
-
-	return nil
-}
-
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
 func GetOptionalParameters(config *AttrConfig, defaultPort string,
