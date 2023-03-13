@@ -28,7 +28,7 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 
 	newLidar, err := camera.FromDependencies(deps, name)
 	if err != nil {
-		return Lidar{}, errors.Wrapf(err, "error getting camera %v for slam service", name)
+		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", name)
 	}
 
 	return Lidar{
