@@ -16,9 +16,8 @@ import (
 
 // RGB represents an RGB sensor.
 type RGB struct {
-	Name         string
-	rgb          camera.Camera
-	DataRateMsec int
+	Name string
+	rgb  camera.Camera
 }
 
 // New creates a new RGB sensor based on the sensor definition and the service config.
@@ -38,9 +37,8 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 	}
 
 	return RGB{
-		Name:         name,
-		rgb:          newRGB,
-		DataRateMsec: sensor.GetDataRateMsec(svcConfig),
+		Name: name,
+		rgb:  newRGB,
 	}, nil
 }
 

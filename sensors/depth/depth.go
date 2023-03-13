@@ -15,9 +15,8 @@ import (
 
 // Depth represents a depth sensor.
 type Depth struct {
-	Name         string
-	depth        camera.Camera
-	DataRateMsec int
+	Name  string
+	depth camera.Camera
 }
 
 // New creates a new Depth sensor based on the sensor definition and the service config.
@@ -32,22 +31,13 @@ func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor,
 		return Depth{}, errors.Wrapf(err, "error getting camera %v for slam service", name)
 	}
 
-	if err = validate(ctx, newDepth); err != nil {
-		return Depth{}, err
-	}
-
 	return Depth{
-		Name:         name,
-		depth:        newDepth,
-		DataRateMsec: sensor.GetDataRateMsec(svcConfig),
+		Name:  name,
+		depth: newDepth,
 	}, nil
 }
 
 // GetData returns data from the depth sensor.
 func (depth Depth) GetData(ctx context.Context) ([]byte, func(), error) {
 	return utils.GetPNGImage(ctx, depth.depth)
-}
-
-func validate(ctx context.Context, rgb camera.Camera) error {
-	return nil
 }
