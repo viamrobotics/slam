@@ -10,6 +10,7 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/rimage"
 	"go.viam.com/rdk/utils"
+
 	"go.viam.com/slam/config"
 )
 
