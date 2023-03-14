@@ -10,7 +10,7 @@ import (
 	"go.viam.com/rdk/registry"
 
 	"go.viam.com/slam/config"
-	"go.viam.com/slam/sensors"
+	"go.viam.com/slam/sensors/utils"
 )
 
 // Lidar represents a LIDAR sensor.
@@ -20,8 +20,8 @@ type Lidar struct {
 }
 
 // New creates a new Lidar sensor based on the sensor definition and the service config.
-func New(ctx context.Context, deps registry.Dependencies, sensor sensors.Sensor, svcConfig *config.AttrConfig) (Lidar, error) {
-	name, err := sensor.GetName(svcConfig)
+func New(ctx context.Context, deps registry.Dependencies, sensorIndex int, svcConfig *config.AttrConfig) (Lidar, error) {
+	name, err := utils.GetName(svcConfig, sensorIndex)
 	if err != nil {
 		return Lidar{}, err
 	}
