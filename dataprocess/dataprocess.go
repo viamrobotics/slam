@@ -5,15 +5,26 @@ import (
 	"bufio"
 	"bytes"
 	"os"
+	"path/filepath"
+	"time"
 
 	pc "go.viam.com/rdk/pointcloud"
 )
 
+const (
+	slamTimeFormat = "2006-01-02T15:04:05.0000Z"
+)
+
+// CreateTimestampFilename creates an absolute filename with a primary sensor name and timestamp written
+// into the filename.
+func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, timeStamp time.Time) string {
+	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(slamTimeFormat)+fileType)
+}
+
 // WritePCDToFile encodes the pointcloud and then saves it to the passed filename.
 func WritePCDToFile(pointcloud pc.PointCloud, filename string) error {
 	buf := new(bytes.Buffer)
-	err := pc.ToPCD(pointcloud, buf, 1)
-	if err != nil {
+	if err := pc.ToPCD(pointcloud, buf, 1); err != nil {
 		return err
 	}
 	return WriteBytesToFile(buf.Bytes(), filename)

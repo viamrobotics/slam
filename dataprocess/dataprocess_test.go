@@ -3,10 +3,24 @@ package dataprocess
 import (
 	"os"
 	"testing"
+	"time"
 
 	pc "go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 )
+
+func TestCreateTimestampFilename(t *testing.T) {
+	t.Run("Create filename with a timestamp", func(t *testing.T) {
+		dataDirectory := "/Users/whoami/slam"
+		primarySensorName := "myCamera"
+		fileType := ".fakepng"
+		timeStamp := time.Date(1955, time.March, 13, 1, 10, 30, 0, time.UTC)
+
+		filepathActual := CreateTimestampFilename(dataDirectory, primarySensorName, fileType, timeStamp)
+		filepathExpected := "/Users/whoami/slam/myCamera_data_1955-03-13T01:10:30.0000Z.fakepng"
+		test.That(t, filepathActual, test.ShouldEqual, filepathExpected)
+	})
+}
 
 func TestWriteBytesToFile(t *testing.T) {
 	t.Run("Write bytes to file", func(t *testing.T) {
