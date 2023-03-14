@@ -19,7 +19,7 @@ type Lidar struct {
 }
 
 // New creates a new Lidar sensor based on the sensor definition and the service config.
-func New(ctx context.Context, deps registry.Dependencies, sensorIndex int, sensors []string) (Lidar, error) {
+func New(ctx context.Context, deps registry.Dependencies, sensors []string, sensorIndex int) (Lidar, error) {
 	name, err := utils.GetName(sensors, sensorIndex)
 	if err != nil {
 		return Lidar{}, err
