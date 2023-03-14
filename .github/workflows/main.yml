@@ -20,7 +20,7 @@ jobs:
   gotest:
     uses: viamrobotics/slam/.github/workflows/gotest.yml@main
   slack-workflow-status:
-        # if: ${{ failure() }}
+        if: ${{ failure() }}
         name: Post Workflow Status To Slack
         needs:
           - gotest
