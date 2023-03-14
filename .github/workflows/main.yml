@@ -20,7 +20,7 @@ jobs:
   gotest:
     uses: viamrobotics/slam/.github/workflows/gotest.yml@main
   slack-workflow-status:
-        if: ${{ failure() }}
+        # if: ${{ failure() }}
         name: Post Workflow Status To Slack
         needs:
           - gotest
@@ -33,5 +33,5 @@ jobs:
             with:
               repo_token: ${{secrets.GITHUB_TOKEN}}
               slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}
-              channel: '#team-slam-dev'
+              channel: '#team-slam-github-notifs'
               name: 'Workflow Status'
