@@ -10,16 +10,14 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/rimage"
 	"go.viam.com/rdk/utils"
-
-	"go.viam.com/slam/config"
 )
 
 // GetName returns the name of the sensor based on its index in the sensor array.
-func GetName(svcConfig *config.AttrConfig, index int) (string, error) {
-	if index > len(svcConfig.Sensors) {
+func GetName(sensors []string, index int) (string, error) {
+	if index > len(sensors) {
 		return "", errors.New("index out of bounds")
 	}
-	return svcConfig.Sensors[index], nil
+	return sensors[index], nil
 }
 
 // GetPNGImage first attempts to get a lazy PNG image. If the image is not a lazy PNG, the

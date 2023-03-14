@@ -9,7 +9,6 @@ import (
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/registry"
 
-	"go.viam.com/slam/config"
 	"go.viam.com/slam/sensors/utils"
 )
 
@@ -20,8 +19,8 @@ type Lidar struct {
 }
 
 // New creates a new Lidar sensor based on the sensor definition and the service config.
-func New(ctx context.Context, deps registry.Dependencies, sensorIndex int, svcConfig *config.AttrConfig) (Lidar, error) {
-	name, err := utils.GetName(svcConfig, sensorIndex)
+func New(ctx context.Context, deps registry.Dependencies, sensorIndex int, sensors []string) (Lidar, error) {
+	name, err := utils.GetName(sensors, sensorIndex)
 	if err != nil {
 		return Lidar{}, err
 	}

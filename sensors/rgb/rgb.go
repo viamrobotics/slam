@@ -9,7 +9,6 @@ import (
 	"go.viam.com/rdk/registry"
 	"go.viam.com/rdk/rimage/transform"
 
-	"go.viam.com/slam/config"
 	"go.viam.com/slam/sensors/utils"
 )
 
@@ -20,8 +19,8 @@ type RGB struct {
 }
 
 // New creates a new RGB sensor based on the sensor definition and the service config.
-func New(ctx context.Context, deps registry.Dependencies, sensorIndex int, svcConfig *config.AttrConfig) (RGB, error) {
-	name, err := utils.GetName(svcConfig, sensorIndex)
+func New(ctx context.Context, deps registry.Dependencies, sensorIndex int, sensors []string) (RGB, error) {
+	name, err := utils.GetName(sensors, sensorIndex)
 	if err != nil {
 		return RGB{}, err
 	}
