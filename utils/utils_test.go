@@ -1,10 +1,13 @@
 package utils
 
 import (
+	"math"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
 )
 
@@ -30,5 +33,57 @@ func TestDictToString(t *testing.T) {
 		sort.Strings(actualContents)
 		sort.Strings(expectedContents)
 		test.That(t, actualContents, test.ShouldResemble, expectedContents)
+	})
+}
+
+func TestBuiltinQuaternion(t *testing.T) {
+	poseSucc := spatialmath.NewPose(r3.Vector{X: 1, Y: 2, Z: 3}, &spatialmath.OrientationVector{Theta: math.Pi / 2, OX: 0, OY: 0, OZ: -1})
+	componentRefSucc := "cam"
+	t.Run("test successful quaternion from internal server", func(t *testing.T) {
+		returnedExtSucc := map[string]interface{}{
+			"quat": map[string]interface{}{
+				"real": poseSucc.Orientation().Quaternion().Real,
+				"imag": poseSucc.Orientation().Quaternion().Imag,
+				"jmag": poseSucc.Orientation().Quaternion().Jmag,
+				"kmag": poseSucc.Orientation().Quaternion().Kmag,
+			},
+		}
+
+		pose, componentRef, err := CheckQuaternionFromClientAlgo(poseSucc, componentRefSucc, returnedExtSucc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, spatialmath.PoseAlmostEqual(poseSucc, pose), test.ShouldBeTrue)
+		test.That(t, componentRef, test.ShouldEqual, componentRefSucc)
+	})
+
+	t.Run("test failure due to quaternion not being given", func(t *testing.T) {
+		returnedExtFail := map[string]interface{}{
+			"badquat": map[string]interface{}{
+				"real": poseSucc.Orientation().Quaternion().Real,
+				"imag": poseSucc.Orientation().Quaternion().Imag,
+				"jmag": poseSucc.Orientation().Quaternion().Jmag,
+				"kmag": poseSucc.Orientation().Quaternion().Kmag,
+			},
+		}
+
+		pose, componentRef, err := CheckQuaternionFromClientAlgo(poseSucc, componentRefSucc, returnedExtFail)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "error getting SLAM position: quaternion not given")
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldBeEmpty)
+	})
+
+	t.Run("test failure due to invalid quaternion format", func(t *testing.T) {
+		returnedExtFail := map[string]interface{}{
+			"quat": map[string]interface{}{
+				"realbad": poseSucc.Orientation().Quaternion().Real,
+				"imagbad": poseSucc.Orientation().Quaternion().Imag,
+				"jmagbad": poseSucc.Orientation().Quaternion().Jmag,
+				"kmagbad": poseSucc.Orientation().Quaternion().Kmag,
+			},
+		}
+
+		pose, componentRef, err := CheckQuaternionFromClientAlgo(poseSucc, componentRefSucc, returnedExtFail)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "error getting SLAM position: quaternion given, but invalid format detected")
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldBeEmpty)
 	})
 }
