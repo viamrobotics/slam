@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	slamTimeFormat = "2006-01-02T15:04:05.0000Z"
+	SlamTimeFormat = "2006-01-02T15:04:05.0000Z"
 )
 
 // CreateTimestampFilename creates an absolute filename with a primary sensor name and timestamp written
 // into the filename.
 func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, timeStamp time.Time) string {
-	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(slamTimeFormat)+fileType)
+	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
 }
 
 // WritePCDToFile encodes the pointcloud and then saves it to the passed filename.
