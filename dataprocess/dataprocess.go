@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	// SlamTimeFormat is the timestamp format used in the dataprocess.
 	SlamTimeFormat = "2006-01-02T15:04:05.0000Z"
 )
 
