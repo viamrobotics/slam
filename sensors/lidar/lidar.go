@@ -38,5 +38,8 @@ func New(ctx context.Context, deps registry.Dependencies, sensors []string, sens
 
 // GetData returns data from the lidar sensor.
 func (lidar Lidar) GetData(ctx context.Context) (pointcloud.PointCloud, error) {
+	if lidar.lidar == nil {
+		return nil, errors.New("lidar is nil, can not get a pointcloud")
+	}
 	return lidar.lidar.NextPointCloud(ctx)
 }
