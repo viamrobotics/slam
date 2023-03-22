@@ -18,7 +18,7 @@ type Depth struct {
 }
 
 // New creates a new Depth sensor based on the sensor definition and the service config.
-func New(ctx context.Context, deps registry.Dependencies, sensors []string, sensorIndex int) (Depth, error) {
+func New(deps registry.Dependencies, sensors []string, sensorIndex int) (Depth, error) {
 	name, err := utils.GetName(sensors, sensorIndex)
 	if err != nil {
 		return Depth{}, err
