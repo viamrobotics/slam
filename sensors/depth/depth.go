@@ -38,8 +38,5 @@ func New(deps registry.Dependencies, sensors []string, sensorIndex int) (Depth, 
 // GetData returns data from the depth sensor. The returned function is a release function
 // that must be called once the caller of GetData is done using the image.
 func (depth Depth) GetData(ctx context.Context) ([]byte, func(), error) {
-	if depth.depth == nil {
-		return nil, nil, errors.New("depth is nil, can not get depth data")
-	}
 	return utils.GetPNGImage(ctx, depth.depth)
 }

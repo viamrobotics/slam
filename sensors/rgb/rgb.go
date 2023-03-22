@@ -43,9 +43,6 @@ func New(ctx context.Context, deps registry.Dependencies, sensors []string, sens
 // GetData returns data from the RGB sensor. The returned function is a release function
 // that must be called once the caller of GetData is done using the image.
 func (rgb RGB) GetData(ctx context.Context) ([]byte, func(), error) {
-	if rgb.rgb == nil {
-		return nil, nil, errors.New("rgb is nil, can not get an rgb png image")
-	}
 	return utils.GetPNGImage(ctx, rgb.rgb)
 }
 
