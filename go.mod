@@ -202,7 +202,6 @@ require (
 	github.com/pion/stun v0.4.0 // indirect
 	github.com/pion/transport/v2 v2.0.2 // indirect
 	github.com/pion/turn/v2 v2.1.0 // indirect
-	github.com/pion/udp v0.1.4 // indirect
 	github.com/pion/udp/v2 v2.0.1 // indirect
 	github.com/pion/webrtc/v3 v3.1.58 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
