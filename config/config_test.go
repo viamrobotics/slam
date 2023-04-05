@@ -195,3 +195,18 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }
+
+func NewAttrConfig(cfg config.Service) (*AttrConfig, error) {
+	attrCfg := &AttrConfig{}
+
+	if _, err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes); err != nil {
+		return &AttrConfig{}, newError(err.Error())
+	}
+
+	// This temporary value will be replaced once we are using rdk's validation
+	if _, err := attrCfg.Validate("services.slam.attributes.fake"); err != nil {
+		return &AttrConfig{}, newError(err.Error())
+	}
+
+	return attrCfg, nil
+}
