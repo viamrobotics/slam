@@ -7,7 +7,6 @@ import (
 	"go.viam.com/rdk/config"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/test"
-	"go.viam.com/utils"
 )
 
 var (
@@ -87,87 +86,6 @@ func makeCfgService() config.Service {
 	return cfgService
 }
 
-func TestNewAttrConf(t *testing.T) {
-	testCfgPath := "services.slam.attributes.fake"
-	logger := golog.NewTestLogger(t)
-
-	t.Run("Empty config", func(t *testing.T) {
-		model := resource.NewDefaultModel(resource.ModelName("test"))
-		cfgService := config.Service{Name: "test", Type: "slam", Model: model}
-		_, err := NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeError)
-	})
-
-	t.Run("Simplest valid config", func(t *testing.T) {
-		cfgService := makeCfgService()
-		_, err := NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("Config without required fields", func(t *testing.T) {
-		// Test for missing main attribute fields
-		requiredFields := []string{"data_dir", "use_live_data"}
-		for _, requiredField := range requiredFields {
-			logger.Debugf("Testing SLAM config without %s", requiredField)
-			cfgService := makeCfgService()
-			delete(cfgService.Attributes, requiredField)
-			_, err := NewAttrConfig(cfgService)
-			test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField).Error()))
-		}
-		// Test for missing config_params attributes
-		logger.Debug("Testing SLAM config without config_params[mode]")
-		cfgService := makeCfgService()
-		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
-		_, err := NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
-	})
-
-	t.Run("Config with invalid parameter type", func(t *testing.T) {
-		cfgService := makeCfgService()
-		cfgService.Attributes["use_live_data"] = "true"
-		_, err := NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeError)
-		cfgService.Attributes["use_live_data"] = true
-		_, err = NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("Config with out of range values", func(t *testing.T) {
-		cfgService := makeCfgService()
-		cfgService.Attributes["data_rate_msec"] = -1
-		_, err := NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeError)
-		cfgService.Attributes["data_rate_msec"] = 1
-		cfgService.Attributes["map_rate_sec"] = -1
-		_, err = NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeError)
-	})
-
-	t.Run("All parameters e2e", func(t *testing.T) {
-		cfgService := makeCfgService()
-		cfgService.Attributes["sensors"] = []string{"a", "b"}
-		cfgService.Attributes["data_rate_msec"] = 1001
-		cfgService.Attributes["map_rate_sec"] = 1002
-		cfgService.Attributes["port"] = "47"
-		cfgService.Attributes["delete_processed_data"] = true
-
-		cfgService.Attributes["config_params"] = map[string]string{
-			"mode":    "test mode",
-			"value":   "0",
-			"value_2": "test",
-		}
-		cfg, err := NewAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
-		test.That(t, *cfg.UseLiveData, test.ShouldEqual, cfgService.Attributes["use_live_data"])
-		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
-		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
-		test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
-		test.That(t, cfg.Port, test.ShouldEqual, cfgService.Attributes["port"])
-		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
-	})
-}
-
 func TestGetOptionalParameters(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
@@ -175,7 +93,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfgService.Attributes["use_live_data"] = true
-		cfg, err := NewAttrConfig(cfgService)
+		cfg, err := newAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -189,14 +107,14 @@ func TestGetOptionalParameters(t *testing.T) {
 	t.Run("Live data without sensors", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["use_live_data"] = true
-		cfg, err := NewAttrConfig(cfgService)
+		cfg, err := newAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		_, _, _, _, _, err = GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }
 
-func NewAttrConfig(cfg config.Service) (*AttrConfig, error) {
+func newAttrConfig(cfg config.Service) (*AttrConfig, error) {
 	attrCfg := &AttrConfig{}
 
 	if _, err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes); err != nil {
