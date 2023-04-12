@@ -4,7 +4,6 @@ package config
 import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"go.viam.com/rdk/config"
 	"go.viam.com/utils"
 )
 
@@ -52,22 +51,6 @@ type AttrConfig struct {
 	MapRateSec          *int              `json:"map_rate_sec"`
 	Port                string            `json:"port"`
 	DeleteProcessedData *bool             `json:"delete_processed_data"`
-}
-
-// NewAttrConfig creates a SLAM config from a service config.
-func NewAttrConfig(cfg config.Service) (*AttrConfig, error) {
-	attrCfg := &AttrConfig{}
-
-	if _, err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes); err != nil {
-		return &AttrConfig{}, newError(err.Error())
-	}
-
-	// This temporary value will be replaced once we are using rdk's validation
-	if _, err := attrCfg.Validate("services.slam.attributes.fake"); err != nil {
-		return &AttrConfig{}, newError(err.Error())
-	}
-
-	return attrCfg, nil
 }
 
 // Validate creates the list of implicit dependencies.
