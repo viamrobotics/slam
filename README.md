@@ -3,6 +3,8 @@
 ## (In)stability Notice
 > **Warning**
 > This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
+> **Warning**
+> The code in this repo might be transient. Stability is not guaranteed.
 
 ## Overview
 This repo contains utils for implementing a [slam service](https://github.com/viamrobotics/rdk/blob/main/services/slam/slam.go) in Golang.
