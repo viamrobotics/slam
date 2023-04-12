@@ -54,7 +54,8 @@ func TestValidate(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["use_live_data"] = "true"
 		_, err := newAttrConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("1 error(s) decoding:\n\n* 'use_live_data' expected type 'bool', got unconvertible type 'string', value: 'true'"))
+		expE := newError("1 error(s) decoding:\n\n* 'use_live_data' expected type 'bool', got unconvertible type 'string', value: 'true'")
+		test.That(t, err, test.ShouldBeError, expE)
 		cfgService.Attributes["use_live_data"] = true
 		_, err = newAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
