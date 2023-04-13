@@ -1,4 +1,5 @@
-// Package utils contains helper functions for the slam library implementations
+// Package utils contains helper functions for the slam library implementations.
+// Warning: The code in this package might be transient. Stability is not guaranteed.
 package utils
 
 import (

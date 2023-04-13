@@ -1,4 +1,5 @@
-// Package lidar implements the Lidar sensor
+// Package lidar implements the Lidar sensor.
+// Warning: The code in this package might be transient. Stability is not guaranteed.
 package lidar
 
 import (

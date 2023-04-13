@@ -1,4 +1,5 @@
 // Package utils contains helper functions for the sensor implementations.
+// Warning: The code in this package might be transient. Stability is not guaranteed.
 package utils
 
 import (
