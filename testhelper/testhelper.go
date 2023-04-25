@@ -8,7 +8,6 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
 
 	"go.viam.com/slam/config"
@@ -54,13 +53,32 @@ func ResetFolder(path string) error {
 // currently in the data directory for the specified config. Future invocations should pass in this
 // value. This function should be passed 0 as a default prev argument in order to get the
 // number of files currently in the directory.
-func CheckDeleteProcessedData(t *testing.T, slamMode slam.Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
+
+// TODO 05/12/2022: Both type and constants will be deprecated when data ingestion via GRPC is available
+// only being used now for linter issues.
+type (
+	// Mode holds the modes a slam model can use.
+	Mode string
+)
+const (
+	// Dense is a Library type.
+	// Mono is a mode a slam model can use.
+	Mono = Mode("mono")
+	// Rgbd is a mode a slam model can use.
+	Rgbd = Mode("rgbd")
+	// Dim2d is a mode a slam model can use.
+	Dim2d = Mode("2d")
+	// Dim3d is a mode a slam model can use.
+	Dim3d = Mode("3d")
+)
+
+func CheckDeleteProcessedData(t *testing.T, slamMode Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
 	switch slamMode {
-	case slam.Mono:
+	case Mono:
 		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
 		return numFiles
-	case slam.Rgbd:
+	case Rgbd:
 		numFilesRGB, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -69,11 +87,11 @@ func CheckDeleteProcessedData(t *testing.T, slamMode slam.Mode, dir string, prev
 
 		test.That(t, numFilesRGB, test.ShouldEqual, numFilesDepth)
 		return numFilesRGB
-	case slam.Dim2d:
+	case Dim2d:
 		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
 		return numFiles
-	case slam.Dim3d:
+	case Dim3d:
 		// TODO: Delete this when implementing models:
 		// https://viam.atlassian.net/browse/RSDK-2015
 		// https://viam.atlassian.net/browse/RSDK-2014
