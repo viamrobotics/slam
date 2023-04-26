@@ -41,10 +41,6 @@ func TestValidate(t *testing.T) {
 			delete(cfgService.Attributes, requiredField)
 			_, err := newConfig(cfgService)
 			expected := newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField).Error())
-			println(err.Error())
-			println(expected.Error())
-			// "services.slam.attributes.fake": "config_params[mode]" is required
-			// "services.slam.attributes.fake": "data_dir" is required
 
 			test.That(t, err, test.ShouldBeError, expected)
 		}
