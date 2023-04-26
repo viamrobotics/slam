@@ -197,15 +197,15 @@ func TestGetOptionalParameters(t *testing.T) {
 	})
 }
 
-func newAttrConfig(cfg resource.Config) (*AttrConfig, error) {
-	attrCfg := AttrConfig{}
+func newAttrConfig(cfg resource.Config) (*Config, error) {
+	attrCfg := Config{}
 
-	if _, err := resource.TransformAttributeMap[*AttrConfig](cfg.Attributes); err != nil {
-		return &AttrConfig{}, newError(err.Error())
+	if _, err := resource.TransformAttributeMap[*Config](cfg.Attributes); err != nil {
+		return &Config{}, newError(err.Error())
 	}
 
 	if _, err := attrCfg.Validate("services.slam.attributes.fake"); err != nil {
-		return &AttrConfig{}, newError(err.Error())
+		return &Config{}, newError(err.Error())
 	}
 
 	return &attrCfg, nil
