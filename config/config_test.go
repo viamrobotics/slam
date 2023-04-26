@@ -22,13 +22,13 @@ func TestValidate(t *testing.T) {
 	t.Run("Empty config", func(t *testing.T) {
 		model := resource.DefaultModelFamily.WithModel("test")
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
-		_, err := newAttrConfig(cfgService)
+		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"config_params[mode]\" is required"))
 	})
 
 	t.Run("Simplest valid config", func(t *testing.T) {
 		cfgService := makeCfgService()
-		_, err := newAttrConfig(cfgService)
+		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -36,39 +36,45 @@ func TestValidate(t *testing.T) {
 		// Test for missing main attribute fields
 		requiredFields := []string{"data_dir", "use_live_data"}
 		for _, requiredField := range requiredFields {
-			logger.Debugf("Testing SLAM config without %s", requiredField)
+			logger.Debugf("Testing SLAM config without %s\n", requiredField)
 			cfgService := makeCfgService()
 			delete(cfgService.Attributes, requiredField)
-			_, err := newAttrConfig(cfgService)
-			test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField).Error()))
+			_, err := newConfig(cfgService)
+			expected := newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredField).Error())
+			println(err.Error())
+			println(expected.Error())
+			// "services.slam.attributes.fake": "config_params[mode]" is required
+			// "services.slam.attributes.fake": "data_dir" is required
+
+			test.That(t, err, test.ShouldBeError, expected)
 		}
 		// Test for missing config_params attributes
 		logger.Debug("Testing SLAM config without config_params[mode]")
 		cfgService := makeCfgService()
 		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
-		_, err := newAttrConfig(cfgService)
+		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
 	})
 
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["use_live_data"] = "true"
-		_, err := newAttrConfig(cfgService)
+		_, err := newConfig(cfgService)
 		expE := newError("1 error(s) decoding:\n\n* 'use_live_data' expected type 'bool', got unconvertible type 'string', value: 'true'")
 		test.That(t, err, test.ShouldBeError, expE)
 		cfgService.Attributes["use_live_data"] = true
-		_, err = newAttrConfig(cfgService)
+		_, err = newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("Config with out of range values", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["data_rate_msec"] = -1
-		_, err := newAttrConfig(cfgService)
+		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("cannot specify data_rate_msec less than zero"))
 		cfgService.Attributes["data_rate_msec"] = 1
 		cfgService.Attributes["map_rate_sec"] = -1
-		_, err = newAttrConfig(cfgService)
+		_, err = newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
 	})
 
@@ -85,7 +91,7 @@ func TestValidate(t *testing.T) {
 			"value":   "0",
 			"value_2": "test",
 		}
-		cfg, err := newAttrConfig(cfgService)
+		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
 		test.That(t, *cfg.UseLiveData, test.ShouldEqual, cfgService.Attributes["use_live_data"])
@@ -176,7 +182,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfgService.Attributes["use_live_data"] = true
-		cfg, err := newAttrConfig(cfgService)
+		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -190,23 +196,23 @@ func TestGetOptionalParameters(t *testing.T) {
 	t.Run("Live data without sensors", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["use_live_data"] = true
-		cfg, err := newAttrConfig(cfgService)
+		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		_, _, _, _, _, err = GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }
 
-func newAttrConfig(cfg resource.Config) (*Config, error) {
-	attrCfg := Config{}
-
-	if _, err := resource.TransformAttributeMap[*Config](cfg.Attributes); err != nil {
+func newConfig(conf resource.Config) (*Config, error) {
+	slamConf, err := resource.TransformAttributeMap[*Config](conf.Attributes)
+	if err != nil {
 		return &Config{}, newError(err.Error())
 	}
 
-	if _, err := attrCfg.Validate("services.slam.attributes.fake"); err != nil {
+	// This temporary value will be replaced once we are using rdk's validation
+	if _, err := slamConf.Validate("services.slam.attributes.fake"); err != nil {
 		return &Config{}, newError(err.Error())
 	}
 
-	return &attrCfg, nil
+	return slamConf, nil
 }
