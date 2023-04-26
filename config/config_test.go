@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/edaniels/golog"
-	"go.viam.com/rdk/config"
 	"go.viam.com/rdk/resource"
+	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
 	"go.viam.com/utils"
 )
@@ -20,8 +20,8 @@ func TestValidate(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Empty config", func(t *testing.T) {
-		model := resource.NewDefaultModel(resource.ModelName("test"))
-		cfgService := config.Service{Name: "test", Type: "slam", Model: model}
+		model := resource.DefaultModelFamily.WithModel("test")
+		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 		_, err := newAttrConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"config_params[mode]\" is required"))
 	})
@@ -157,9 +157,9 @@ func TestDetermineUseLiveData(t *testing.T) {
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
-func makeCfgService() config.Service {
-	model := resource.NewDefaultModel(resource.ModelName("test"))
-	cfgService := config.Service{Name: "test", Type: "slam", Model: model}
+func makeCfgService() resource.Config {
+	model := resource.DefaultModelFamily.WithModel("test")
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 	cfgService.Attributes = make(map[string]interface{})
 	cfgService.Attributes["config_params"] = map[string]string{
 		"mode": "test mode",
@@ -197,10 +197,10 @@ func TestGetOptionalParameters(t *testing.T) {
 	})
 }
 
-func newAttrConfig(cfg config.Service) (*AttrConfig, error) {
-	attrCfg := &AttrConfig{}
+func newAttrConfig(cfg resource.Config) (*AttrConfig, error) {
+	attrCfg := AttrConfig{}
 
-	if _, err := config.TransformAttributeMapToStruct(attrCfg, cfg.Attributes); err != nil {
+	if _, err := resource.TransformAttributeMap[*AttrConfig](cfg.Attributes); err != nil {
 		return &AttrConfig{}, newError(err.Error())
 	}
 
@@ -208,5 +208,5 @@ func newAttrConfig(cfg config.Service) (*AttrConfig, error) {
 		return &AttrConfig{}, newError(err.Error())
 	}
 
-	return attrCfg, nil
+	return &attrCfg, nil
 }

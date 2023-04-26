@@ -47,21 +47,14 @@ func ResetFolder(path string) error {
 	return os.Mkdir(path, dirInfo.Mode())
 }
 
-// CheckDeleteProcessedData compares the number of files found in a specified data
-// directory with the previous number found and uses the useLiveData and
-// deleteProcessedData values to evaluate this comparison. It returns the number of files
-// currently in the data directory for the specified config. Future invocations should pass in this
-// value. This function should be passed 0 as a default prev argument in order to get the
-// number of files currently in the directory.
-
 // TODO 05/12/2022: Both type and constants will be deprecated when data ingestion via GRPC is available
 // only being used now for linter issues.
 type (
 	// Mode holds the modes a slam model can use.
 	Mode string
 )
+
 const (
-	// Dense is a Library type.
 	// Mono is a mode a slam model can use.
 	Mono = Mode("mono")
 	// Rgbd is a mode a slam model can use.
@@ -72,6 +65,12 @@ const (
 	Dim3d = Mode("3d")
 )
 
+// CheckDeleteProcessedData compares the number of files found in a specified data
+// directory with the previous number found and uses the useLiveData and
+// deleteProcessedData values to evaluate this comparison. It returns the number of files
+// currently in the data directory for the specified config. Future invocations should pass in this
+// value. This function should be passed 0 as a default prev argument in order to get the
+// number of files currently in the directory.
 func CheckDeleteProcessedData(t *testing.T, slamMode Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
 	switch slamMode {
 	case Mono:
