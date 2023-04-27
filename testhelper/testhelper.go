@@ -8,7 +8,6 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
 
 	"go.viam.com/slam/config"
@@ -48,42 +47,9 @@ func ResetFolder(path string) error {
 	return os.Mkdir(path, dirInfo.Mode())
 }
 
-// CheckDeleteProcessedData compares the number of files found in a specified data
-// directory with the previous number found and uses the useLiveData and
-// deleteProcessedData values to evaluate this comparison. It returns the number of files
-// currently in the data directory for the specified config. Future invocations should pass in this
-// value. This function should be passed 0 as a default prev argument in order to get the
-// number of files currently in the directory.
-func CheckDeleteProcessedData(t *testing.T, slamMode slam.Mode, dir string, prev int, deleteProcessedData, useLiveData bool) int {
-	switch slamMode {
-	case slam.Mono:
-		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
-		test.That(t, err, test.ShouldBeNil)
-		return numFiles
-	case slam.Rgbd:
-		numFilesRGB, err := checkDataDirForExpectedFiles(t, dir+"/data/rgb", prev, deleteProcessedData, useLiveData)
-		test.That(t, err, test.ShouldBeNil)
-
-		numFilesDepth, err := checkDataDirForExpectedFiles(t, dir+"/data/depth", prev, deleteProcessedData, useLiveData)
-		test.That(t, err, test.ShouldBeNil)
-
-		test.That(t, numFilesRGB, test.ShouldEqual, numFilesDepth)
-		return numFilesRGB
-	case slam.Dim2d:
-		numFiles, err := checkDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
-		test.That(t, err, test.ShouldBeNil)
-		return numFiles
-	case slam.Dim3d:
-		// TODO: Delete this when implementing models:
-		// https://viam.atlassian.net/browse/RSDK-2015
-		// https://viam.atlassian.net/browse/RSDK-2014
-		return 0
-	default:
-		return 0
-	}
-}
-
-func checkDataDirForExpectedFiles(t *testing.T, dir string, prev int, deleteProcessedData, useLiveData bool) (int, error) {
+// CheckDataDirForExpectedFiles ensures that the provided data directory contains the correct amount of files
+// based on the config parameters deleteProcessedData and useLiveData.
+func CheckDataDirForExpectedFiles(t *testing.T, dir string, prev int, deleteProcessedData, useLiveData bool) (int, error) {
 	files, err := os.ReadDir(dir)
 	test.That(t, err, test.ShouldBeNil)
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/components/camera"
-	"go.viam.com/rdk/registry"
+	"go.viam.com/rdk/resource"
 
 	"go.viam.com/slam/sensors/utils"
 )
@@ -19,7 +19,7 @@ type Depth struct {
 }
 
 // New creates a new Depth sensor based on the sensor definition and the service config.
-func New(deps registry.Dependencies, sensors []string, sensorIndex int) (Depth, error) {
+func New(deps resource.Dependencies, sensors []string, sensorIndex int) (Depth, error) {
 	name, err := utils.GetName(sensors, sensorIndex)
 	if err != nil {
 		return Depth{}, err

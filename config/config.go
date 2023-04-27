@@ -42,8 +42,8 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 	return useLiveData, nil
 }
 
-// AttrConfig describes how to configure the SLAM service.
-type AttrConfig struct {
+// Config describes how to configure the SLAM service.
+type Config struct {
 	Sensors             []string          `json:"sensors"`
 	ConfigParams        map[string]string `json:"config_params"`
 	DataDirectory       string            `json:"data_dir"`
@@ -55,7 +55,7 @@ type AttrConfig struct {
 }
 
 // Validate creates the list of implicit dependencies.
-func (config *AttrConfig) Validate(path string) ([]string, error) {
+func (config *Config) Validate(path string) ([]string, error) {
 	if config.ConfigParams["mode"] == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
@@ -83,7 +83,7 @@ func (config *AttrConfig) Validate(path string) ([]string, error) {
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
-func GetOptionalParameters(config *AttrConfig, defaultPort string,
+func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (string, int, int, bool, bool, error) {
 	port := config.Port
