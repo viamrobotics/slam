@@ -205,7 +205,6 @@ func newConfig(conf resource.Config) (*Config, error) {
 		return &Config{}, newError(err.Error())
 	}
 
-	// This temporary value will be replaced once we are using rdk's validation
 	if _, err := slamConf.Validate("services.slam.attributes.fake"); err != nil {
 		return &Config{}, newError(err.Error())
 	}
