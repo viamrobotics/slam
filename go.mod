@@ -37,6 +37,7 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/a8m/envsubst v1.4.2 // indirect
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
+	github.com/alecthomas/participle/v2 v2.0.0-alpha3 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/ashanbrown/forbidigo v1.4.0 // indirect
@@ -69,6 +70,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/edaniels/lidario v0.0.0-20220607182921-5879aa7b96dd // indirect
 	github.com/edaniels/zeroconf v1.0.5 // indirect
+	github.com/erh/scheme v0.0.0-20210304170849-99d295c6ce9a // indirect
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/esimonov/ifshort v1.0.4 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
@@ -80,10 +82,15 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/gen2brain/malgo v0.11.10 // indirect
+	github.com/go-audio/audio v1.0.0 // indirect
+	github.com/go-audio/riff v1.0.0 // indirect
+	github.com/go-audio/transforms v0.0.0-20180121090939-51830ccc35a5 // indirect
+	github.com/go-audio/wav v1.1.0 // indirect
 	github.com/go-critic/go-critic v0.6.7 // indirect
 	github.com/go-fonts/liberation v0.3.0 // indirect
 	github.com/go-gl/mathgl v1.0.0 // indirect
 	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
+	github.com/go-nlopt/nlopt v0.0.0-20230219125344-443d3362dcb5 // indirect
 	github.com/go-pdf/fpdf v0.6.0 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.0.3 // indirect
@@ -292,6 +299,7 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
+	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.4.2 // indirect
