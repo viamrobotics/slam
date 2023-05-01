@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 		test.That(t, testLidar, test.ShouldResemble, lidar.Lidar{})
 	})
 
-	t.Run("Out of bounds index failure", func(t *testing.T) {
+	t.Run("Sensor index out of sensor array bounds failure", func(t *testing.T) {
 		deps := make(resource.Dependencies)
 		sensors := []string{testLidarName}
 		sensorIndex := 1
