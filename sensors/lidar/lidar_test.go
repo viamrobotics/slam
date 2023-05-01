@@ -34,6 +34,17 @@ func TestNew(t *testing.T) {
 		test.That(t, testLidar, test.ShouldResemble, lidar.Lidar{})
 	})
 
+	t.Run("Negative sensor index failure", func(t *testing.T) {
+		deps := make(resource.Dependencies)
+		sensors := []string{testLidarName}
+		sensorIndex := -1
+
+		testLidar, err := lidar.New(deps, sensors, sensorIndex)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err.Error(), test.ShouldEqual, "index out of bounds")
+		test.That(t, testLidar, test.ShouldResemble, lidar.Lidar{})
+	})
+
 	t.Run("Sensor index out of sensor array bounds failure", func(t *testing.T) {
 		deps := make(resource.Dependencies)
 		sensors := []string{testLidarName}
@@ -120,7 +131,7 @@ func TestGetData(t *testing.T) {
 	t.Run("Successful GetData call", func(t *testing.T) {
 		cam := &inject.Camera{}
 		cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-			pc1 := pointcloud.NewWithPrealloc(1)
+			pc1 := pointcloud.New()
 			err := pc1.Set(pointcloud.NewVector(1, 0, 0), pointcloud.NewColoredData(color.NRGBA{255, 0, 0, 255}))
 			test.That(t, err, test.ShouldBeNil)
 			return pc1, nil
