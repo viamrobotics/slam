@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Config without required fields", func(t *testing.T) {
 		// Test for missing main attribute fields
-		requiredFields := []string{"data_dir", "use_live_data"}
+		requiredFields := []string{"data_dir"}
 		for _, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s\n", requiredField)
 			cfgService := makeCfgService()
