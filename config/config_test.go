@@ -131,12 +131,12 @@ func TestDetermineUseLiveData(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	t.Run("No use_live_data specified", func(t *testing.T) {
 		useLiveData, err := DetermineUseLiveData(logger, nil, []string{})
-		test.That(t, err, test.ShouldBeError, newError("use_live_data is a required input parameter"))
+		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty"))
 		test.That(t, useLiveData, test.ShouldBeFalse)
 
 		useLiveData, err = DetermineUseLiveData(logger, nil, []string{"camera"})
-		test.That(t, err, test.ShouldBeError, newError("use_live_data is a required input parameter"))
-		test.That(t, useLiveData, test.ShouldBeFalse)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, useLiveData, test.ShouldBeTrue)
 	})
 	t.Run("False use_live_data", func(t *testing.T) {
 		useLiveData, err := DetermineUseLiveData(logger, &_false, []string{})

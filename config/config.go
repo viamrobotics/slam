@@ -32,9 +32,14 @@ func DetermineDeleteProcessedData(logger golog.Logger, deleteData *bool, useLive
 // DetermineUseLiveData will determine the value of the useLiveData attribute
 // based on the liveData input parameter and sensor list.
 func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string) (bool, error) {
+	// If liveData is not set, default it to true and require a sensor to have been provided.
 	if liveData == nil {
-		return false, newError("use_live_data is a required input parameter")
+		if len(sensors) == 0 {
+			return false, newError("sensors field cannot be empty")
+		}
+		return true, nil
 	}
+
 	useLiveData := *liveData
 	if useLiveData && len(sensors) == 0 {
 		return false, newError("sensors field cannot be empty when use_live_data is set to true")
