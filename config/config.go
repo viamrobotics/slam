@@ -69,10 +69,6 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 	}
 
-	if config.UseLiveData == nil {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
-	}
-
 	if config.DataRateMsec < 0 {
 		return nil, errors.New("cannot specify data_rate_msec less than zero")
 	}
